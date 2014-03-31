@@ -1,0 +1,61 @@
+#!/usr/bin/env ruby
+
+MIGRATIONS_LOCATION = "mystic/migrations/"
+
+# 1_MigrationClassName.rb
+
+case ARGV[0]
+when "setup"
+  Mystic.setup
+  Mystic.exec("CREATE TABLE IF NOT EXISTS mystic_migrations (filename TEXT)")
+  
+when "create"
+  
+  case ARGV[1]
+  when "migration"
+    
+    highest_mig_num = Dir[MIGRATIONS_LOCATION].inject do |highest, filename|
+      mig_num = filename.split("_").first.to_i
+      mig_num if mig_num > highest_Mig_num
+    end
+    
+    File.open(MIGRATIONS_LOCATION + "" + ARGV[2] + ".rb", "w+")
+  end
+  
+when "migrate"
+  
+  migrated_filenames = []
+  
+  Mystic.exec("SELECT * FROM mystic_migrations").each do |tuple|
+    filenames << tuple["filename"]
+  end
+  
+  files = Dir[MIGRATIONS_LOCATION].reject do |filename|
+    migrated_filenames.include?(filename)
+  end
+  
+  files.each do |filename|
+    # apply the migration
+    migration_code = File.read(MIGRATIONS_LOCATION + filename)
+    eval(migration_code)
+    
+    migration_name = filename.split("_").last.split(".").first
+    
+    migration = Object.const_get(nugration_name).new
+    migration.up
+    Mystic.exec("INSERT INTO mystic_migrations VALUES(#{filename})")
+  end
+  
+when "rollback"
+  filename = Dir[MIGRATIONS_LOCATION].last
+  
+  migration_code = File.read(MIGRATIONS_LOCATION + filename)
+  eval(migration_code)
+  
+  migration_name = filename.split("_").last.split(".").first
+  
+  migration = Object.const_get(nugration_name).new
+  migration.down
+  Mystic.exec("DELETE FROM mystic_migrations WHERE filename='#{filename}'")
+  
+end

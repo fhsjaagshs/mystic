@@ -76,6 +76,10 @@ class PostgresAdapter < Adapter
     end
   end
   
+  def disconnect
+    # disconnect the DB
+  end
+  
   def exec(sql)
     res = nil
     @pool.with do |instance|

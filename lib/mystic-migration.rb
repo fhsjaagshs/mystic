@@ -24,7 +24,7 @@ module Mystic
     end
     
     def integer(name, opts={})
-      
+      column(:integer, name, opts)
     end
     
     def index(idxname, cols=[], opts={})
@@ -36,7 +36,7 @@ module Mystic
     end
     
     def check(criteria)
-      # implement a check
+      # implement a check (a constraint)
     end
     
     def column(type, name, opts={})
@@ -55,16 +55,14 @@ module Mystic
         index_strings << Mystic.adapter.index_sql(@name, index[:idxname], index[:cols], index[:opts])
       end
       
-      column_strings += @constraints
+      column_strings.push *@constraints
       
       "CREATE TABLE #{name} (#{column_strings.join(",")});#{index_strings.join(";")}"
     end
-    
   end
     
     
 =begin
-add_column(table_name, column_name, type, options): Adds a new column to the table called table_name named column_name specified to be one of the following types: :string, :text, :integer, :float, :decimal, :datetime, :timestamp, :time, :date, :binary, :boolean. A default value can be specified by passing an options hash like { default: 11 }. Other options include :limit and :null (e.g. { limit: 50, null: false }) – see ActiveRecord::ConnectionAdapters::TableDefinition#column for details.
 change_column(table_name, column_name, type, options): Changes the column to a different type using the same parameters as add_column.
 =end
     
@@ -114,5 +112,9 @@ change_column(table_name, column_name, type, options): Changes the column to a d
       end
     end
     
+    def add_column(table_name, col_name, type, opts={})
+      column_sql = Mystic.adapter.column_sql(type.to_sym, column_name, opts)
+      Mystic.execute("ALTER TABLE #{table_name} ADD COLUMN #{column_sql}")
+    end
   end
 end
