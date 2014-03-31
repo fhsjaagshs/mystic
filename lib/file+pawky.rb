@@ -30,7 +30,7 @@ class File
     root = File.git_root
     
     if root.nil?
-      root = File.check_for_config_ru(File.script_path)
+      root = File.find_app_root(File.script_path)
     end
     
     return root

@@ -36,7 +36,7 @@ module Mystic
     end
     
     def check(criteria)
-      # implement a check (a constraint)
+      @constraints << "CHECK (#{criteria})"
     end
     
     def column(type, name, opts={})
@@ -60,12 +60,7 @@ module Mystic
       "CREATE TABLE #{name} (#{column_strings.join(",")});#{index_strings.join(";")}"
     end
   end
-    
-    
-=begin
-change_column(table_name, column_name, type, options): Changes the column to a different type using the same parameters as add_column.
-=end
-    
+
   class Migration
     def create_table(name)
       table = Mystic::Table.new(name)

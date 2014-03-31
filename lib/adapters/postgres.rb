@@ -4,9 +4,6 @@ require "adapter"
 require "pg"
 
 =begin
-  t.string
-  t.text
-  t.integer
   t.float
   t.decimal
   t.datetime
@@ -14,7 +11,6 @@ require "pg"
   t.time
   t.date
   t.binary
-  t.boolean
 =end
 
 POSTGRES_INDEX_ORDERS = {
@@ -129,7 +125,7 @@ class PostgresAdapter < Adapter
     # opts:
     # :type => the index type (:btree, :hash, :gist, or :gin)
     # :order => :asc, :desc, :nulls_first, :nulls_last
-    # :fastupdate => true/false
+    return nil if cols.count == 0
     
     with = opts[:with]
     type = idx_types_hash[opts[:type].to_s.to_sym]
@@ -139,7 +135,7 @@ class PostgresAdapter < Adapter
       col_name = col_hash[:name]
       col_name = col_hash[:expression] if col_name.nil?
       col_order = idx_orders_hash[col_hash[:order].to_s.to_sym]
-      return col_name = 
+      "#{name}#{ col_order ? " " + col_order : "" }"
     end
     
     "CREATE#{unique ? " UNIQUE " : " "}INDEX #{idx_name} ON #{tablename} USING #{type} (#{cols_sql.join(",")})#{ with ? " WITH (#{with})" : ""}"
