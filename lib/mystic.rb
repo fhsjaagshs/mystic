@@ -1,31 +1,40 @@
 #!/usr/bin/env ruby
 
-require "mystic-connection"
 require "mystic-migration"
+require "file+pawky"
 
 module Mystic
+  
+  def self.setup
+    eval(File.read(File.app_root+"/config/mystic.rb"))
+  end
   
   def self.adapter
     return @@adapter
   end
   
+  # Ultra hacky string based object instantiation
   def self.adapter=(adapter)
-    # this creates the adapter object
-    @@adapter = Object.const_get(adapter.to_s.capitalize + "Adapter").new
-    
-    return @@adapter != nil
+    adapter_class = adapter.to_s.capitalize + "Adapter"
+    require adapter_class
+    @@adapter = Object.const_get(adapter_class).new
   end
   
   def self.connect(opts={})
-    Mystic.adapter = opts[:adapter].to_sym
-    Mystic::Connection.connect(opts)
+    adapter_name = opts.delete(:adapter)
+    Mystic.adapter = adapter_name if adapter_name != nil
+    return false if @@adapter.nil?
+    Mystic.adapter.connect(opts)
+    return true
   end
   
   def self.execute(sql)
-    Mystic::Connection.execute(sql)
+    return false if @@adapter.nil?  
+    return Mystic.adapter.exec(sql)
   end
   
   def self.sanitize(string)
-    Mystic::Connection.sanitize(string)
+    return false if @@adapter.nil?
+    Mystic.adapter.sanitize(string)
   end
 end

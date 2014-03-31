@@ -1,6 +1,5 @@
 #!/usr/bin/env ruby
 
-require "pg"
 require "connection_pool"
 
 module Mystic
