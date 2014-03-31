@@ -27,8 +27,8 @@ module Mystic
       
     end
     
-    def index(idxname, name, opts={})
-      @indeces = { :idxname => idxname, :colname => name, :opts => opts }
+    def index(idxname, cols=[], opts={})
+      @indeces = { :idxname => idxname, :cols => cols, :opts => opts }
     end
     
     def check(criteria)
@@ -48,7 +48,7 @@ module Mystic
       end
       
       @indeces.each do |index|
-        index_strings << Mystic.adapter.index_sql(index[:idxname], @name, index[:colname], index[:opts])
+        index_strings << Mystic.adapter.index_sql(@name, index[:idxname], index[:cols], index[:opts])
       end
       
       @constraints.each do |constraint|
@@ -102,7 +102,14 @@ remove_index(table_name, name: index_name): Removes the index specified by index
       Mystic.execute("DROP VIEW #{name}")
     end
     
-    def add_index(table_name, )
+    def add_index(table_name, index_name, cols=[], opts={})
+      sql = Mystic.adapter.index_sql(table_name, index_name, cols, opts)
+      Mystic.execute(sql)
+    end
+    
+    def drop_index(index_name)
+      Mystic.execute("DROP INDEX #{index_name}")
+    end
     
   end
 end

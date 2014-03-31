@@ -75,11 +75,19 @@ class PostgresAdapter < Adapter
   end
   
   def exec(sql)
-    pool_instance.exec(sql)
+    res = nil
+    @pool.with do |instance|
+      res = instance.exec(sql)
+    end
+    return res
   end
   
   def sanitize(string)
-    pool_instance.escape_string(string)
+    res = nil
+    @pool.with do |instance|
+      res = instance.escape_string(string)
+    end
+    return res
   end
   
   def size_hash
@@ -111,20 +119,22 @@ class PostgresAdapter < Adapter
     return opt_strings
   end
   
-  def index_sql(idx_name, tablename, colname, opts)
+  def index_sql(relation_name, index_name, cols, opts)
     # opts:
     # :type => the index type (:btree, :hash, :gist, or :gin)
     # :order => :asc, :desc, :nulls_first, :nulls_last
     # :fastupdate => true/false
     
-    type_sym = opts[:type].to_sym
-    order_sym = opts[:order].to_sym
+    type = idx_types_hash[opts[:type].to_sym]
+    unique = opts[:unique]
+
+    cols_sql = cols.map do |col_hash|
+      col_name = col_hash[:name]
+      col_name = col_hash[:expression] if col_name.nil?
+      col_order = idx_orders_hash[col_hash[:order].to_sym]
+    end
     
-    type_str = idx_types_hash[type_sym]
-    order_str = idx_orders_hash[order_sym]
-    
-    "CREATE INDEX #{idx_name} .... "
-    
+    "CREATE #{unique ? " UNIQUE " : ""} INDEX #{idx_name} ON #{tablename} USING #{type} (#{cols_sql.join(",")})"
   end
   
   def column_sql(type,name,opts)
