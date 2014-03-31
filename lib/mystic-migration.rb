@@ -28,7 +28,11 @@ module Mystic
     end
     
     def index(idxname, cols=[], opts={})
-      @indeces = { :idxname => idxname, :cols => cols, :opts => opts }
+      @indeces << { :idxname => idxname, :cols => cols, :opts => opts }
+    end
+    
+    def constraint(constraint_sql)
+      @constraints << constraint_sql
     end
     
     def check(criteria)
@@ -51,9 +55,7 @@ module Mystic
         index_strings << Mystic.adapter.index_sql(@name, index[:idxname], index[:cols], index[:opts])
       end
       
-      @constraints.each do |constraint|
-        column_strings << "<CONSTRAINT_HERE>"
-      end
+      column_strings += @constraints
       
       "CREATE TABLE #{name} (#{column_strings.join(",")});#{index_strings.join(";")}"
     end
@@ -62,25 +64,8 @@ module Mystic
     
     
 =begin
-
-change_table(name, options): Allows to make column alterations to the table called name. It makes the table object available to a block that can then add/remove columns, indexes or foreign keys to it.
-
-rename_table(old_name, new_name): Renames the table called old_name to new_name.
-
 add_column(table_name, column_name, type, options): Adds a new column to the table called table_name named column_name specified to be one of the following types: :string, :text, :integer, :float, :decimal, :datetime, :timestamp, :time, :date, :binary, :boolean. A default value can be specified by passing an options hash like { default: 11 }. Other options include :limit and :null (e.g. { limit: 50, null: false }) – see ActiveRecord::ConnectionAdapters::TableDefinition#column for details.
-
-rename_column(table_name, column_name, new_column_name): Renames a column but keeps the type and content.
-
 change_column(table_name, column_name, type, options): Changes the column to a different type using the same parameters as add_column.
-
-remove_column(table_name, column_name, type, options): Removes the column named column_name from the table called table_name.
-
-add_index(table_name, column_names, options): Adds a new index with the name of the column. Other options include :name, :unique (e.g. { name: 'users_name_index', unique: true }) and :order (e.g. { order: { name: :desc } }).
-
-remove_index(table_name, column: column_name): Removes the index specified by column_name.
-
-remove_index(table_name, name: index_name): Removes the index specified by index_name.
-
 =end
     
   class Migration
@@ -109,6 +94,24 @@ remove_index(table_name, name: index_name): Removes the index specified by index
     
     def drop_index(index_name)
       Mystic.execute("DROP INDEX #{index_name}")
+    end
+    
+    def rename_column(table, oldname, newname)
+      Mystic.execute("ALTER TABLE #{table} RENAME COLUMN #{oldname} TO #{newname}")
+    end
+    
+    def rename_table(oldname, newname)
+      Mystic.execute("ALTER TABLE #{oldname} RENAME TO #{newname}")
+    end
+    
+    def drop_column(table_name, column_name)
+      drop_columns(table_name, [column_name])
+    end
+    
+    def drop_columns(table_name, col_names=[])
+      if col_names.count > 0
+        Mystic.execute("ALTER TABLE #{table_name} DROP COLUMN #{col_names.join(",")}")
+      end
     end
     
   end

@@ -18,14 +18,16 @@ require "pg"
 =end
 
 POSTGRES_INDEX_ORDERS = {
-  :asc => "ASC", # the default
+  :"" => "ASC",
+  :asc => "ASC",
   :desc => "DESC",
   :nulls_first => "NULLS FIRST",
   :nulls_last => "NULLS LAST"
 }
 
 POSTGRES_INDEX_TYPES = {
-  :btree => "btree", # the default
+  :"" => "btree",
+  :btree => "btree",
   :hash => "hash", 
   :gist => "gist",
   :gin => "gin"
@@ -125,16 +127,18 @@ class PostgresAdapter < Adapter
     # :order => :asc, :desc, :nulls_first, :nulls_last
     # :fastupdate => true/false
     
-    type = idx_types_hash[opts[:type].to_sym]
+    with = opts[:with]
+    type = idx_types_hash[opts[:type].to_s.to_sym]
     unique = opts[:unique]
 
     cols_sql = cols.map do |col_hash|
       col_name = col_hash[:name]
       col_name = col_hash[:expression] if col_name.nil?
-      col_order = idx_orders_hash[col_hash[:order].to_sym]
+      col_order = idx_orders_hash[col_hash[:order].to_s.to_sym]
+      return col_name = 
     end
     
-    "CREATE #{unique ? " UNIQUE " : ""} INDEX #{idx_name} ON #{tablename} USING #{type} (#{cols_sql.join(",")})"
+    "CREATE#{unique ? " UNIQUE " : " "}INDEX #{idx_name} ON #{tablename} USING #{type} (#{cols_sql.join(",")})#{ with ? " WITH (#{with})" : ""}"
   end
   
   def column_sql(type,name,opts)
