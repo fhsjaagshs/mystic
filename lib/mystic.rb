@@ -1,15 +1,12 @@
 #!/usr/bin/env ruby
 
 require "mystic-migration"
-require "file+pawky"
+require "file+pawky.rb"
 
 module Mystic
-  
-  def self.setup
-    eval(File.read(File.app_root+"/config/mystic.rb"))
-  end
-  
   def self.adapter
+    @@adapter ||= nil
+    eval(File.read(File.app_root+"/config/mystic.rb")) if @@adapter.nil?
     return @@adapter
   end
   
@@ -29,7 +26,7 @@ module Mystic
   end
   
   def self.execute(sql)
-    return false if @@adapter.nil?  
+    return false if @@adapter.nil?
     return Mystic.adapter.exec(sql)
   end
   

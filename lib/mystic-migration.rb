@@ -2,13 +2,11 @@
 
 module Mystic
   class Table
-    @columns = [] # contains column names
-    @constraints = [] # contains constraints
-    @indeces = []
-    
     def initialize(name)
       @name = name
-      super
+      @columns = [] # contains column names
+      @constraints = [] # contains constraints
+      @indeces = []
     end
 
     def varchar(name, opts={})

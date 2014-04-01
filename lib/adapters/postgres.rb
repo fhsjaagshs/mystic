@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-require "adapter"
+require "../adapter.rb"
 require "pg"
 
 =begin
@@ -77,6 +77,7 @@ class PostgresAdapter < Adapter
   end
   
   def exec(sql)
+    puts sql
     res = nil
     @pool.with do |instance|
       res = instance.exec(sql)

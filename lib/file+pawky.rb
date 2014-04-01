@@ -19,11 +19,11 @@ class File
     # this is the directory containing the passed path
     newpath = File.expand_path(File.dirname(path))
     
-    return path == "/" ? nil : File.check_for_config_ru(newpath)
+    return path == "/" ? nil : File.find_app_root(newpath)
   end
   
   def self.script_path
-    File.expand_path(File.dirname(File.dirname(__FILE__)))
+    File.expand_path $0
   end
   
   def self.app_root
