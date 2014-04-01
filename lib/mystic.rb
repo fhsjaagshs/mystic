@@ -1,19 +1,19 @@
 #!/usr/bin/env ruby
 
-require "mystic-migration"
-require "file+pawky.rb"
+require "mystic/mystic-migration"
+require "mystic/file+pawky.rb"
 
 module Mystic
   def self.adapter
     @@adapter ||= nil
-    eval(File.read(File.app_root+"/config/mystic.rb")) if @@adapter.nil?
+    eval(File.read(File.app_root + "config/mystic.rb")) if @@adapter.nil?
     return @@adapter
   end
   
   # Ultra hacky string based object instantiation
   def self.adapter=(adapter)
     adapter_class = adapter.to_s.capitalize + "Adapter"
-    require adapter_class
+    require "mystic/adapters/" + adapter
     @@adapter = Object.const_get(adapter_class).new
   end
   

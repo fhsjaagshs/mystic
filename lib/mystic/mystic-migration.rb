@@ -55,7 +55,10 @@ module Mystic
       
       column_strings.push *@constraints
       
-      "CREATE TABLE #{name} (#{column_strings.join(",")});#{index_strings.join(";")}"
+      column_strings.compact!
+      index_strings.compact!
+      
+      "CREATE TABLE #{@name} (#{column_strings.join(",")});#{index_strings.join(";")}"
     end
   end
 

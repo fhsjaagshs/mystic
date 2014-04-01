@@ -5,7 +5,7 @@ require "connection_pool"
 class Adapter
   
   def name
-    class.name.split('::').last.gsub("Adapter","").downcase
+    self.class.name.split('::').last.gsub("Adapter","").downcase
   end
   
   def create_pool(&block)

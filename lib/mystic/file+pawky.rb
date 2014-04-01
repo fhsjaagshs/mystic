@@ -22,15 +22,15 @@ class File
     return path == "/" ? nil : File.find_app_root(newpath)
   end
   
-  def self.script_path
-    File.expand_path $0
+  def self.script_dir
+    File.dirname(File.expand_path($0)) + "/"
   end
   
   def self.app_root
     root = File.git_root
     
     if root.nil?
-      root = File.find_app_root(File.script_path)
+      root = File.find_app_root(File.script_dir)
     end
     
     return root

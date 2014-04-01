@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-require "../adapter.rb"
+require "mystic/adapter"
 require "pg"
 
 =begin
@@ -54,6 +54,8 @@ POSTGRES_SIZES = {
   :path => -1, # 16+16n bytes
   :polygon => -1, # 40+16n bytes
   :circle => 24,
+  
+  :varchar => 255
 }
 
 module Mystic
@@ -73,10 +75,13 @@ class PostgresAdapter < Adapter
   end
   
   def disconnect
-    # disconnect the DB
+    @pool.with do |instance|
+      instance.close
+    end
   end
   
   def exec(sql)
+    return nil if @pool.nil?
     puts sql
     res = nil
     @pool.with do |instance|
@@ -106,6 +111,9 @@ class PostgresAdapter < Adapter
   end
   
   def sqlize_opts(opts)
+    
+    return [] if opts.length == 0
+    
     opt_strings = []
     
     opts.each do |key, value|
@@ -116,6 +124,8 @@ class PostgresAdapter < Adapter
         opt_strings << "UNIQUE" if value == true
       when :primary_key
         opt_strings << "PRIMARY KEY" if value == true
+      when :autoincrement
+        opt_strings << "AUTOINCREMENT" if value == true
       end
     end
     
@@ -143,12 +153,18 @@ class PostgresAdapter < Adapter
   end
   
   def column_sql(type,name,opts)
-    size = opts[:size] ? opts[:size] : max_length_for(type.to_sym)
-    column_string = "#{name.to_s} #{type.to_s}(#{size.to_s})"
+    return nil if type.nil?
+    return nil if name.nil?
+    
+    size = opts[:size] ? opts.delete(:size) : max_length_for(type.to_sym)
+    column_string = "#{name.to_s} #{type.to_s}"
+    column_string << "(#{size.to_s})" if size != nil
     
     opt_strings = sqlize_opts(opts)
+    
+    column_string << " " + opt_strings.join(" ") if opt_strings.count > 0
 
-    return column_string + " " + opt_strings.join(" ")
+    return column_string
   end
   
 end
