@@ -158,8 +158,13 @@ class PostgresAdapter < Adapter
     
     size = opts[:size] ? opts.delete(:size) : max_length_for(type.to_sym)
     column_string = "#{name.to_s} #{type.to_s}"
-    column_string << "(#{size.to_s})" if size != nil
     
+    if name() == "postgis" && 
+      column_string << "(#{opts[:geom_kind].to_s.downcase.capitalize},#{opts[:geom_srid].to_i.to_s})" if size != nil
+    else
+      column_string << "(#{size.to_s})" if size != nil
+    end
+
     opt_strings = sqlize_opts(opts)
     
     column_string << " " + opt_strings.join(" ") if opt_strings.count > 0

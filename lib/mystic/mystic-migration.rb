@@ -58,7 +58,9 @@ module Mystic
       column_strings.compact!
       index_strings.compact!
       
-      "CREATE TABLE #{@name} (#{column_strings.join(",")});#{index_strings.join(";")}"
+      sql = "CREATE TABLE #{@name} (#{column_strings.join(",")})"
+      sql << ";#{index_strings.join(";")}" if index_strings.count > 0
+      sql
     end
   end
 
