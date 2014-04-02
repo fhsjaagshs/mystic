@@ -7,7 +7,7 @@ module Mystic
     
     class Index
       
-      attr_accessor :name, :tblname, :opts, :type, :unique, :using, :concurrently, :columns
+      attr_accessor :name, :tblname, :opts, :type, :unique, :using, :concurrently, :with, :columns
       
       def initialize(name, tblname, opts={})
         @name = name
