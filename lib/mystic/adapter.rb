@@ -2,8 +2,17 @@
 
 require "connection_pool"
 
+UNIVERSAL_TYPES = {
+  :date => "DATE",
+  :time => "TIME",
+  :timestamp => "TIMESTAMP"
+  :bool => "BOOLEAN",
+  :text => "TEXT",
+  :integer => "INTEGER",
+  :varchar => "VARCHAR"
+}
+
 class Adapter
-  
   def name
     self.class.name.split('::').last.gsub("Adapter","").downcase
   end
@@ -20,15 +29,11 @@ class Adapter
     
   end
   
-  def size_hash
-    {}
-  end
-  
-  def column_sql(type,name,opts)
+  def column_sql(name, kind, size, constraints)
     ""
   end
   
-  def max_length_for(type_symbol)
-    return size_hash[type_symbol]  
+  def kind(kind)
+    UNIVERSAL_TYPES[kind.to_sym]
   end
 end

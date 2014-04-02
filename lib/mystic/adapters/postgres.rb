@@ -3,18 +3,19 @@
 require "mystic/adapter"
 require "pg"
 
-=begin
-  t.float
-  t.decimal
-  t.datetime
-  t.timestamp
-  t.time
-  t.date
-  t.binary
-=end
+# http://en.wikibooks.org/wiki/Converting_MySQL_to_PostgreSQL#Data_Types
+POSTGRES_TYPES = {
+  :float => "REAL",
+  :double => "DOUBLE PRECISION",
+  
+  :serial => "SERIAL",
+  :json => "JSON",
+  :xml => "XML",
+  :uuid => "UUID"
+}
 
 POSTGRES_INDEX_ORDERS = {
-  :"" => "ASC",
+  :"" => "ASC", # default
   :asc => "ASC",
   :desc => "DESC",
   :nulls_first => "NULLS FIRST",
@@ -22,40 +23,11 @@ POSTGRES_INDEX_ORDERS = {
 }
 
 POSTGRES_INDEX_TYPES = {
-  :"" => "btree",
+  :"" => "btree", # default
   :btree => "btree",
   :hash => "hash", 
   :gist => "gist",
   :gin => "gin"
-}
-
-POSTGRES_SIZES = {
-  # boolean
-  :boolean => 1,
-  
-  # numerical
-  :smallint => 2,
-  :integer => 4,
-  :bigint => 8,
-  :decimal => -1,
-  :numeric => -1,
-  :real => 4,
-  :double_precision => 8,
-  :smallserial => 2,
-  :serial => 4,
-  :bigserial => 8,
-  
-  # geometric/spatial
-  # n is the number of points
-  :point => 16,
-  :line => 32,
-  :lseg => 32,
-  :box => 32, # 16+16n bytes
-  :path => -1, # 16+16n bytes
-  :polygon => -1, # 40+16n bytes
-  :circle => 24,
-  
-  :varchar => 255
 }
 
 module Mystic
@@ -98,38 +70,12 @@ class PostgresAdapter < Adapter
     return res
   end
   
-  def size_hash
-    return POSTGRES_SIZES
-  end
-  
   def idx_types_hash
     return POSTGRES_INDEX_TYPES
   end
   
   def idx_orders_hash
     return POSTGRES_INDEX_ORDERS
-  end
-  
-  def sqlize_opts(opts)
-    
-    return [] if opts.length == 0
-    
-    opt_strings = []
-    
-    opts.each do |key, value|
-      case key
-      when :not_null
-        opt_strings << "NOT NULL" if value == true
-      when :unique
-        opt_strings << "UNIQUE" if value == true
-      when :primary_key
-        opt_strings << "PRIMARY KEY" if value == true
-      when :autoincrement
-        opt_strings << "AUTOINCREMENT" if value == true
-      end
-    end
-    
-    return opt_strings
   end
   
   def index_sql(relation_name, index_name, cols, opts)
@@ -152,24 +98,27 @@ class PostgresAdapter < Adapter
     "CREATE#{unique ? " UNIQUE " : " "}INDEX #{idx_name} ON #{tablename} USING #{type} (#{cols_sql.join(",")})#{ with ? " WITH (#{with})" : ""}"
   end
   
-  def column_sql(type,name,opts)
-    return nil if type.nil?
-    return nil if name.nil?
+  def foreign_key_sql(tbl, column, opts)
+    references = "REFERENCES #{foreign_key}"
     
-    size = opts[:size] ? opts.delete(:size) : max_length_for(type.to_sym)
-    column_string = "#{name.to_s} #{type.to_s}"
-    
-    if name() == "postgis" && 
-      column_string << "(#{opts[:geom_kind].to_s.downcase.capitalize},#{opts[:geom_srid].to_i.to_s})" if size != nil
-    else
-      column_string << "(#{size.to_s})" if size != nil
+    opts.each do |key, value|
+      case key.to_sym
+      when :delete
+        references << " ON DELETE #{value.to_s.upcase}"
+      when :update
+        references << " ON UPDATE #{value.to_s.upcase}"
+      end
     end
-
-    opt_strings = sqlize_opts(opts)
-    
-    column_string << " " + opt_strings.join(" ") if opt_strings.count > 0
-
-    return column_string
   end
   
+  def constraint_sql(name, conditions)
+    "CONSTRAINT #{name} CHECK(#{conditions})"
+  end
+  
+  def column_sql(name, kind, size, constraints)
+    sql = "#{@name} #{@kind}"
+    sql << "(#{@size})" if size
+    sql << " " + "constraints"
+    return sql
+  end
 end

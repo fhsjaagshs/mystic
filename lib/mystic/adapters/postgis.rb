@@ -13,8 +13,29 @@ module Mystic
   end
 end
 
+module Mystic
+  module SQL
+    class SpatialColumn < Column
+      def initialize(opts={})
+        @srid = opts[:srid].to_s
+        @attributes = {}
+        super
+      end
+      
+      def to_sql
+        "#{@name} GEOMETRY(#{@kind},#{@srid})"
+      end
+    end
+  end
+end
+
 class PostgisAdapter < PostgresAdapter
   # this is essentially a name change for 
   # the PostgresAdapter class
   # It allows the column_sql(type,name,opts) method to 
+  
+  def column_sql(name, kind, size)
+    
+  end
+  
 end
