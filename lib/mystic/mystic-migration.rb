@@ -16,8 +16,6 @@ module Mystic
         # add constraints
         self << column
       end
-      
-      def 
     
       def boolean(name, opts={})
         column(:boolean, name, opts)
