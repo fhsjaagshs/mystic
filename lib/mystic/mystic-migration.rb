@@ -69,8 +69,8 @@ module Mystic
       Mystic.execute(sql)
     end
     
-    def drop_index(index_name)
-      Mystic.execute("DROP INDEX #{index_name}")
+    def drop_index(*args)
+      Mystic.execute(Mystic.drop_index_sql(*args))
     end
     
     def rename_column(table, oldname, newname)

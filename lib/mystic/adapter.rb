@@ -40,6 +40,10 @@ class Adapter
   def sql_kind(kind)
     UNIVERSAL_TYPES[kind.to_sym]
   end
+  
+  def drop_index_sql(*args)
+    ""
+  end
 
   #
   # These methods are the same across MySQL and PostgreSQL

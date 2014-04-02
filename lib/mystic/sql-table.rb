@@ -6,8 +6,24 @@ module Mystic
   module SQL
     
     class Index
-      def initialize
-        
+      def initialize(name, tblname, opts={})
+        @name = name
+        @tblname = tblname
+        @type = opts[:type]
+        @unique = opts[:unique]
+        @using = opts[:using]
+        @concurrently = opts[:concurrently]
+        @columns = []
+      end
+      
+      # can accept shit other than columns
+      # like box(location,location)
+      def <<(col)
+        @columns << col
+      end
+      
+      def to_sql
+        Mystic.adapter.index_sql()
       end
     end
     

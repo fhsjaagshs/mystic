@@ -3,14 +3,9 @@
 require "mystic/adapter"
 require "mysql2"
 
-POSTGRES_TYPES = {
-  :float => "REAL",
-  :double => "DOUBLE PRECISION",
-  
-  :serial => "SERIAL",
-  :json => "JSON",
-  :xml => "XML",
-  :uuid => "UUID"
+MYSQL_TYPES = {
+  :float => "FLOAT",
+  :double => "DOUBLE"
 }
 
 class MysqlAdapter < Adapter
