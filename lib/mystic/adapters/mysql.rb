@@ -45,10 +45,6 @@ class MysqlAdapter < Adapter
     res
   end
   
-  def constraint_sql(name, conditions)
-    "CONSTRAINT #{name} CHECK(#{conditions})"
-  end
-  
   def drop_index_sql(*args)
     index_name, table_name = *args
     "DROP INDEX #{index_name} ON #{table_name}"

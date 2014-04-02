@@ -6,18 +6,22 @@ module Mystic
   module SQL
     
     class Index
+      
+      attr_accessor :name, :tblname, :opts, :type, :unique, :using, :concurrently, :columns
+      
       def initialize(name, tblname, opts={})
         @name = name
         @tblname = tblname
-        @type = opts[:type]
-        @unique = opts[:unique]
-        @using = opts[:using]
-        @concurrently = opts[:concurrently]
+        @type = opts[:type] # a string/symbol
+        @unique = opts[:unique] # a boolean
+        @using = opts[:using] # a symbol/string
+        @concurrently = opts[:concurrently] # a boolean
+        @with = opts[:with] # a hash (keys => [:fillfactor => 10..100, :fastupdate => true])
         @columns = []
       end
       
-      # can accept shit other than columns
-      # like box(location,location)
+      # can accept shit other than columns like
+      # box(location,location)
       def <<(col)
         @columns << col
       end
@@ -44,7 +48,7 @@ module Mystic
       end
       
       def to_sql
-        MYSTIC_CONSTRAINTS_HASH[constr]
+        @constr.sqlize
       end
     end
 

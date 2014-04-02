@@ -5,13 +5,12 @@ require "mystic/sql-table"
 module Mystic
   module SQL
     class Table
-      def varchar(name, size, constraints=[])
+      def varchar(name, size, *constraints)
         column = Column.new(:name => name, :kind => :varchar, :size => size)
-        # add constraints
         self << column
       end
     
-      def text(name, constraints=[])
+      def text(name, *constraints)
         column = Column.new(:name => name, :kind => :text)
         # add constraints
         self << column

@@ -59,10 +59,6 @@ class PostgresAdapter < Adapter
     res
   end
   
-  def constraint_sql(name, conditions)
-    "CONSTRAINT #{name} CHECK(#{conditions})"
-  end
-  
   def drop_index_sql(*args)
     "DROP INDEX #{args.first}"
   end

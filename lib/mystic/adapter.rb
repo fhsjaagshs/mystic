@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 
+require "mystic"
 require "connection_pool"
 require "mystic/extensions"
 
@@ -11,13 +12,6 @@ UNIVERSAL_TYPES = {
   :text => "TEXT",
   :integer => "INTEGER",
   :varchar => "VARCHAR"
-}
-
-MYSTIC_CONSTRAINTS_HASH = {
-  :unique => "UNIQUE",
-  :null => "NULL",
-  :not_null => "NOT NULL",
-  :primary_key => "PRIMARY KEY"
 }
 
 class Adapter
@@ -72,23 +66,19 @@ class Adapter
     return sql
   end
   
-  def index_sql(relation_name, index_name, cols, opts)
-    # opts:
-    # :type => the index type (:btree, :hash, :gist, or :gin)
-    # :order => :asc, :desc, :nulls_first, :nulls_last
-    return nil if cols.count == 0
-    
-    with = opts[:with]
-    type = idx_types_hash[opts[:type].to_s.to_sym]
-    unique = opts[:unique]
-
-    cols_sql = cols.map do |col_hash|
-      col_name = col_hash[:name]
-      col_name = col_hash[:expression] if col_name.nil?
-      col_order = idx_orders_hash[col_hash[:order].to_s.to_sym]
-      "#{name}#{ col_order ? " " + col_order : "" }"
-    end
-    
-    "CREATE#{unique ? " UNIQUE " : " "}INDEX #{idx_name} ON #{tablename} USING #{type} (#{cols_sql.join(",")})#{ with ? " WITH (#{with})" : ""}"
+  def index_sql(index)
+    sql = []
+    sql << "CREATE"
+    sql << "UNIQUE" if index.unique
+    sql << "INDEX ON"
+    sql << index.tblname
+    sql << "USING #{index.type}" if index.type
+    sql << "(#{cols.join(",")})"
+    sql << "WITH (#{index.with.map { |key, value| key+"="+value.to_s }})" if index.with
+    return sql.join(" ")
+  end
+  
+  def check_constraint_sql(name, conditions)
+    "CONSTRAINT #{name} CHECK(#{conditions})"
   end
 end
