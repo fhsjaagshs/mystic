@@ -2,19 +2,8 @@
 
 require "mystic"
 
-CONSTRAINTS_HASH = {
-  :unique => "UNIQUE",
-  :null => "NULL",
-  :not_null => "NOT NULL",
-  :primary_key => "PRIMARY KEY"
-}
-
 module Mystic
   module SQL
-    
-    def adapter
-      Mystic.adapter
-    end
     
     class Index
       def initialize
@@ -22,7 +11,7 @@ module Mystic
       end
     end
     
-    class Constraint
+    class CheckConstraint
       def initialize(conditions_str, name)
         @conditions = conditions_str.to_s
         @name = name
@@ -32,12 +21,27 @@ module Mystic
         Mystic.adapter.constraint_sql(@name, @conditions)
       end
     end
+    
+    class Constraint
+      def initialize(constr)
+        @constr = constr
+      end
+      
+      def to_sql
+        MYSTIC_CONSTRAINTS_HASH[constr]
+      end
+    end
 
     class ForeignKey
-      def initialize
-        #
-        ## Should this class exist?
-        #
+      def initialize(tbl, column, opts={})
+        @tbl = tbl
+        @column = column
+        @delete = opts[:delete]
+        @update = opts[:update]
+      end
+      
+      def to_sql
+        Mystic.adapter.foreign_key_sql(@tbl, @column, @delete, @update)
       end
     end
   
@@ -49,20 +53,19 @@ module Mystic
         @constraints = []
       end
     
-      def <<(constraint)
-        @constraints << constraint.to_sql
-      end
-
-      def foreign_key(tbl, column, opts={})
-        @constraints << Mystic.adapter.foreign_key_sql(tbl,column,opts)
+      def <<(obj)
+        case obj
+        when Constraint, CheckConstraint, ForeignKey
+          @constraints << obj
+        end
       end
       
-      def concat_constraints
-        
+      def [](idx)
+        @constraints[idx]
       end
       
       def to_sql
-        Mystic.adapter.column_sql(@name, @kind, @size, )
+        Mystic.adapter.column_sql(@name, @kind, @size, @constraints.map { |constr| constr.to_sql })
       end
     end
   

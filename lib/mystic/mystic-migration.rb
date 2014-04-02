@@ -1,69 +1,52 @@
 #!/usr/bin/env ruby
 
-module Mystic
-  class Table
-    def initialize(name)
-      @name = name
-      @columns = [] # contains column names
-      @constraints = [] # contains constraints
-      @indeces = []
-    end
+require "mystic/sql-table"
 
-    def varchar(name, opts={})
-      column(:varchar, name, opts)
-    end
+module Mystic
+  module SQL
+    class Table
+      def varchar(name, size, constraints=[])
+        column = Column.new(:name => name, :kind => :varchar, :size => size)
+        # add constraints
+        self << column
+      end
     
-    def text(name, opts={})
-      column(:text, name, opts)
-    end
-    
-    def boolean(name, opts={})
-      column(:boolean, name, opts)
-    end
-    
-    def integer(name, opts={})
-      column(:integer, name, opts)
-    end
-    
-    def index(idxname, cols=[], opts={})
-      @indeces << { :idxname => idxname, :cols => cols, :opts => opts }
-    end
-    
-    def constraint(constraint_sql)
-      @constraints << constraint_sql
-    end
-    
-    def check(criteria)
-      @constraints << "CHECK (#{criteria})"
-    end
-    
-    def column(type, name, opts={})
-      @columns << { :type => type, :name => name, :opts => opts }
-    end
-    
-    def to_sql
-      column_strings = []
-      index_strings = []
-      
-      @columns.each do |column|
-        column_strings << Mystic.adapter.column_sql(column[:type], column[:name], column[:opts])
+      def text(name, constraints=[])
+        column = Column.new(:name => name, :kind => :text)
+        # add constraints
+        self << column
       end
       
-      @indeces.each do |index|
-        index_strings << Mystic.adapter.index_sql(@name, index[:idxname], index[:cols], index[:opts])
+      def 
+    
+      def boolean(name, opts={})
+        column(:boolean, name, opts)
       end
-      
-      column_strings.push *@constraints
-      
-      column_strings.compact!
-      index_strings.compact!
-      
-      sql = "CREATE TABLE #{@name} (#{column_strings.join(",")})"
-      sql << ";#{index_strings.join(";")}" if index_strings.count > 0
-      sql
+    
+      def integer(name, opts={})
+        column(:integer, name, opts)
+      end
+    
+      def index(idxname, cols=[], opts={})
+        @indeces << { :idxname => idxname, :cols => cols, :opts => opts }
+      end
+    
+      def constraint(constraint_sql)
+        @constraints << constraint_sql
+      end
+    
+      def check(criteria)
+        @constraints << "CHECK (#{criteria})"
+      end
+    
+      def column(type, name, opts={})
+        @columns << { :type => type, :name => name, :opts => opts }
+      end
     end
   end
+end
 
+module Mystic
   class Migration
     def create_table(name)
       table = Mystic::Table.new(name)

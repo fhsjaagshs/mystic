@@ -39,7 +39,6 @@ module Mystic
 end
 
 class PostgresAdapter < Adapter
-  
   def connect(opts)
     create_pool do
       PG.connect(opts)
@@ -78,6 +77,12 @@ class PostgresAdapter < Adapter
     return POSTGRES_INDEX_ORDERS
   end
   
+  def sql_kind(kind)
+    res = super(kind)
+    res ||= POSTGRES_TYPES[kind.to_sym]
+    res
+  end
+  
   def index_sql(relation_name, index_name, cols, opts)
     # opts:
     # :type => the index type (:btree, :hash, :gist, or :gin)
@@ -98,27 +103,7 @@ class PostgresAdapter < Adapter
     "CREATE#{unique ? " UNIQUE " : " "}INDEX #{idx_name} ON #{tablename} USING #{type} (#{cols_sql.join(",")})#{ with ? " WITH (#{with})" : ""}"
   end
   
-  def foreign_key_sql(tbl, column, opts)
-    references = "REFERENCES #{foreign_key}"
-    
-    opts.each do |key, value|
-      case key.to_sym
-      when :delete
-        references << " ON DELETE #{value.to_s.upcase}"
-      when :update
-        references << " ON UPDATE #{value.to_s.upcase}"
-      end
-    end
-  end
-  
   def constraint_sql(name, conditions)
     "CONSTRAINT #{name} CHECK(#{conditions})"
-  end
-  
-  def column_sql(name, kind, size, constraints)
-    sql = "#{@name} #{@kind}"
-    sql << "(#{@size})" if size
-    sql << " " + "constraints"
-    return sql
   end
 end
