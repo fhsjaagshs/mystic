@@ -1,9 +1,9 @@
-#include "string_c_ext.h"
+#include "minify.h"
 #include "ruby.h"
 
 static VALUE minify(VALUE mod);
 
-void Init_string_c_ext() {
+void Init_minify() {
     rb_define_method(rb_cString, "minify", RUBY_METHOD_FUNC(minify), 0);
 }
 
