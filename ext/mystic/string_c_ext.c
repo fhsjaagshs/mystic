@@ -1,10 +1,6 @@
 #include "string_c_ext.h"
 #include "ruby.h"
 
-// "this is a "string   this" with      many spaces"
-// becomes
-// "this is a "string   this" with many spaces"
-
 static VALUE minify(VALUE mod);
 
 void Init_string_c_ext() {
@@ -12,15 +8,16 @@ void Init_string_c_ext() {
 }
 
 static VALUE minify(VALUE self) {
+    // Convert ruby string into c string and length
     int length = RSTRING_LEN(self);
     char *string = RSTRING_PTR(self);
     
+    // set up string to accept characters from ruby string
     char sanitized[length+1];
-    int sanitized_index = 0;
+    int sanitized_index = 0; // since the overall length of the original string > length of the minified string
     
     int is_in_quotes = 0;
     int is_in_spaces = 0;
-    int is_in_escape_sequence = 0;
     
     for (int i = 0; i < length; i++) {
         char curr_char = string[i];
@@ -37,27 +34,29 @@ static VALUE minify(VALUE self) {
             continue;
         }
         
-        if (curr_char == '\n') {
-            continue;
-        } else if (curr_char == '\t') {
-            curr_char = ' ';
-        }
-
-        // current char is a space, outside of any quotes
-        if (curr_char == ' ') {
-            // indicate that we are in a series of spaces
-            
-            // If this is the first space, add the space
-            if (is_in_spaces == 0) {
+        switch (curr_char) {
+            case '\n':
+                // skip
+                // just ignore this character
+                break;
+            case '\t':
+                curr_char = ' ';
+                break;
+            case ' ':
+                // If this is the first space, add the space
+                if (is_in_spaces == 0) {
+                    sanitized[sanitized_index] = curr_char;
+                    sanitized_index++;
+                }
+                
+                // indicate that we are in a series of spaces
+                is_in_spaces = 1;
+                break;
+            default: // this is every other character
+                is_in_spaces = 0;
                 sanitized[sanitized_index] = curr_char;
                 sanitized_index++;
-            }
-            
-            is_in_spaces = 1;
-        } else {
-            is_in_spaces = 0;
-            sanitized[sanitized_index] = curr_char;
-            sanitized_index++;
+                break;
         }
     }
     sanitized[sanitized_index] = '\0'; // don't add anything to the index because it will have been incremented after the last character is appended in the for loop
