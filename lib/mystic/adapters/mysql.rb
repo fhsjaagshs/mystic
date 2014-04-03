@@ -16,7 +16,7 @@ class MysqlAdapter < Adapter
   end
   
   def disconnect
-    @pool.with do |instance|
+    @pool.shutdown do |instance|
       instance.close
     end
   end

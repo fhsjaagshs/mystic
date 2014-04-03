@@ -1,13 +1,12 @@
 #!/usr/bin/env ruby
 
 require "mystic/mystic-migration"
-require "mystic/file+pawky.rb"
+require "mystic/extensions.rb"
 
 module Mystic
   def self.adapter
-    @@adapter ||= nil
-    eval(File.read(File.app_root + "config/mystic.rb")) if @@adapter.nil?
-    return @@adapter
+    eval(File.read(File.app_root + "config/mystic.rb")) if @@adapter == nil
+    @@adapter
   end
   
   # Ultra hacky string based object instantiation
@@ -26,12 +25,10 @@ module Mystic
   end
   
   def self.execute(sql)
-    return false if @@adapter.nil?
-    return Mystic.adapter.exec(sql)
+    @@adapter == nil ? nil : Mystic.adapter.exec(sql)
   end
   
   def self.sanitize(string)
-    return false if @@adapter.nil?
-    Mystic.adapter.sanitize(string)
+    @@adapter == nil ? nil : Mystic.adapter.sanitize(string)
   end
 end

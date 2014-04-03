@@ -30,7 +30,7 @@ class PostgresAdapter < Adapter
   end
   
   def disconnect
-    @pool.with do |instance|
+    @pool.shutdown do |instance|
       instance.close
     end
   end
@@ -61,5 +61,12 @@ class PostgresAdapter < Adapter
   
   def drop_index_sql(*args)
     "DROP INDEX #{args.first}"
+  end
+  
+  def column_sql(name, kind, size, constraints, opts={})
+    sql = "#{name} #{kind}"
+    sql << "(#{size})" if size.to_s.length > 0
+    sql << " " + constraints.join(" ") if constraints.count == 0
+    return sql
   end
 end

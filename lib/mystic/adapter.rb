@@ -20,10 +20,14 @@ class Adapter
   end
   
   def create_pool(&block)
-    @pool = ConnectionPool::Wrapper.new(:size => 5, :timeout => 5, &block)
+    @pool = ConnectionPool.new(:size => 5, :timeout => 5, &block)
   end
   
   def connect(opts)
+    
+  end
+  
+  def disconnect
     
   end
   
@@ -56,6 +60,13 @@ class Adapter
       sql << " ON UPDATE " + update_sql
     end
     
+    return sql
+  end
+  
+  def column_sql(col)
+    sql = "#{col.name} #{kind.kind.to_s}"
+    sql << "(#{size})" if size.to_s.length > 0
+    sql << " " + constraints.join(" ") if constraints.count == 0
     return sql
   end
   

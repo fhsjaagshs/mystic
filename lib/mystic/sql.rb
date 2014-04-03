@@ -66,11 +66,23 @@ module Mystic
     end
   
     class Column
+      
+      attr_accessor :name, :kind, :size, :constraints
+      
       def initialize(opts={})
         @name = opts[:name].to_s
         @kind = opts[:kind].to_sym
         @size = opts[:size].to_s
+        @array = opts[:array]
         @constraints = []
+      end
+      
+      def array?
+        return @array
+      end
+    
+      def is_array=(is_array)
+        @array = is_array
       end
     
       def <<(obj)
