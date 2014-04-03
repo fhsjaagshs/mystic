@@ -13,8 +13,8 @@ static VALUE minify(VALUE self) {
     char *string = RSTRING_PTR(self);
     
     // set up string to accept characters from ruby string
-    char sanitized[length+1];
-    int sanitized_index = 0; // since the overall length of the original string > length of the minified string
+    char minified[length+1];
+    int minified_index = 0; // since the overall length of the original string > length of the minified string
     
     int is_in_quotes = 0;
     int is_in_spaces = 0;
@@ -29,8 +29,8 @@ static VALUE minify(VALUE self) {
         
         // if in quotes, add the character automatically
         if (is_in_quotes == 1) {
-            sanitized[sanitized_index] = curr_char;
-            sanitized_index++;
+            minified[minified_index] = curr_char;
+            minified_index++;
             continue;
         }
         
@@ -45,8 +45,8 @@ static VALUE minify(VALUE self) {
             case ' ':
                 // If this is the first space, add the space
                 if (is_in_spaces == 0) {
-                    sanitized[sanitized_index] = curr_char;
-                    sanitized_index++;
+                    minified[minified_index] = curr_char;
+                    minified_index++;
                 }
                 
                 // indicate that we are in a series of spaces
@@ -54,11 +54,11 @@ static VALUE minify(VALUE self) {
                 break;
             default: // this is every other character
                 is_in_spaces = 0;
-                sanitized[sanitized_index] = curr_char;
-                sanitized_index++;
+                minified[minified_index] = curr_char;
+                minified_index++;
                 break;
         }
     }
-    sanitized[sanitized_index] = '\0'; // don't add anything to the index because it will have been incremented after the last character is appended in the for loop
-    return rb_str_new2(sanitized);
+    minified[minified_index] = '\0'; // don't add anything to the index because it will have been incremented after the last character is appended in the for loop
+    return rb_str_new2(minified);
 }
