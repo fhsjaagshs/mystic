@@ -2,6 +2,7 @@
 
 require "mystic/mystic-migration"
 require "mystic/extensions.rb"
+require "mystic/minify"
 
 module Mystic
   def self.adapter
@@ -25,7 +26,7 @@ module Mystic
   end
   
   def self.execute(sql)
-    @@adapter == nil ? nil : Mystic.adapter.exec(sql)
+    @@adapter == nil ? nil : Mystic.adapter.exec(sql.minify)
   end
   
   def self.sanitize(string)
