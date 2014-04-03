@@ -15,7 +15,7 @@ static VALUE minify(VALUE self) {
     int length = RSTRING_LEN(self);
     char *string = RSTRING_PTR(self);
     
-    char sanitized[length];
+    char sanitized[length+1];
     int sanitized_index = 0;
     
     int is_in_quotes = 0;
@@ -39,9 +39,7 @@ static VALUE minify(VALUE self) {
         
         if (curr_char == '\n') {
             continue;
-        }
-        
-        if (curr_char == '\t') {
+        } else if (curr_char == '\t') {
             curr_char = ' ';
         }
 
@@ -62,6 +60,6 @@ static VALUE minify(VALUE self) {
             sanitized_index++;
         }
     }
-    sanitized[sanitized_index+1] = '\0';
+    sanitized[sanitized_index] = '\0'; // don't add anything to the index because it will have been incremented after the last character is appended in the for loop
     return rb_str_new2(sanitized);
 }
