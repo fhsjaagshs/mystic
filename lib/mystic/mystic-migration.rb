@@ -6,38 +6,40 @@ module Mystic
   module SQL
     class Table
       def varchar(name, size, *constraints)
-        column = Column.new(:name => name, :kind => :varchar, :size => size)
-        self << column
+        self << Column.new(
+          :name => name,
+          :kind => :varchar,
+          :size => size,
+          :constraints => constraints
+        )
       end
     
       def text(name, *constraints)
-        column = Column.new(:name => name, :kind => :text)
-        # add constraints
-        self << column
+        self << Column.new(
+          :name => name,
+          :kind => :text,
+          :constraints => constraints
+        )
       end
     
       def boolean(name, opts={})
-        column(:boolean, name, opts)
+        self << Column.new(
+          :name => name,
+          :kind => :boolean,
+          :constraints => constraints
+        )
       end
     
       def integer(name, opts={})
-        column(:integer, name, opts)
+        self << Column.new(
+          :name => name,
+          :kind => :integer,
+          :constraints => constraints
+        )
       end
     
       def index(idxname, cols=[], opts={})
         @indeces << { :idxname => idxname, :cols => cols, :opts => opts }
-      end
-    
-      def constraint(constraint_sql)
-        @constraints << constraint_sql
-      end
-    
-      def check(criteria)
-        @constraints << "CHECK (#{criteria})"
-      end
-    
-      def column(type, name, opts={})
-        @columns << { :type => type, :name => name, :opts => opts }
       end
     end
   end
@@ -45,6 +47,11 @@ end
 
 module Mystic
   class Migration
+    
+    def exec(sql)
+      Mystic.execute(sql)
+    end
+    
     def create_table(name)
       table = Mystic::Table.new(name)
       yield(table) if block_given?

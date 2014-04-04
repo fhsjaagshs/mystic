@@ -66,7 +66,6 @@ module Mystic
     end
   
     class Column
-      
       attr_accessor :name, :kind, :size, :constraints
       
       def initialize(opts={})
@@ -74,7 +73,7 @@ module Mystic
         @kind = opts[:kind].to_sym
         @size = opts[:size].to_s
         @array = opts[:array]
-        @constraints = []
+        @constraints = opts[:constraints]
       end
       
       def array?
@@ -85,10 +84,12 @@ module Mystic
         @array = is_array
       end
     
-      def <<(obj)
-        case obj
-        when Constraint, CheckConstraint, ForeignKey
-          @constraints << obj
+      def <<(*objects)
+        objects.each do |obj|
+          case obj
+          when Constraint, CheckConstraint, ForeignKey
+            @constraints << obj
+          end
         end
       end
       
@@ -106,11 +107,13 @@ module Mystic
         @name = name.to_s
         raise ArgumentError, "Argument 'name' is invalid." if @name.length == 0
         @columns = []
+        @indeces = []
       end
     
-      def <<(column)
-        raise ArgumentError, "Argument is not a Column or a Constraint" if [Mystic::SQL::Constraint, Mystic::SQL::Column].include?(column.class)
-        @columns << column
+      def <<(obj)
+        @columns << obj if obj.is_a?(Column) || obj.is_a?(Constraint)
+        @indeces << obj if obj.is_a?(Index)
+        raise ArgumentError, "Argument is not a Column or a Constraint"
       end
     
       def to_sql
