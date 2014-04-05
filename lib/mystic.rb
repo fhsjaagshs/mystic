@@ -1,8 +1,9 @@
 #!/usr/bin/env ruby
 
 require "mystic/mystic-migration"
-require "mystic/extensions.rb"
+require "mystic/extensions"
 require "mystic/minify"
+require "mystic/sql"
 
 module Mystic
   def self.adapter

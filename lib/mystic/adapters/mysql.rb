@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 
+require "mystic"
 require "mystic/adapter"
 require "mysql2"
 
@@ -48,5 +49,9 @@ class MysqlAdapter < Adapter
   def drop_index_sql(*args)
     index_name, table_name = *args
     "DROP INDEX #{index_name} ON #{table_name}"
+  end
+  
+  def geospatial_sql_type(col)
+    ""
   end
 end

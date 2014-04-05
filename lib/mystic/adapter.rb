@@ -2,7 +2,6 @@
 
 require "mystic"
 require "connection_pool"
-require "mystic/extensions"
 
 UNIVERSAL_TYPES = {
   :date => "DATE",
@@ -42,6 +41,10 @@ class Adapter
   def drop_index_sql(*args)
     ""
   end
+  
+  def geospatial_sql_type(col)
+    ""
+  end
 
   #
   # These methods are the same across MySQL and PostgreSQL
@@ -64,17 +67,13 @@ class Adapter
   end
   
   def column_sql(col)
-    sql = "#{col.name} #{kind.kind.to_s}"
-    sql << "(#{size})" if size.to_s.length > 0
-    sql << " " + constraints.join(" ") if constraints.count == 0
-    return sql
-  end
-  
-  def column_sql(name, kind, size, constraints)
-    sql = "#{name} #{kind}"
-    sql << "(#{size})" if size.to_s.length > 0
-    sql << " " + constraints.join(" ") if constraints.count == 0
-    return sql
+    sql = []
+    sql << col.name.to_s
+    sql << col.kind.to_s
+    sql << "(#{col.size})" if col.size.to_s.length > 0 && col.geospatial? == false
+    sql << "#{self.geospatial_sql_type(col)}" if col.geospatial?
+    sql << col.constraints.join(" ") if col.constraints.count > 0
+    return sql.join(" ")
   end
   
   def index_sql(index)

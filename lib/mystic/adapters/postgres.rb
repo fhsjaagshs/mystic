@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 
+require "mystic"
 require "mystic/adapter"
 require "pg"
 

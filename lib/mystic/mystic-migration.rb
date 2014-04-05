@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-require "mystic/sql"
+require "mystic"
 
 module Mystic
   module SQL

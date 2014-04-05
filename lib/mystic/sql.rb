@@ -4,9 +4,7 @@ require "mystic"
 
 module Mystic
   module SQL
-    
     class Index
-      
       attr_accessor :name, :tblname, :opts, :type, :unique, :using, :concurrently, :with, :columns
       
       def initialize(name, tblname, opts={})
@@ -32,6 +30,7 @@ module Mystic
     end
     
     class CheckConstraint
+      attr_accessor :conditions, :name
       def initialize(conditions_str, name)
         @conditions = conditions_str.to_s
         @name = name
@@ -43,6 +42,7 @@ module Mystic
     end
     
     class Constraint
+      attr_accessor :constr
       def initialize(constr)
         @constr = constr
       end
@@ -53,6 +53,8 @@ module Mystic
     end
 
     class ForeignKey
+      attr_accessor :tbl, :column, :delete, :update
+      
       def initialize(tbl, column, opts={})
         @tbl = tbl
         @column = column
@@ -64,6 +66,20 @@ module Mystic
         Mystic.adapter.foreign_key_sql(@tbl, @column, @delete, @update)
       end
     end
+    
+    class SpatialColumn < Column
+      attr_accessor :geom_kind, :geom_srid
+      
+      def initialize(opts={})
+        super
+        @geom_kind = opts[:geom_kind]
+        @srid = opts[:geom_srid]
+      end
+      
+      def geospatial?
+        true
+      end
+    end
   
     class Column
       attr_accessor :name, :kind, :size, :constraints
@@ -72,16 +88,11 @@ module Mystic
         @name = opts[:name].to_s
         @kind = opts[:kind].to_sym
         @size = opts[:size].to_s
-        @array = opts[:array]
         @constraints = opts[:constraints]
       end
       
-      def array?
-        return @array
-      end
-    
-      def is_array=(is_array)
-        @array = is_array
+      def geospatial?
+        false
       end
     
       def <<(*objects)
@@ -103,6 +114,8 @@ module Mystic
     end
   
     class Table
+      attr_accessor :name, :columns, :indeces
+      
       def initialize(name)
         @name = name.to_s
         raise ArgumentError, "Argument 'name' is invalid." if @name.length == 0
@@ -120,6 +133,9 @@ module Mystic
         cols_sql = @columns.inject do |col_string, column|
           col_string << "," + column.to_sql
         end
+        # write in indeces
+        # MySQL supports indeces in CREATE TABLE
+        # PostgreSQL does not
         "CREATE TABLE #{@name} (#{cols_sql})"
       end
     end
