@@ -57,6 +57,7 @@ class PostgresAdapter < Adapter
   def sql_kind(kind)
     res = super(kind)
     res ||= POSTGRES_TYPES[kind.to_sym]
+    res ||= kind.sqlize
     res
   end
   

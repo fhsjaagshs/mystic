@@ -35,7 +35,9 @@ class Adapter
   end
   
   def sql_kind(kind)
-    UNIVERSAL_TYPES[kind.to_sym]
+    sql_kind = UNIVERSAL_TYPES[kind.to_sym]
+    sql_kind ||= kind.sqlize
+    sql_kind
   end
   
   def drop_index_sql(*args)
@@ -50,30 +52,21 @@ class Adapter
   # These methods are the same across MySQL and PostgreSQL
   #
 
-  def foreign_key_sql(tbl, column, delete_action, update_action)
-    sql = "REFERENCES #{tbl}(#{column})"
-    
-    if delete_action
-      del_sql = delete_action.sqlize
-      sql << " ON DELETE " + del_sql
-    end
-    
-    if update_action
-      update_sql = update_action.sqlize
-      sql << " ON UPDATE " + update_sql
-    end
-    
-    return sql
+  def foreign_key_sql(fkey)
+    sql = "REFERENCES #{fkey.tbl}(#{fkey.column})"
+    sql << " ON DELETE " + fkey.delete_action.sqlize if fkey.delete_action
+    sql << " ON UPDATE " + fkey.update_action.sqlize if fkey.update_action
+    sql
   end
-  
+
   def column_sql(col)
     sql = []
     sql << col.name.to_s
-    sql << col.kind.to_s
+    sql << sql_kind(col.kind.to_sym)
     sql << "(#{col.size})" if col.size.to_s.length > 0 && col.geospatial? == false
     sql << "#{self.geospatial_sql_type(col)}" if col.geospatial?
     sql << col.constraints.join(" ") if col.constraints.count > 0
-    return sql.join(" ")
+    sql.join(" ")
   end
   
   def index_sql(index)
@@ -85,10 +78,10 @@ class Adapter
     sql << "USING #{index.type}" if index.type
     sql << "(#{cols.join(",")})"
     sql << "WITH (#{index.with.map { |key, value| key+"="+value.to_s }})" if index.with
-    return sql.join(" ")
+    sql.join(" ")
   end
   
-  def check_constraint_sql(name, conditions)
-    "CONSTRAINT #{name} CHECK(#{conditions})"
+  def check_constraint_sql(constr)
+    "CONSTRAINT #{constr.name} CHECK(#{constr.conditions})"
   end
 end

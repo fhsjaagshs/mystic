@@ -37,6 +37,14 @@ module Mystic
           :constraints => constraints
         )
       end
+      
+      def float(name, opts{})
+        self << Column.new(
+          :name => name,
+          :kind => :float,
+          :constraints => constraints
+        )
+      end
     
       def index(idxname, cols=[], opts={})
         @indeces << { :idxname => idxname, :cols => cols, :opts => opts }

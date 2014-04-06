@@ -37,7 +37,7 @@ module Mystic
       end
     
       def to_sql
-        Mystic.adapter.constraint_sql(@name, @conditions)
+        Mystic.adapter.constraint_sql(self)
       end
     end
     
@@ -63,7 +63,7 @@ module Mystic
       end
       
       def to_sql
-        Mystic.adapter.foreign_key_sql(@tbl, @column, @delete, @update)
+        Mystic.adapter.foreign_key_sql(self)
       end
     end
     
@@ -109,7 +109,8 @@ module Mystic
       end
       
       def to_sql
-        Mystic.adapter.column_sql(@name, @kind, @size, @constraints.map { |constr| constr.to_sql })
+        Mystic.adapter.column_sql(self)
+      #  Mystic.adapter.column_sql(@name, @kind, @size, @constraints.map { |constr| constr.to_sql })
       end
     end
   
