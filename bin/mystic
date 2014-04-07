@@ -1,11 +1,36 @@
 #!/usr/bin/env ruby
 
-MIGRATIONS_LOCATION = "mystic/migrations/"
+MIGRATIONS_PATH = "./mystic/migrations/"
+MIGRATIONS_LOCATION = MIGRATIONS_PATH + "*.rb"
+
+MIG_TEMPLATE = <<-mig_template
+#!/usr/bin/env ruby
+
+require "mystic"
+
+class <MIGRATION_CLASS_NAME> < Mystic::Migration
+  def up
+    
+  end
+  
+  def down
+    
+  end
+end
+mig_template
 
 # 1_MigrationClassName.rb
 
+# I know this is really hacky
+def migration_paths(order_matters)
+  filenames = Dir[MIGRATIONS_LOCATION]
+  filenames.sort!{ |a,b| a.split("_").first.to_i <=> b.split("_").first.to_i } if order_matters
+  filenames.each{ |filename| File.expand_path(File.dirname(filename) + filename) }
+end
+
 case ARGV[0]
 when "setup"
+  
   Mystic.setup
   Mystic.exec("CREATE TABLE IF NOT EXISTS mystic_migrations (filename TEXT)")
   
@@ -14,12 +39,19 @@ when "create"
   case ARGV[1]
   when "migration"
     
+    mig_name = ARGV[2].strip.capitalize
+    
+    abort if mig_name.length == 0
+    
     highest_mig_num = Dir[MIGRATIONS_LOCATION].inject do |highest, filename|
       mig_num = filename.split("_").first.to_i
       mig_num if mig_num > highest
+      highest
     end
     
-    File.open(MIGRATIONS_LOCATION + "" + ARGV[2] + ".rb", "w+")
+    file = File.open(MIGRATIONS_PATH + highest_mig_num + "_" + mig_name + ".rb", "w+")
+    file << MIG_TEMPLATE.sub("<MIGRATION_CLASS_NAME>",mig_name)
+    
   end
   
 when "migrate"
@@ -34,7 +66,7 @@ when "migrate"
   
   files.each do |filename|
     # apply the migration
-    migration_code = File.read(MIGRATIONS_LOCATION + filename)
+    migration_code = File.read(MIGRATIONS_PATH + filename)
     eval(migration_code)
     
     migration_name = filename.split("_").last.split(".").first
@@ -45,9 +77,9 @@ when "migrate"
   end
   
 when "rollback"
-  filename = Dir[MIGRATIONS_LOCATION].last
+  filename = Dir[MIGRATIONS_LOCATION][-2]
   
-  migration_code = File.read(MIGRATIONS_LOCATION + filename)
+  migration_code = File.read(MIGRATIONS_PATH + filename)
   
   return false if migration_code.nil?
   
@@ -55,7 +87,7 @@ when "rollback"
   
   migration_name = filename.split("_").last.split(".").first
   
-  migration = Object.const_get(nugration_name).new
+  migration = Object.const_get(migration_name).new
   migration.down
   Mystic.exec("DELETE FROM mystic_migrations WHERE filename='#{filename}'")
 end
