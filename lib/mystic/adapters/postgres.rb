@@ -38,7 +38,6 @@ class PostgresAdapter < Adapter
   
   def exec(sql)
     return nil if @pool.nil?
-    puts sql
     res = nil
     @pool.with do |instance|
       res = instance.exec(sql)
