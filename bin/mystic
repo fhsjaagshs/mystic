@@ -22,8 +22,8 @@ mig_template
 # 1_MigrationClassName.rb
 
 # I know this is really hacky
-def migration_paths(order_matters)
-  filenames = Dir[MIGRATIONS_LOCATION]
+def migration_paths(order_matters, paths_to_reject)
+  filenames = Dir[MIGRATIONS_LOCATION] - paths_to_reject
   filenames.sort!{ |a,b| a.split("_").first.to_i <=> b.split("_").first.to_i } if order_matters
   filenames.each{ |filename| File.expand_path(File.dirname(filename) + filename) }
 end
@@ -41,7 +41,7 @@ when "create"
     
     mig_name = ARGV[2].strip.capitalize
     
-    abort if mig_name.length == 0
+    Kernel.abort if mig_name.length == 0
     
     highest_mig_num = Dir[MIGRATIONS_LOCATION].inject do |highest, filename|
       mig_num = filename.split("_").first.to_i
@@ -64,24 +64,25 @@ when "migrate"
   
   files = Dir[MIGRATIONS_LOCATION].reject { |filename| migrated_filenames.include?(filename) }
   
-  files.each do |filename|
+  files.each do |file|
     # apply the migration
-    migration_code = File.read(MIGRATIONS_PATH + filename)
+    filename = File.split(file).last
+    migration_code = File.read(file)
     eval(migration_code)
     
     migration_name = filename.split("_").last.split(".").first
     
-    migration = Object.const_get(nugration_name).new
+    migration = Object.const_get(migration_name).new
     migration.up
     Mystic.exec("INSERT INTO mystic_migrations VALUES(#{filename})")
   end
   
 when "rollback"
-  filename = Dir[MIGRATIONS_LOCATION][-2]
+  filename = Dir[MIGRATIONS_LOCATION].last
   
   migration_code = File.read(MIGRATIONS_PATH + filename)
   
-  return false if migration_code.nil?
+  Kernel.abort if migration_code.nil?
   
   eval(migration_code)
   
