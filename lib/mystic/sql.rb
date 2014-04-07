@@ -21,12 +21,17 @@ module Mystic
       # can accept shit other than columns like
       # box(location,location)
       def <<(col)
-        @columns << col
+        @columns << col.name; return if col.is_a?(Column)
+        @columns << coll; return if col.is_a?(String)
+        raise ArgumentError, "Column must be a String or a Mystic::SQL::Column" if col.is_a
+      end
+
+      def to_sql
+        Mystic.adapter.index_sql(self)
       end
       
-      def to_sql
-        Mystic.adapter.index_sql()
-      end
+      alias_method :to_s, :to_sql
+      alias_method :push, :<<
     end
     
     class CheckConstraint
@@ -39,6 +44,8 @@ module Mystic
       def to_sql
         Mystic.adapter.constraint_sql(self)
       end
+      
+      alias_method :to_s, :to_sql
     end
     
     class Constraint
@@ -50,6 +57,8 @@ module Mystic
       def to_sql
         @constr.sqlize
       end
+      
+      alias_method :to_s, :to_sql
     end
 
     class ForeignKey
@@ -65,6 +74,8 @@ module Mystic
       def to_sql
         Mystic.adapter.foreign_key_sql(self)
       end
+      
+      alias_method :to_s, :to_sql
     end
     
     class SpatialColumn < Column
@@ -79,6 +90,8 @@ module Mystic
       def geospatial?
         true
       end
+      
+      alias_method :to_s, :to_sql
     end
   
     class Column
@@ -110,8 +123,10 @@ module Mystic
       
       def to_sql
         Mystic.adapter.column_sql(self)
-      #  Mystic.adapter.column_sql(@name, @kind, @size, @constraints.map { |constr| constr.to_sql })
       end
+      
+      alias_method :to_s, :to_sql
+      alias_method :push, :<<
     end
   
     class Table
@@ -120,25 +135,30 @@ module Mystic
       def initialize(name)
         @name = name.to_s
         raise ArgumentError, "Argument 'name' is invalid." if @name.length == 0
+        raise ArgumentError, "Table cannot have zero columns" if @columns.count == 0
         @columns = []
         @indeces = []
       end
     
       def <<(obj)
-        @columns << obj if obj.is_a?(Column) || obj.is_a?(Constraint)
-        @indeces << obj if obj.is_a?(Index)
+        @columns << obj; return if obj.is_a?(Column) || obj.is_a?(Constraint)
+        @indeces << obj; return if obj.is_a?(Index)
         raise ArgumentError, "Argument is not a Column or a Constraint"
+      end
+      
+      def [](idx)
+        @columns[idx]
       end
     
       def to_sql
-        cols_sql = @columns.inject do |col_string, column|
-          col_string << "," + column.to_sql
-        end
-        # write in indeces
-        # MySQL supports indeces in CREATE TABLE
-        # PostgreSQL does not
-        "CREATE TABLE #{@name} (#{cols_sql})"
+        cols_sql = @columns.map { |col| col.to_sql }.join(",")
+        sql = "CREATE TABLE #{@name} (#{cols_sql});"
+        sql << @indeces.map { |index| index.to_sql }.join(";") if @indeces.count > 0
+        sql
       end
+      
+      alias_method :to_s, :to_sql
+      alias_method :push, :<<
     end
   end
 end
