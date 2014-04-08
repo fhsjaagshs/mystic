@@ -45,6 +45,15 @@ module Mystic
           :constraints => opts[:constraints]
         )
       end
+      
+      def geometry(name, kind, srid, opts={})
+        self << SpatialColumn.new(
+          :name => name,
+          :constraints => constraints,
+          :geom_kind => kind,
+          :geom_srid => srid
+        ) if geospatial?()
+      end
     
       def index(idxname, cols=[], opts={})
         @indeces << { :idxname => idxname, :cols => cols, :opts => opts }
