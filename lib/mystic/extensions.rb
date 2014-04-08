@@ -23,10 +23,7 @@ class File
   end
   
   def self.find_app_root(path)
-    files = Dir.entries(path).map{ |filename| filename.strip }
-    
-    targets = files.select { |filename| APP_ROOT_FILENAMES.include?(filename) }
-    
+    targets = Dir.entries(path).select { |filename| APP_ROOT_FILENAMES.include?(filename) }
     return nil if targets.count == 0 && path.length == 1
     return path if targets.count > 0
     return File.find_app_root(File.dirname(path))

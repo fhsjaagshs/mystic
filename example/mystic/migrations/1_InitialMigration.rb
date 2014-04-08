@@ -6,8 +6,8 @@ class InitialMigration < Mystic::Migration
   
   def up
     create_table :users do |t|
-      t.varchar :guid, :length => 255
-      t.varchar :username, :length => 255
+      t.varchar :guid, :size => 255
+      t.varchar :username, :size => 255
       t.boolean :cool
       t.integer :likes
       t.text :bio

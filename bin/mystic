@@ -59,7 +59,7 @@ when "migrate"
   
   migrated_filenames = []
   
-  Mystic.exec("SELECT * FROM mystic_migrations").each do |tuple|
+  Mystic.execute("SELECT * FROM mystic_migrations").each do |tuple|
     migrated_filenames << tuple["filename"]
   end
   
@@ -75,7 +75,7 @@ when "migrate"
     
     migration = Object.const_get(migration_name).new
     migration.up
-    Mystic.exec("INSERT INTO mystic_migrations VALUES(#{filename})")
+    Mystic.execute("INSERT INTO mystic_migrations VALUES(#{filename})")
   end
   
 when "rollback"
@@ -91,5 +91,5 @@ when "rollback"
   
   migration = Object.const_get(migration_name).new
   migration.down
-  Mystic.exec("DELETE FROM mystic_migrations WHERE filename='#{filename}'")
+  Mystic.execute("DELETE FROM mystic_migrations WHERE filename='#{filename}'")
 end

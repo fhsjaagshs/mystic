@@ -10,7 +10,6 @@ module Mystic
   @@adapter = nil
   
   def self.adapter
-    puts "ADAPTER"
     eval(File.read(File.app_root + "/config/mystic.rb")) if @@adapter == nil
     return @@adapter
   end

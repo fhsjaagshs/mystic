@@ -60,6 +60,7 @@ class Adapter
   end
 
   def column_sql(col)
+#    sql = col.name.to_s + " " + sql_kind(col.kind.to_sym)   
     sql = []
     sql << col.name.to_s
     sql << sql_kind(col.kind.to_sym)

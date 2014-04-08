@@ -84,7 +84,8 @@ module Mystic
         @name = opts[:name].to_s
         @kind = opts[:kind].to_sym
         @size = opts[:size].to_s
-        @constraints = opts[:constraints]
+        @constraints = opts[:constraints] || []
+        puts opts
       end
       
       def geospatial?
