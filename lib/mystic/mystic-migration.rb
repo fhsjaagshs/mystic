@@ -10,35 +10,35 @@ module Mystic
         self << Column.new({
           :name => name,
           :kind => :varchar
-        }.merge(merge))
+        }.merge(opts))
       end
     
       def text(name, opts={})
         self << Column.new({
           :name => name,
           :kind => :text
-        }.merge(merge))
+        }.merge(opts))
       end
     
       def boolean(name, opts={})
         self << Column.new({
           :name => name,
           :kind => :boolean
-        }.merge(merge))
+        }.merge(opts))
       end
     
       def integer(name, opts={})
         self << Column.new({
           :name => name,
           :kind => :integer
-        }.merge(merge))
+        }.merge(opts))
       end
       
       def float(name, opts={})
         self << Column.new({
           :name => name,
           :kind => :float
-        }.merge(merge))
+        }.merge(opts))
       end
       
       def geometry(name, kind, srid, opts={})
@@ -47,7 +47,7 @@ module Mystic
           :name => name,
           :geom_kind => kind,
           :geom_srid => srid
-        }.merge(merge))
+        }.merge(opts))
       end
     
       def index(name, tblname, opts={})
@@ -58,11 +58,8 @@ module Mystic
       end
     end
   end
-end
-
-module Mystic
+  
   class Migration
-    
     def exec(sql)
       Mystic.execute(sql)
     end
@@ -85,9 +82,12 @@ module Mystic
       Mystic.execute("DROP VIEW #{name}")
     end
     
-    def add_index(table_name, index_name, cols=[], opts={})
-      sql = Mystic.adapter.index_sql(table_name, index_name, cols, opts)
-      Mystic.execute(sql)
+    def add_index(name, tblname, opts={})
+      index = Mystic::SQL::Index.new({
+        :name => name,
+        :tblname => tblname
+      }.merge(opts))
+      Mystic.execute(index.to_sql)
     end
     
     def drop_index(*args)
@@ -112,7 +112,11 @@ module Mystic
       end
     end
     
-    def add_column(table_name, col_name, type, opts={})
+    def add_column(table_name, col_name, kind, opts={})
+      col = Mystic::SQL::Column.new({
+          :name => name,
+          :kind => kind
+        }.merge(opts))
       column_sql = Mystic.adapter.column_sql(type.to_sym, column_name, opts)
       Mystic.execute("ALTER TABLE #{table_name} ADD COLUMN #{column_sql}")
     end
