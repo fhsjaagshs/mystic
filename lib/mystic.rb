@@ -6,8 +6,11 @@ require "mystic/minify"
 require "mystic/sql"
 
 module Mystic
+  
+  @@adapter = nil
+  
   def self.adapter
-    @@adapter ||= eval(File.read(File.app_root + "config/mystic.rb"))
+    @@adapter ||= eval(File.read(File.app_root + "/config/mystic.rb"))
     @@adapter
   end
   
