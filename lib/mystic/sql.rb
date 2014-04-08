@@ -21,9 +21,14 @@ module Mystic
       # can accept shit other than columns like
       # box(location,location)
       def <<(col)
-        @columns << col.name; return if col.is_a?(Column)
-        @columns << coll; return if col.is_a?(String)
-        raise ArgumentError, "Column must be a String or a Mystic::SQL::Column" if col.is_a
+        case col
+        when Column
+          @columns << col.name.to_s;
+        when String
+          @columns << col;
+        else
+          raise ArgumentError, "Column must be a String or a Mystic::SQL::Column"
+        end
       end
 
       def to_sql
@@ -108,12 +113,12 @@ module Mystic
         false
       end
     
-      def <<(*objects)
-        objects.each do |obj|
-          case obj
-          when Constraint, CheckConstraint, ForeignKey
-            @constraints << obj
-          end
+      def <<(obj)
+        case obj
+        when Constraint, CheckConstraint, ForeignKey
+          @constraints << obj
+        else
+          raise ArgumentException, "Argument must be a Mystic::SQL::Constraint or subclass of said class."
         end
       end
       
@@ -140,9 +145,14 @@ module Mystic
       end
     
       def <<(obj)
-        @columns << obj; return if obj.is_a?(Column) || obj.is_a?(Constraint)
-        @indeces << obj; return if obj.is_a?(Index)
-        raise ArgumentError, "Argument is not a Mystic::SQL::Column or a Mystic::SQL::Constraint."
+        case obj
+        when Column, Constraint
+          @columns << obj;
+        when Index
+          @indeces << obj;
+        else
+          raise ArgumentError, "Argument is not a Mystic::SQL::Column, Mystic::SQL::Constraint, or Mystic::SQL::Index."
+        end
       end
       
       def [](idx)
