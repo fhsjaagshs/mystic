@@ -76,22 +76,6 @@ module Mystic
       
       alias_method :to_s, :to_sql
     end
-    
-    class SpatialColumn < Column
-      attr_accessor :geom_kind, :geom_srid
-      
-      def initialize(opts={})
-        super
-        @geom_kind = opts[:geom_kind]
-        @srid = opts[:geom_srid]
-      end
-      
-      def geospatial?
-        true
-      end
-      
-      alias_method :to_s, :to_sql
-    end
   
     class Column
       attr_accessor :name, :kind, :size, :constraints
@@ -126,6 +110,22 @@ module Mystic
       
       alias_method :to_s, :to_sql
       alias_method :push, :<<
+    end
+  
+    class SpatialColumn < Column
+      attr_accessor :geom_kind, :geom_srid
+      
+      def initialize(opts={})
+        super
+        @geom_kind = opts[:geom_kind]
+        @srid = opts[:geom_srid]
+      end
+      
+      def geospatial?
+        true
+      end
+      
+      alias_method :to_s, :to_sql
     end
   
     class Table

@@ -31,7 +31,7 @@ class Adapter
   end
   
   def exec(sql)
-    
+    puts sql
   end
   
   def sql_kind(kind)

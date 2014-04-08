@@ -7,7 +7,7 @@ require "mystic/sql"
 
 module Mystic
   def self.adapter
-    eval(File.read(File.app_root + "config/mystic.rb")) if @@adapter == nil
+    @@adapter ||= eval(File.read(File.app_root + "config/mystic.rb"))
     @@adapter
   end
   

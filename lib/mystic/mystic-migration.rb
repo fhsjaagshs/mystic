@@ -26,7 +26,7 @@ module Mystic
         self << Column.new(
           :name => name,
           :kind => :boolean,
-          :constraints => constraints
+          :constraints => opts[:constraints]
         )
       end
     
@@ -34,15 +34,15 @@ module Mystic
         self << Column.new(
           :name => name,
           :kind => :integer,
-          :constraints => constraints
+          :constraints => opts[:constraints]
         )
       end
       
-      def float(name, opts{})
+      def float(name, opts={})
         self << Column.new(
           :name => name,
           :kind => :float,
-          :constraints => constraints
+          :constraints => opts[:constraints]
         )
       end
     
@@ -61,7 +61,7 @@ module Mystic
     end
     
     def create_table(name)
-      table = Mystic::Table.new(name)
+      table = Mystic::SQL::Table.new(name)
       yield(table) if block_given?
       Mystic.execute(table.to_sql)
     end
