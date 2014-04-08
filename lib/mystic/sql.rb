@@ -135,7 +135,6 @@ module Mystic
       def initialize(name)
         @name = name.to_s
         raise ArgumentError, "Argument 'name' is invalid." if @name.length == 0
-        raise ArgumentError, "Table cannot have zero columns" if @columns.count == 0
         @columns = []
         @indeces = []
       end
@@ -143,7 +142,7 @@ module Mystic
       def <<(obj)
         @columns << obj; return if obj.is_a?(Column) || obj.is_a?(Constraint)
         @indeces << obj; return if obj.is_a?(Index)
-        raise ArgumentError, "Argument is not a Column or a Constraint"
+        raise ArgumentError, "Argument is not a Mystic::SQL::Column or a Mystic::SQL::Constraint."
       end
       
       def [](idx)
@@ -151,6 +150,7 @@ module Mystic
       end
     
       def to_sql
+        raise ArgumentError, "Table cannot have zero columns." if @columns.count == 0
         cols_sql = @columns.map { |col| col.to_sql }.join(",")
         sql = "CREATE TABLE #{@name} (#{cols_sql});"
         sql << @indeces.map { |index| index.to_sql }.join(";") if @indeces.count > 0
