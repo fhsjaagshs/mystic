@@ -10,4 +10,5 @@ Gem::Specification.new do |s|
   s.files        = Dir.glob("{bin,lib,ext}/**/*") + %w(LICENSE)
   s.require_path = "lib"
   s.extensions   = ['ext/mystic/extconf.rb']
+  s.executables << "mystic"
 end

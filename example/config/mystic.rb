@@ -10,6 +10,6 @@ Mystic.connect(
   :adapter => "postgres" # This is not part of pg's PG.connect hash...
   :dbname => "test",
   :port => 5432,
-  :user => "example",
-  :password => "50M37H1NG_53CR3T!!!"
+  :user => "database_username",
+  :password => "password"
 )

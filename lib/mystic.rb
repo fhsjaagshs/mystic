@@ -4,6 +4,7 @@ require "mystic/mystic-migration"
 require "mystic/extensions"
 require "mystic/minify"
 require "mystic/sql"
+require "mystic/adapter"
 
 module Mystic
   
@@ -30,10 +31,14 @@ module Mystic
   end
   
   def self.execute(sql)
-    @@adapter == nil ? nil : Mystic.adapter.exec(sql.minify)
+    adptr = Mystic.adapter
+    return nil if adptr.nil?
+    adptr.exec(sql.minify)
   end
   
   def self.sanitize(string)
-    @@adapter == nil ? nil : Mystic.adapter.sanitize(string)
+    adptr = Mystic.adapter
+    return nil if adptr.nil?
+    adptr.sanitize(string)
   end
 end

@@ -1,5 +1,7 @@
 #!/usr/bin/env ruby
 
+require "mystic"
+
 MIGRATIONS_PATH = "./mystic/migrations/"
 MIGRATIONS_LOCATION = MIGRATIONS_PATH + "*.rb"
 

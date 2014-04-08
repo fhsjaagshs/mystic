@@ -37,6 +37,7 @@ class PostgresAdapter < Adapter
   end
   
   def exec(sql)
+    super
     return nil if @pool.nil?
     res = nil
     @pool.with do |instance|
