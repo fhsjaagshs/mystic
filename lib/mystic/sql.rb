@@ -39,20 +39,6 @@ module Mystic
       alias_method :push, :<<
     end
     
-    class CheckConstraint
-      attr_accessor :conditions, :name
-      def initialize(conditions_str, name)
-        @conditions = conditions_str.to_s
-        @name = name
-      end
-    
-      def to_sql
-        Mystic.adapter.constraint_sql(self)
-      end
-      
-      alias_method :to_s, :to_sql
-    end
-    
     class Constraint
       attr_accessor :constr
       def initialize(constr)
@@ -60,10 +46,18 @@ module Mystic
       end
       
       def to_sql
-        @constr.sqlize
+        Mystic.adapter.constraint_sql(self)
       end
       
       alias_method :to_s, :to_sql
+    end
+    
+    class CheckConstraint < Constraint
+      attr_accessor :conditions, :name
+      def initialize(conditions_str, name)
+        @conditions = conditions_str.to_s
+        @name = name
+      end
     end
 
     class ForeignKey

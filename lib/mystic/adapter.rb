@@ -81,7 +81,12 @@ class Adapter
     sql.join(" ")
   end
   
-  def check_constraint_sql(constr)
-    "CONSTRAINT #{constr.name} CHECK(#{constr.conditions})"
+  def constraint_sql(constraint)
+    case constraint
+    when CheckConstraint
+      return "CONSTRAINT #{constr.name} CHECK(#{constr.conditions})"
+    when Constraint
+      return constraint.sqlize
+    end
   end
 end
