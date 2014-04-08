@@ -6,7 +6,7 @@ require "connection_pool"
 UNIVERSAL_TYPES = {
   :date => "DATE",
   :time => "TIME",
-  :timestamp => "TIMESTAMP"
+  :timestamp => "TIMESTAMP",
   :bool => "BOOLEAN",
   :text => "TEXT",
   :integer => "INTEGER",

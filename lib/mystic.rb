@@ -11,6 +11,7 @@ module Mystic
   @@adapter = nil
   
   def self.adapter
+    puts File.app_root
     @@adapter ||= eval(File.read(File.app_root + "/config/mystic.rb"))
     @@adapter
   end

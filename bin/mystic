@@ -32,9 +32,8 @@ end
 
 case ARGV[0]
 when "setup"
-  
-  Mystic.setup
-  Mystic.exec("CREATE TABLE IF NOT EXISTS mystic_migrations (filename TEXT)")
+
+  Mystic.execute("CREATE TABLE IF NOT EXISTS mystic_migrations (filename TEXT)")
   
 when "create"
   
