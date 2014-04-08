@@ -5,58 +5,56 @@ require "mystic"
 module Mystic
   module SQL
     class Table
-      def varchar(name, size, *constraints)
-        self << Column.new(
+      def varchar(name, opts={})
+        raise ArgumentError, "VARCHARs require a size." if opts[:size].nil?
+        self << Column.new({
           :name => name,
-          :kind => :varchar,
-          :size => size,
-          :constraints => constraints
-        )
+          :kind => :varchar
+        }.merge(merge))
       end
     
-      def text(name, *constraints)
-        self << Column.new(
+      def text(name, opts={})
+        self << Column.new({
           :name => name,
-          :kind => :text,
-          :constraints => constraints
-        )
+          :kind => :text
+        }.merge(merge))
       end
     
       def boolean(name, opts={})
-        self << Column.new(
+        self << Column.new({
           :name => name,
-          :kind => :boolean,
-          :constraints => opts[:constraints]
-        )
+          :kind => :boolean
+        }.merge(merge))
       end
     
       def integer(name, opts={})
-        self << Column.new(
+        self << Column.new({
           :name => name,
-          :kind => :integer,
-          :constraints => opts[:constraints]
-        )
+          :kind => :integer
+        }.merge(merge))
       end
       
       def float(name, opts={})
-        self << Column.new(
+        self << Column.new({
           :name => name,
-          :kind => :float,
-          :constraints => opts[:constraints]
-        )
+          :kind => :float
+        }.merge(merge))
       end
       
       def geometry(name, kind, srid, opts={})
-        self << SpatialColumn.new(
+        raise ArgumentError, "" if if geospatial?() == false
+        self << SpatialColumn.new({
           :name => name,
-          :constraints => constraints,
           :geom_kind => kind,
           :geom_srid => srid
-        ) if geospatial?()
+        }.merge(merge))
       end
     
-      def index(idxname, cols=[], opts={})
-        @indeces << { :idxname => idxname, :cols => cols, :opts => opts }
+      def index(name, tblname, opts={})
+        self << Index.new({
+          :name => name,
+          :tblname => tblname
+        }.merge(opts))
       end
     end
   end
