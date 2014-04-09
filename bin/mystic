@@ -30,7 +30,7 @@ end
 # I know this is really hacky
 def migration_paths(order_matters, paths_to_reject)
   mp = mig_path()
-  filenames = Dir.entries(mp) - paths_to_reject
+  filenames = Dir.entries(mp) - paths_to_reject - [".", "..", ".DS_Store"]
   filenames.sort!{ |a,b| a.split("_").first.to_i <=> b.split("_").first.to_i } if order_matters
   filenames.map{ |filename| mp + filename }
 end
@@ -71,9 +71,11 @@ when "migrate"
   
   files = migration_paths(true, migrated_filenames)
   
+  puts files.inspect
+  
   files.each do |file|
     # apply the migration
-    filename = File.split(file).last
+    filename = file.split("/").last
     migration_code = File.read(file)
     eval(migration_code) # define the migration class
     
@@ -92,17 +94,19 @@ when "rollback"
     migrated_filenames << tuple["filename"]
   end
   
-  migrated_filenames.sort!{ |a,b| a.split("_").first.to_i <=> b.split("_").first.to_i }
+  if migrated_filenames.count > 0
+    migrated_filenames.sort!{ |a,b| a.split("_").first.to_i <=> b.split("_").first.to_i }
   
-  filename = migrated_filenames.last
+    filename = migrated_filenames.last
   
-  migration_code = File.read(migration_path() + filename)
-  eval(migration_code)
+    migration_code = File.read(mig_path() + filename)
+    eval(migration_code)
   
-  migration_name = filename.split("_").last.split(".").first
+    migration_name = filename.split("_").last.split(".").first
   
-  migration = Object.const_get(migration_name).new
-  migration.down
-  Mystic.execute("DELETE FROM mystic_migrations WHERE filename='#{filename}'")
+    migration = Object.const_get(migration_name).new
+    migration.down
+    Mystic.execute("DELETE FROM mystic_migrations WHERE filename='#{filename}'")
+  end
   
 end
