@@ -81,11 +81,10 @@ module Mystic
       attr_accessor :name, :kind, :size, :constraints
       
       def initialize(opts={})
-        @name = opts[:name].to_s
-        @kind = opts[:kind].to_sym
-        @size = opts[:size].to_s
-        @constraints = opts[:constraints] || []
-        puts opts
+        @name = opts.delete(:name).to_s
+        @kind = opts.delete(:kind).to_sym
+        @size = opts.delete(:size).to_s
+        @constraints = opts.dup
       end
       
       def geospatial?

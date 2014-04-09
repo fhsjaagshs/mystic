@@ -6,7 +6,7 @@ class InitialMigration < Mystic::Migration
   
   def up
     create_table :users do |t|
-      t.varchar :guid, :size => 255
+      t.varchar :guid, :size => 255, :unique => true
       t.varchar :username, :size => 255
       t.boolean :cool
       t.integer :likes
@@ -14,7 +14,7 @@ class InitialMigration < Mystic::Migration
       t.text :drop_me
     end
     
-    add_index :users, :guid_idx, [{:name => :guid, :order => :desc}]
+    add_index :users, :guid_idx, :[{:name => :guid, :order => :desc}]
     drop_column :users, :drop_me
   end
   

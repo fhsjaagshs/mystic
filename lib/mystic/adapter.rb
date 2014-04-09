@@ -59,14 +59,16 @@ class Adapter
     sql
   end
 
-  def column_sql(col)
-#    sql = col.name.to_s + " " + sql_kind(col.kind.to_sym)   
+  def column_sql(col) 
     sql = []
     sql << col.name.to_s
     sql << sql_kind(col.kind.to_sym)
     sql << "(#{col.size})" if col.size.to_s.length > 0 && col.geospatial? == false
     sql << "#{self.geospatial_sql_type(col)}" if col.geospatial?
-    sql << col.constraints.join(" ") if col.constraints.count > 0
+    sql << "NOT NULL" if col.constraints[:not_null] == true
+    sql << "UNIQUE" if col.constraints[:unique] == true
+    sql << "PRIMARY KEY" if col.constraints[:primary_key] == true
+    sql << "REFERENCES " + col.constraints[:references] if col.constraints.member?(:references)
     sql.join(" ")
   end
   
