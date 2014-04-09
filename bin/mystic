@@ -23,11 +23,16 @@ mig_template
 
 # 1_MigrationClassName.rb
 
+def mig_path
+  File.app_root + "/mystic/migrations/"
+end
+
 # I know this is really hacky
 def migration_paths(order_matters, paths_to_reject)
-  filenames = Dir[MIGRATIONS_LOCATION] - paths_to_reject
+  mp = mig_path()
+  filenames = Dir.entries(mp) - paths_to_reject
   filenames.sort!{ |a,b| a.split("_").first.to_i <=> b.split("_").first.to_i } if order_matters
-  filenames.each{ |filename| File.expand_path(File.dirname(filename) + filename) }
+  filenames.map{ |filename| mp + filename }
 end
 
 case ARGV[0]
@@ -40,17 +45,18 @@ when "create"
   case ARGV[1]
   when "migration"
     
+    mg = mig_path()
     mig_name = ARGV[2].strip.capitalize
     
     Kernel.abort if mig_name.length == 0
     
-    highest_mig_num = Dir[MIGRATIONS_LOCATION].inject do |highest, filename|
+    highest_mig_num = Dir.entries[mp].inject do |highest, filename|
       mig_num = filename.split("_").first.to_i
       mig_num if mig_num > highest
       highest
     end
     
-    file = File.open(MIGRATIONS_PATH + highest_mig_num + "_" + mig_name + ".rb", "w+")
+    file = File.open(mp + highest_mig_num + "_" + mig_name + ".rb", "w+")
     file << MIG_TEMPLATE.sub("<MIGRATION_CLASS_NAME>",mig_name)
     
   end
@@ -63,13 +69,13 @@ when "migrate"
     migrated_filenames << tuple["filename"]
   end
   
-  files = Dir[MIGRATIONS_LOCATION].reject { |filename| migrated_filenames.include?(filename) }
+  files = migration_paths(true, migrated_filenames)
   
   files.each do |file|
     # apply the migration
     filename = File.split(file).last
     migration_code = File.read(file)
-    eval(migration_code)
+    eval(migration_code) # define the migration class
     
     migration_name = filename.split("_").last.split(".").first
     
@@ -79,12 +85,18 @@ when "migrate"
   end
   
 when "rollback"
-  filename = Dir[MIGRATIONS_LOCATION].last
   
-  migration_code = File.read(MIGRATIONS_PATH + filename)
+  migrated_filenames = []
   
-  Kernel.abort if migration_code.nil?
+  Mystic.execute("SELECT * FROM mystic_migrations").each do |tuple|
+    migrated_filenames << tuple["filename"]
+  end
   
+  migrated_filenames.sort!{ |a,b| a.split("_").first.to_i <=> b.split("_").first.to_i }
+  
+  filename = migrated_filenames.last
+  
+  migration_code = File.read(migration_path() + filename)
   eval(migration_code)
   
   migration_name = filename.split("_").last.split(".").first
@@ -92,4 +104,5 @@ when "rollback"
   migration = Object.const_get(migration_name).new
   migration.down
   Mystic.execute("DELETE FROM mystic_migrations WHERE filename='#{filename}'")
+  
 end

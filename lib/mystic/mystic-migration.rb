@@ -89,10 +89,11 @@ module Mystic
     end
     
     def add_index(name, tblname, opts={})
-      index = Mystic::SQL::Index.new({
+      hash = {
         :name => name,
         :tblname => tblname
-      }.merge(opts))
+      }.merge(opts)
+      index = Mystic::SQL::Index.new(hash)
       Mystic.execute(index.to_sql)
     end
     

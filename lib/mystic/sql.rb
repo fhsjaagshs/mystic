@@ -38,44 +38,6 @@ module Mystic
       alias_method :to_s, :to_sql
       alias_method :push, :<<
     end
-    
-    class Constraint
-      attr_accessor :constr
-      def initialize(constr)
-        @constr = constr
-      end
-      
-      def to_sql
-        Mystic.adapter.constraint_sql(self)
-      end
-      
-      alias_method :to_s, :to_sql
-    end
-    
-    class CheckConstraint < Constraint
-      attr_accessor :conditions, :name
-      def initialize(conditions_str, name)
-        @conditions = conditions_str.to_s
-        @name = name
-      end
-    end
-
-    class ForeignKey
-      attr_accessor :tbl, :column, :delete, :update
-      
-      def initialize(tbl, column, opts={})
-        @tbl = tbl
-        @column = column
-        @delete = opts[:delete]
-        @update = opts[:update]
-      end
-      
-      def to_sql
-        Mystic.adapter.foreign_key_sql(self)
-      end
-      
-      alias_method :to_s, :to_sql
-    end
   
     class Column
       attr_accessor :name, :kind, :size, :constraints
@@ -90,26 +52,12 @@ module Mystic
       def geospatial?
         false
       end
-    
-      def <<(obj)
-        case obj
-        when Constraint, CheckConstraint, ForeignKey
-          @constraints << obj
-        else
-          raise ArgumentException, "Argument must be a Mystic::SQL::Constraint or subclass of said class."
-        end
-      end
-      
-      def [](idx)
-        @constraints[idx]
-      end
       
       def to_sql
         Mystic.adapter.column_sql(self)
       end
       
       alias_method :to_s, :to_sql
-      alias_method :push, :<<
     end
   
     class SpatialColumn < Column
