@@ -125,8 +125,6 @@ module Mystic
       def geospatial?
         true
       end
-      
-      alias_method :to_s, :to_sql
     end
   
     class Table

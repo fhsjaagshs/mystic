@@ -15,14 +15,6 @@ POSTGRES_TYPES = {
   :uuid => "UUID"
 }
 
-module Mystic
-  class Table
-    def array(name,  opts={})
-      column(:array, name, opts)
-    end
-  end
-end
-
 class PostgresAdapter < Adapter
   def connect(opts)
     create_pool do

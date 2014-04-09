@@ -23,7 +23,7 @@ module Mystic
       def boolean(name, opts={})
         self << Column.new({
           :name => name,
-          :kind => :boolean
+          :kind => :bool
         }.merge(opts))
       end
     
@@ -41,15 +41,21 @@ module Mystic
         }.merge(opts))
       end
       
+      def column(name, kind, opts={})
+        self << Column.new({
+          :name => name,
+          :kind => kind.to_sym
+        }.merge(opts))
+      end
+      
       def geometry(name, kind, srid, opts={})
-        raise ArgumentError, "" if if geospatial?() == false
         self << SpatialColumn.new({
           :name => name,
           :geom_kind => kind,
           :geom_srid => srid
         }.merge(opts))
       end
-    
+      
       def index(name, tblname, opts={})
         self << Index.new({
           :name => name,
@@ -60,7 +66,7 @@ module Mystic
   end
   
   class Migration
-    def exec(sql)
+    def execute(sql)
       Mystic.execute(sql)
     end
     
@@ -102,14 +108,8 @@ module Mystic
       Mystic.execute("ALTER TABLE #{oldname} RENAME TO #{newname}")
     end
     
-    def drop_column(table_name, column_name)
-      drop_columns(table_name, [column_name])
-    end
-    
-    def drop_columns(table_name, col_names=[])
-      if col_names.count > 0
-        Mystic.execute("ALTER TABLE #{table_name} DROP COLUMN #{col_names.join(",")}")
-      end
+    def drop_columns(table_name, *col_names)
+      Mystic.execute("ALTER TABLE #{table_name} DROP COLUMN #{col_names.join(",")}") if col_names.count > 0
     end
     
     def add_column(table_name, col_name, kind, opts={})
@@ -117,8 +117,7 @@ module Mystic
           :name => name,
           :kind => kind
         }.merge(opts))
-      column_sql = Mystic.adapter.column_sql(type.to_sym, column_name, opts)
-      Mystic.execute("ALTER TABLE #{table_name} ADD COLUMN #{column_sql}")
+      Mystic.execute("ALTER TABLE #{table_name} ADD COLUMN #{col.to_sql}")
     end
   end
 end
