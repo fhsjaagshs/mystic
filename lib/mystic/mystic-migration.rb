@@ -88,7 +88,9 @@ module Mystic
       Mystic.execute("DROP VIEW #{name}")
     end
     
-    def add_index(name, tblname, opts={})
+    def add_index(tblname, name, opts={})
+      raise ArgumentError, "opts parameter must be a hash." if opts.is_a?(Hash) == false
+      puts opts.class
       hash = {
         :name => name,
         :tblname => tblname

@@ -4,6 +4,12 @@ require "pathname"
 
 APP_ROOT_FILENAMES = ["mystic", "config", "app.rb"]
 
+class Hash
+  def sql_stringify
+    self.inject([]) { |array, key, value| array << key + " " + value }.join(",")
+  end
+end
+
 class String
   def sqlize
     self.capitalize.split("_").join(" ")

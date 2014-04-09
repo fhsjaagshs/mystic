@@ -79,8 +79,9 @@ class Adapter
     sql << "INDEX ON"
     sql << index.tblname
     sql << "USING #{index.type}" if index.type
-    sql << "(#{cols.join(",")})"
-    sql << "WITH (#{index.with.map { |key, value| key+"="+value.to_s }})" if index.with
+    sql << "(#{index.columns.map { |h| h[:name].to_s + " " + h[:order].to_s }.join(",")})"
+    sql << "WITH (#{index.with.inject([]) { |product, key, value| product << key.to_s+"="+value.to_s }.join(" ")})" if index.with
+    sql << "TABLESPACE #{index.tablespace}" if index.tablespace
     sql.join(" ")
   end
   

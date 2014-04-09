@@ -14,8 +14,8 @@ class InitialMigration < Mystic::Migration
       t.text :drop_me
     end
     
-    add_index :users, :guid_idx, [{:name => :guid, :order => :desc}]
-    drop_column :users, :drop_me
+    add_index :users, :guid_idx, :columns => [{:name => :guid, :order => :desc}]
+    drop_columns :users, :drop_me
   end
   
   def down

@@ -71,8 +71,6 @@ when "migrate"
   
   files = migration_paths(true, migrated_filenames)
   
-  puts files.inspect
-  
   files.each do |file|
     # apply the migration
     filename = file.split("/").last
@@ -83,7 +81,7 @@ when "migrate"
     
     migration = Object.const_get(migration_name).new
     migration.up
-    Mystic.execute("INSERT INTO mystic_migrations VALUES(#{filename})")
+    Mystic.execute("INSERT INTO mystic_migrations VALUES('#{filename}')")
   end
   
 when "rollback"

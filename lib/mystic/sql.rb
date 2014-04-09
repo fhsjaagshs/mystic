@@ -5,7 +5,7 @@ require "mystic"
 module Mystic
   module SQL
     class Index
-      attr_accessor :name, :tblname, :opts, :type, :unique, :using, :concurrently, :with, :columns
+      attr_accessor :name, :tblname, :opts, :type, :unique, :using, :concurrently, :with, :columns, :tablespace
       
       def initialize(opts={})
         @name = opts[:name]
@@ -14,8 +14,9 @@ module Mystic
         @unique = opts[:unique] # a boolean
         @using = opts[:using] # a symbol/string
         @concurrently = opts[:concurrently] # a boolean
-        @with = opts[:with] # a hash (keys => [:fillfactor => 10..100, :fastupdate => true])
-        @columns = []
+        @with = opts[:with] # a hash (keys => { :fillfactor => 10..100, :fastupdate => true })
+        @tablespace = opts[:tablespace]
+        @columns = opts[:columns] || []
       end
       
       # can accept shit other than columns like
@@ -23,9 +24,9 @@ module Mystic
       def <<(col)
         case col
         when Column
-          @columns << col.name.to_s;
+          @columns << { :name => col.name.to_s }
         when String
-          @columns << col;
+          @columns << { :name => col };
         else
           raise ArgumentError, "Column must be a String or a Mystic::SQL::Column"
         end
