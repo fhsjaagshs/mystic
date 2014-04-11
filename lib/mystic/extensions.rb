@@ -40,8 +40,6 @@ class File
   end
   
   def self.app_root
-    g = File.git_root
-    a = File.find_app_root(Dir.pwd.to_s)
-    return a.length > g.length ? a : g
+    File.find_app_root(Dir.pwd.to_s)
   end
 end

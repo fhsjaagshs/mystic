@@ -90,7 +90,6 @@ module Mystic
     
     def add_index(tblname, name, opts={})
       raise ArgumentError, "opts parameter must be a hash." if opts.is_a?(Hash) == false
-      puts opts.class
       hash = {
         :name => name,
         :tblname => tblname
@@ -100,7 +99,7 @@ module Mystic
     end
     
     def drop_index(*args)
-      Mystic.execute(Mystic.drop_index_sql(*args))
+      Mystic.execute(Mystic.adapter.drop_index_sql(*args))
     end
     
     def rename_column(table, oldname, newname)

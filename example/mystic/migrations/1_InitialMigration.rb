@@ -19,8 +19,8 @@ class InitialMigration < Mystic::Migration
   end
   
   def down
-    drop_table :users
     drop_index :guid_idx
+    drop_table :users
   end
   
 end

@@ -76,7 +76,7 @@ class Adapter
     sql = []
     sql << "CREATE"
     sql << "UNIQUE" if index.unique
-    sql << "INDEX ON"
+    sql << "INDEX #{index.name} ON"
     sql << index.tblname
     sql << "USING #{index.type}" if index.type
     sql << "(#{index.columns.map { |h| h[:name].to_s + " " + h[:order].to_s }.join(",")})"
