@@ -10,6 +10,10 @@ require "mystic/model"
 module Mystic
   @@adapter = nil
   
+  def self.parse_response(res)
+    self.adapter.parse_response(res)
+  end
+  
   def self.adapter
     eval(File.read(File.app_root + "/config/mystic.rb")) if @@adapter == nil
     return @@adapter
@@ -24,18 +28,18 @@ module Mystic
     @@adapter = Object.const_get(adapter_class).new
     
     return false if @@adapter == nil
-    Mystic.adapter.connect(opts)
+    self.adapter.connect(opts)
     return true
   end
   
   def self.execute(sql)
-    adptr = Mystic.adapter
+    adptr = self.adapter
     return nil if adptr.nil?
     adptr.exec(sql.minify)
   end
   
   def self.sanitize(string)
-    adptr = Mystic.adapter
+    adptr = self.adapter
     return nil if adptr.nil?
     adptr.sanitize(string)
   end

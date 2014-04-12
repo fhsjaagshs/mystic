@@ -2,8 +2,14 @@
 
 module Mystic
   class Model
+    attr_accessor :attributes
+    
     def table_name
       self.class.to_s
+    end
+    
+    def initialize
+      @attributes = {}
     end
     
     def self.generate_objs(obj)
@@ -22,8 +28,8 @@ module Mystic
       end
     end
     
-    def self.fetch(count)
-      return nil # returns an array of objects, use self.generate_objs
+    def self.fetch(obj)
+      return self.generate_objs(Mystic.parse_response(obj))
     end
     
     def to_json

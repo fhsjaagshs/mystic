@@ -4,6 +4,17 @@ require "pathname"
 
 APP_ROOT_FILENAMES = ["mystic", "config", "app.rb"]
 
+class Array
+  def merge_keys(keys)
+    i = 0
+    self.inject({}) do |hash, obj| 
+      key = keys[i]
+      hash[key] = obj.to_s
+      i += 1
+    end
+  end
+end
+
 class Hash
   def sql_stringify
     self.inject([]) { |array, key, value| array << key + " " + value }.join(",")

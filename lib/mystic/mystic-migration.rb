@@ -30,7 +30,8 @@ module Mystic
         }.merge(opts))
       end
       
-      def index(column), opts={})
+      def index(*columns, opts={})
+        opts[:columns] = opts[:columns].merge(columns)
         self << Index.new({
           :tblname => @name
         }.merge(opts))

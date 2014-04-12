@@ -34,6 +34,10 @@ class Adapter
     puts sql
   end
   
+  def parse_response(res)
+    
+  end
+  
   def sql_kind(kind)
     sql_kind = UNIVERSAL_TYPES[kind.to_sym]
     sql_kind ||= kind.sqlize

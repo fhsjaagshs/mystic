@@ -38,6 +38,17 @@ class PostgresAdapter < Adapter
     return res
   end
   
+  def parse_response(res)
+    row_names = res.fields
+    results = []
+    
+    res.each_row do |row_array|
+      results << row_array.merge_keys[row_names]
+    end
+    
+    results
+  end
+  
   def sanitize(string)
     res = nil
     @pool.with do |instance|
