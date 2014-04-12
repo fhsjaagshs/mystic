@@ -5,6 +5,7 @@ require "mystic/extensions"
 require "mystic/minify"
 require "mystic/sql"
 require "mystic/adapter"
+require "mystic/model"
 
 module Mystic
   @@adapter = nil

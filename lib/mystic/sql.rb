@@ -10,7 +10,7 @@ module Mystic
       def initialize(opts={})
         @name = opts[:name]
         @tblname = opts[:tblname]
-        @type = opts[:type] # a string/symbol
+        @type = opts[:type] || :btree # a string/symbol
         @unique = opts[:unique] # a boolean
         @using = opts[:using] # a symbol/string
         @concurrently = opts[:concurrently] # a boolean

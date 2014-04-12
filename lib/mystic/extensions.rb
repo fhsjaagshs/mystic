@@ -12,7 +12,7 @@ end
 
 class String
   def sqlize
-    self.capitalize.split("_").join(" ")
+    self.downcase.split("_").map { |part| part.capitalize }.join(" ")
   end
 end
 

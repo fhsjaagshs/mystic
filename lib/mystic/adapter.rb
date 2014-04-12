@@ -76,10 +76,11 @@ class Adapter
     sql = []
     sql << "CREATE"
     sql << "UNIQUE" if index.unique
-    sql << "INDEX #{index.name} ON"
+    sql << index.name.nil? "INDEX ON" : "INDEX #{index.name} ON"
     sql << index.tblname
     sql << "USING #{index.type}" if index.type
-    sql << "(#{index.columns.map { |h| h[:name].to_s + " " + h[:order].to_s }.join(",")})"
+    sql << "(" + index.columns.join(",") + ")" if index.columns.is_a?(Array)  
+    sql << "(#{index.columns.map { |h| h[:name].to_s + " " + h[:order].to_s }.join(",")})" if index.columns.is_a?(Hash)
     sql << "WITH (#{index.with.inject([]) { |product, key, value| product << key.to_s+"="+value.to_s }.join(" ")})" if index.with
     sql << "TABLESPACE #{index.tablespace}" if index.tablespace
     sql.join(" ")

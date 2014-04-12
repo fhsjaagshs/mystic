@@ -5,63 +5,40 @@ require "mystic"
 module Mystic
   module SQL
     class Table
-      def varchar(name, opts={})
-        raise ArgumentError, "VARCHARs require a size." if opts[:size].nil?
+      def column(col_name, kind, opts={})
         self << Column.new({
-          :name => name,
-          :kind => :varchar
-        }.merge(opts))
-      end
-    
-      def text(name, opts={})
-        self << Column.new({
-          :name => name,
-          :kind => :text
-        }.merge(opts))
-      end
-    
-      def boolean(name, opts={})
-        self << Column.new({
-          :name => name,
-          :kind => :bool
-        }.merge(opts))
-      end
-    
-      def integer(name, opts={})
-        self << Column.new({
-          :name => name,
-          :kind => :integer
-        }.merge(opts))
-      end
-      
-      def float(name, opts={})
-        self << Column.new({
-          :name => name,
-          :kind => :float
-        }.merge(opts))
-      end
-      
-      def column(name, kind, opts={})
-        self << Column.new({
-          :name => name,
+          :name => col_name,
           :kind => kind.to_sym
         }.merge(opts))
       end
       
-      def geometry(name, kind, srid, opts={})
+      def varchar(name, opts={})
+        raise ArgumentError, "VARCHARs require a size." if opts[:size].nil?
+        column(name, :varchar, opts)
+      end
+      
+      def char(name, opts={})
+        raise ArgumentError, "CHARs require a size." if opts[:size].nil?
+        column(name, :char, opts)
+      end
+
+      def geometry(col_name, kind, srid, opts={})
         self << SpatialColumn.new({
-          :name => name,
+          :name => col_name,
           :geom_kind => kind,
           :geom_srid => srid
         }.merge(opts))
       end
       
-      def index(name, tblname, opts={})
+      def index(column), opts={})
         self << Index.new({
-          :name => name,
-          :tblname => tblname
+          :tblname => @name
         }.merge(opts))
       end
+      
+      def method_missing(meth, *args, &block)
+        column(args[0], meth.to_s, args[1])
+      end  
     end
   end
   
