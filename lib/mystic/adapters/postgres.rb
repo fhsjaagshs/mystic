@@ -38,11 +38,11 @@ class PostgresAdapter < Adapter
   
   def exec(sql)
     super
-    return nil if @pool.nil?
     res = nil
     @pool.with do |instance|
       res = instance.exec(sql)
     end
+    
     return parse_response(res)
   end
   

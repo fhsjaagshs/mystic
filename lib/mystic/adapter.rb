@@ -31,7 +31,8 @@ class Adapter
   end
   
   def exec(sql)
-    puts sql
+    return nil if @pool.nil?
+    sql = sql.minify
   end
   
   def parse_response(res)

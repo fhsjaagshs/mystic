@@ -5,7 +5,11 @@ module Mystic
     attr_accessor :attributes
     
     def table_name
-      self.class.to_s[0..-2]
+      self.class.table_name
+    end
+    
+    def self.table_name
+      self.to_s[1..-2]
     end
     
     def initialize

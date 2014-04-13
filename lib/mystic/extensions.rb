@@ -25,6 +25,17 @@ class String
   def sqlize
     self.downcase.split("_").map { |part| part.capitalize }.join(" ")
   end
+  
+  def sanitize!
+    sanitized = Mystic.sanitize(self)
+    sanitized.untaint if tainted? # may not be suitable
+    self = sanitized
+  end
+  
+  def sanitize
+    self.dup.sanitize!
+  end
+  
 end
 
 class Symbol

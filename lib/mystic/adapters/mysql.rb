@@ -23,8 +23,7 @@ class MysqlAdapter < Adapter
   end
   
   def exec(sql)
-    return nil if @pool.nil?
-    puts sql
+    super
     res = nil
     @pool.with do |instance|
       res = instance.query(sql)

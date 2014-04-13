@@ -35,7 +35,7 @@ module Mystic
   def self.execute(sql)
     adptr = self.adapter
     return nil if adptr.nil?
-    adptr.exec(sql.minify)
+    adptr.exec(sql)
   end
   
   def self.sanitize(string)
