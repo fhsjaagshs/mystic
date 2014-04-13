@@ -9,7 +9,7 @@ class Array
     i = 0
     self.inject({}) do |hash, obj| 
       key = keys[i]
-      hash[key] = obj.to_s
+      hash[key] = obj.to_s if obj
       i += 1
     end
   end

@@ -40,13 +40,10 @@ class PostgresAdapter < Adapter
   
   def parse_response(res)
     row_names = res.fields
-    results = []
     
-    res.each_row do |row_array|
-      results << row_array.merge_keys[row_names]
-    end
-    
-    results
+    ret = []
+    res.each_row { |row_array| ret << row_array.merge_keys[row_names] }
+    ret.count == 1 ? ret.first : ret
   end
   
   def sanitize(string)

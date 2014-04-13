@@ -5,7 +5,7 @@ module Mystic
     attr_accessor :attributes
     
     def table_name
-      self.class.to_s
+      self.class.to_s[0..-2]
     end
     
     def initialize
@@ -28,7 +28,7 @@ module Mystic
       end
     end
     
-    def self.fetch(obj)
+    def self.objectify(obj)
       return self.generate_objs(Mystic.parse_response(obj))
     end
     
