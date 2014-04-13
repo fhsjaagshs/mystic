@@ -9,7 +9,7 @@ module Mystic
     end
     
     def self.table_name
-      self.to_s[1..-2]
+      self.to_s.downcase[1..-2]
     end
     
     def initialize
