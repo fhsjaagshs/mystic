@@ -16,12 +16,12 @@ module Mystic
       case obj
       when Array and obj.first.is_a?(Hash)
         obj.map do |hash| 
-          ret = self.class.new
+          ret = self.new
           ret.attributes = obj
           ret
         end
       when Hash
-        ret = self.class.new
+        ret = self.new
         ret.attributes = obj
       else
         raise ArgumentError, "Cannot create #{self.class.to_s}(s) from #{obj.inspect}."

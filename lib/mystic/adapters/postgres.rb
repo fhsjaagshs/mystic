@@ -28,6 +28,14 @@ class PostgresAdapter < Adapter
     end
   end
   
+  def parse_response(res)
+    row_names = res.fields
+    
+    ret = []
+    res.each_row { |row_array| ret << row_array.merge_keys[row_names] }
+    ret.count == 1 ? ret.first : ret
+  end
+  
   def exec(sql)
     super
     return nil if @pool.nil?
@@ -35,15 +43,7 @@ class PostgresAdapter < Adapter
     @pool.with do |instance|
       res = instance.exec(sql)
     end
-    return res
-  end
-  
-  def parse_response(res)
-    row_names = res.fields
-    
-    ret = []
-    res.each_row { |row_array| ret << row_array.merge_keys[row_names] }
-    ret.count == 1 ? ret.first : ret
+    return parse_response(res)
   end
   
   def sanitize(string)
