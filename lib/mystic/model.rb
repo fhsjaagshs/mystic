@@ -31,26 +31,5 @@ module Mystic
         raise ArgumentError, "Cannot create #{self.class.to_s}(s) from #{obj.inspect}."
       end
     end
-    
-    def self.objectify(obj)
-      return self.generate_objs(Mystic.parse_response(obj))
-    end
-    
-    def to_json
-      @attributes.to_json
-    end
-    
-    def [](key)
-      return @attributes[key]
-    end
-    
-    def [](key, value)
-      @attributes[key] = value if (key.is_a?(Symbol) || key.is_a?(String)) && (value.is_a?(Symbol) || value.is_a?(String))
-    end
-    
-    def method_missing(meth, *args, &block)
-      super if @attributes.member(meth.to_s) == false
-      @attributes[meth]
-    end
   end
 end
