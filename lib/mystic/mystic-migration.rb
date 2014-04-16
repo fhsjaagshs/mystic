@@ -31,7 +31,7 @@ module Mystic
       end
       
       def index(*columns, opts={})
-        opts[:columns] = opts[:columns].merge(columns)
+        opts[:columns] = opts[:columns].merge(columns) if columns
         self << Index.new({
           :tblname => @name
         }.merge(opts))

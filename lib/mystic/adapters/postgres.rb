@@ -31,7 +31,7 @@ class PostgresAdapter < Adapter
   def parse_response(res)
     row_names = res.fields
     ret = []
-    res.each_row { |row_array| ret << row_array.merge_keys[row_names] }
+    res.each_row { |row_array| ret << row_array.merge_keys(row_names) }
     ret
   end
   
