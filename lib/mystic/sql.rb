@@ -12,7 +12,6 @@ module Mystic
         @tblname = opts[:tblname]
         @type = opts[:type] || :btree # a string/symbol
         @unique = opts[:unique] # a boolean
-        @using = opts[:using] # a symbol/string
         @concurrently = opts[:concurrently] # a boolean
         @with = opts[:with] # a hash (keys => { :fillfactor => 10..100, :fastupdate => true })
         @tablespace = opts[:tablespace]

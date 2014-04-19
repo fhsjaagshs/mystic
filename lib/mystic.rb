@@ -10,10 +10,6 @@ require "mystic/model"
 module Mystic
   @@adapter = nil
   
-  def self.parse_response(res)
-    self.adapter.parse_response(res)
-  end
-  
   def self.adapter
     eval(File.read(File.app_root + "/config/mystic.rb")) if @@adapter == nil
     return @@adapter

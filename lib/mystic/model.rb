@@ -9,10 +9,10 @@ end
 module Mystic
   class Model
     def self.table_name
-      self.to_s.downcase[1..-2]
+      self.to_s.downcase
     end
     
-    def self.fetch_sql(opts={})
+    def self.select_sql(opts={})
       count = opts.delete(:count) || 0
       pairs = opts.sqlize
       
@@ -22,11 +22,16 @@ module Mystic
       sql
     end
     
+    def self.function_sql(funcname, *params)
+      params.map!{ |param| "'" + param.to_s.sanitize + "'" }
+      "SELECT " + funcname.to_s "(" + params.join(",") + ");"
+    end
+    
     def self.update_sql(where={}, set={})
       where_pairs = where.sqlize
       set_pairs = set.sqlize
       return nil if where_pairs.count == 0
-      return nil if set_pairs.count == 0
+      return nil if set_pairs.count == 08
       
       "UPDATE " + self.table_name + " SET " + set_pairs.join(",") + " WHERE " + where_pairs.join(" AND ")
     end
