@@ -32,18 +32,14 @@ class MysqlAdapter < Adapter
   def exec(sql)
     super
     res = nil
-    @pool.with do |instance|
-      res = instance.query(sql)
-    end
-    return res
+    @pool.with { |instance| res = instance.query(sql) }
+    parse_response(res)
   end
   
   def sanitize(string)
     res = nil
-    @pool.with do |instance|
-      res = instance.escape(string)
-    end
-    return res
+    @pool.with { |instance| res = instance.escape(string) }
+    res
   end
   
   def sql_kind(kind)

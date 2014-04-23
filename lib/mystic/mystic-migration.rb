@@ -32,9 +32,7 @@ module Mystic
       
       def index(*columns, opts={})
         opts[:columns] = opts[:columns].merge(columns) if columns
-        self << Index.new({
-          :tblname => @name
-        }.merge(opts))
+        self << Index.new({ :tblname => @name }.merge(opts))
       end
       
       def method_missing(meth, *args, &block)
@@ -49,8 +47,9 @@ module Mystic
     end
     
     def create_table(name)
+      raise ArgumentError, "No block provided." unless block_given?
       table = Mystic::SQL::Table.new(name)
-      yield(table) if block_given?
+      yield(table)
       Mystic.execute(table.to_sql)
     end
     

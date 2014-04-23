@@ -15,7 +15,7 @@ UNIVERSAL_TYPES = {
 
 class Adapter
   def name
-    self.class.name.split('::').last.gsub("Adapter","").downcase
+    self.class.name.split('::').last.delete("Adapter").downcase
   end
   
   def create_pool(&block)
@@ -31,7 +31,7 @@ class Adapter
   end
   
   def exec(sql)
-    return nil if @pool.nil?
+    nil if @pool.nil?
     sql = sql.minify
   end
   
@@ -59,44 +59,45 @@ class Adapter
 
   def foreign_key_sql(fkey)
     sql = "REFERENCES #{fkey.tbl}(#{fkey.column})"
-    sql << " ON DELETE " + fkey.delete_action.sqlize if fkey.delete_action
-    sql << " ON UPDATE " + fkey.update_action.sqlize if fkey.update_action
-    sql
+    sql << "ON DELETE " + fkey.delete_action.sqlize if fkey.delete_action
+    sql << "ON UPDATE " + fkey.update_action.sqlize if fkey.update_action
+    sql*" "
   end
 
   def column_sql(col) 
     sql = []
     sql << col.name.to_s
     sql << sql_kind(col.kind.to_sym)
-    sql << "(#{col.size})" if col.size.to_s.length > 0 && col.geospatial? == false
-    sql << "#{self.geospatial_sql_type(col)}" if col.geospatial?
-    sql << "NOT NULL" if col.constraints[:not_null] == true
-    sql << "UNIQUE" if col.constraints[:unique] == true
-    sql << "PRIMARY KEY" if col.constraints[:primary_key] == true
+    sql << "(" + col.size + ")" if col.size && col.geospatial? == false
+    sql << self.geospatial_sql_type(col) if col.geospatial?
+    sql << "NOT NULL" if col.constraints[:not_null]
+    sql << "UNIQUE" if col.constraints[:unique]
+    sql << "PRIMARY KEY" if col.constraints[:primary_key]
     sql << "REFERENCES " + col.constraints[:references] if col.constraints.member?(:references)
-    sql.join(" ")
+    sql*" "
   end
   
   def index_sql(index)
     sql = []
     sql << "CREATE"
     sql << "UNIQUE" if index.unique
-    sql << index.name.nil? "INDEX ON" : "INDEX #{index.name} ON"
+    sql << "INDEX"
+    sql << index.name unless index.name.nil?
+    sql << "ON"
     sql << index.tblname
     sql << "USING #{index.type}" if index.type
-    sql << "(" + index.columns.join(",") + ")" if index.columns.is_a?(Array)  
-    sql << "(#{index.columns.map { |h| h[:name].to_s + " " + h[:order].to_s }.join(",")})" if index.columns.is_a?(Hash)
-    sql << "WITH (#{index.with.inject([]) { |product, key, value| product << key.to_s+"="+value.to_s }.join(" ")})" if index.with
+    sql << "(#{index.columns.map { |h| h[:name].to_s + " " + h[:order].to_s } * ","})" if index.columns.is_a?(Hash)
+    sql << "WITH (#{index.with.sql_stringify("=")})" if index.with
     sql << "TABLESPACE #{index.tablespace}" if index.tablespace
-    sql.join(" ")
+    sql*" "
   end
   
-  def constraint_sql(constraint)
+  def constraint_sql(constr)
     case constraint
     when CheckConstraint
-      return "CONSTRAINT #{constr.name} CHECK(#{constr.conditions})"
+      "CONSTRAINT #{constr.name} CHECK(#{constr.conditions})"
     when Constraint
-      return constraint.sqlize
+      constr.sqlize
     end
   end
 end

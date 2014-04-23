@@ -23,9 +23,7 @@ class PostgresAdapter < Adapter
   end
   
   def disconnect
-    @pool.shutdown do |instance|
-      instance.close
-    end
+    @pool.shutdown { |instance| instance.close }
   end
   
   def parse_response(res)
@@ -38,19 +36,14 @@ class PostgresAdapter < Adapter
   def exec(sql)
     super
     res = nil
-    @pool.with do |instance|
-      res = instance.exec(sql)
-    end
-    
-    return parse_response(res)
+    @pool.with { |instance| res = instance.exec(sql) }
+    parse_response(res)
   end
   
   def sanitize(string)
     res = nil
-    @pool.with do |instance|
-      res = instance.escape_string(string)
-    end
-    return res
+    @pool.with { |instance| res = instance.escape_string(string) }
+    res
   end
 
   def sql_kind(kind)

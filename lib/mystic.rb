@@ -6,13 +6,13 @@ require "mystic/minify"
 require "mystic/sql"
 require "mystic/adapter"
 require "mystic/model"
+require "mystic/adapters/*"
 
 module Mystic
   @@adapter = nil
   
   def self.adapter
-    eval(File.read(File.app_root + "/config/mystic.rb")) if @@adapter == nil
-    return @@adapter
+    @@adapter ||= eval(File.read(File.app_root + "/config/mystic.rb"))
   end
   
   def self.connect(opts={})
@@ -30,13 +30,13 @@ module Mystic
   
   def self.execute(sql)
     adptr = self.adapter
-    return nil if adptr.nil?
+    nil if adptr.nil?
     adptr.exec(sql)
   end
   
   def self.sanitize(string)
     adptr = self.adapter
-    return nil if adptr.nil?
+    nil if adptr.nil?
     adptr.sanitize(string)
   end
 end

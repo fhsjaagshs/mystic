@@ -46,7 +46,7 @@ module Mystic
         @name = opts.delete(:name).to_s
         @kind = opts.delete(:kind).to_sym
         @size = opts.delete(:size).to_s
-        @constraints = opts.dup
+        @constraints = opts
       end
       
       def geospatial?
@@ -100,10 +100,10 @@ module Mystic
       end
     
       def to_sql
-        raise ArgumentError, "Table cannot have zero columns." if @columns.count == 0
-        cols_sql = @columns.map { |col| col.to_sql }.join(",")
+        raise ArgumentError, "Table cannot have zero columns." if @columns.empty?
+        cols_sql = @columns.map(&:to_sql)*","
         sql = "CREATE TABLE #{@name} (#{cols_sql});"
-        sql << @indeces.map { |index| index.to_sql }.join(";") if @indeces.count > 0
+        sql << @indeces.map(&:to_sql)*";" unless @indeces.empty?
         sql
       end
       
