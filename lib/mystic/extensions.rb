@@ -3,7 +3,6 @@
 require "pathname"
 
 module Mystic
-  # These two things abuse the structure of hashes as [[:key,"value"],[:key,"value"]]
   class Array
     def merge_keys(keys)
       raise ArgumentError, "Argument array must have the same number of elements as the receiver of this method." if keys.count != self.count
@@ -12,20 +11,22 @@ module Mystic
   end
 
   class Hash
-    def sql_stringify(pair_separator=" ")
-      map { |pair| pair * pair_separator } * ","
+    #def sql_stringify(pair_separator=" ")
+    #  map { |pair| pair * pair_separator } * ","
+    #end
+    
+    def sqlize
+      Hash[reject{ |key, value| value.to_s.empty? }.map{ |pair| "#{pair.first.to_s.sanitize}='#{pair.last.to_s.sanitize}'" }]
     end
   end
 
   class String
     def sqlize
-      downcase.split("_").map(&:capitalize)*" "
+      downcase.split("_").map(&:capitalize) * " "
     end
   
     def sanitize
-      sanitized = Mystic.sanitize(self)
-      sanitized.untaint if tainted? # may not be suitable
-      sanitized
+      Mystic.sanitize(self).untaint
     end
   end
 
@@ -41,20 +42,11 @@ module Mystic
       return nil if res[0..4] == "fatal"
       res
     end
-  
-    def self.find_app_root(path)
+    
+    def self.app_root(path=Dir.pwd)
       mystic_dir_path = expand_path("mystic",path)
-      return path if exists?(mystic_dir_path) && directory?(mystic_dir_path) # return is necessary
-      return nil if path.length == 1 # return is necessary
-      find_app_root(dirname(path))
-    end
-
-    def self.script_dir
-      File.dirname(File.expand_path($0)) + "/"
-    end
-  
-    def self.app_root
-      File.find_app_root(Dir.pwd)
+      return path if exists?(mystic_dir_path) && directory?(mystic_dir_path)
+      app_root(dirname(path)) unless path.length == 1
     end
   end
 end

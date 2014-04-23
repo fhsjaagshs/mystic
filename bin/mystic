@@ -2,8 +2,13 @@
 
 require "mystic"
 
+MIGRATION_SELECT_SQL = "SELECT * FROM mystic_migrations"
+MIGRATION_SELECT_SQL_ORDERED = MIGRATION_SELECT_SQL + " ORDER BY mig_number ASC"
+
 MIGRATIONS_PATH = "./mystic/migrations/"
 MIGRATIONS_LOCATION = MIGRATIONS_PATH + "*.rb"
+
+FILENAME_REGEX = /^\d+\_[A-Za-z]+\.rb$/
 
 MIG_TEMPLATE = <<-mig_template
 #!/usr/bin/env ruby
@@ -23,6 +28,14 @@ mig_template
 
 # 1_MigrationClassName.rb
 
+module Mystic
+  def self.mig_path
+    File.app_root + "/mystic/migrations/"
+  end
+end
+
+include Mystic
+
 def mig_path
   File.app_root + "/mystic/migrations/"
 end
@@ -30,7 +43,7 @@ end
 # I know this is really hacky
 def migration_paths(order_matters, paths_to_reject)
   mp = mig_path()
-  filenames = Dir.entries(mp) - paths_to_reject - [".", "..", ".DS_Store"]
+  filenames = Dir.entries(mp).select(&FILENAME_REGEX)
   filenames.sort!{ |a,b| a.split("_").first.to_i <=> b.split("_").first.to_i } if order_matters
   filenames.map{ |filename| mp + filename }
 end
@@ -38,7 +51,7 @@ end
 case ARGV[0]
 when "setup"
 
-  Mystic.execute("CREATE TABLE IF NOT EXISTS mystic_migrations (filename TEXT)")
+  Mystic.execute("CREATE TABLE IF NOT EXISTS mystic_migrations (mig_number integer, filename TEXT)")
   
 when "create"
   
@@ -64,42 +77,34 @@ when "create"
 when "migrate"
   
   migrated_filenames = []
+  Mystic.execute(MIGRATION_SELECT_SQL).each { |tuple| migrated_filenames << tuple["filename"] }
   
-  Mystic.execute("SELECT * FROM mystic_migrations").each do |tuple|
-    migrated_filenames << tuple["filename"]
-  end
+  mp = Mystic.app_root File.app_root + "/mystic/migrations/"
+  filenames = Dir.entries(mp).select(&FILENAME_REGEX)-migrated_filenames
+  filenames.sort!{ |a,b| a.split("_").first.to_i <=> b.split("_").first.to_i }
   
-  files = migration_paths(true, migrated_filenames)
-  
-  files.each do |file|
-    # apply the migration
-    filename = file.split("/").last
-    migration_code = File.read(file)
-    eval(migration_code) # define the migration class
+  filenames.each do |filename|
+    require mp + filename
     
-    migration_name = filename.split("_").last.split(".").first
+    mig_number, mig_name = *filename.split("_")
+    mig_name.delete!(".rb")
     
-    migration = Object.const_get(migration_name).new
+    migration = Object.const_get(mig_name).new
     migration.up
-    Mystic.execute("INSERT INTO mystic_migrations VALUES('#{filename}')")
+    Mystic.execute("INSERT INTO mystic_migrations (mig_number, filename) VALUES(#{mig_number},'#{filename}')")
   end
   
 when "rollback"
   
   migrated_filenames = []
+  Mystic.execute(MIGRATION_SELECT_SQL_ORDERED).each { |tuple| migrated_filenames << tuple["filename"] }
   
-  Mystic.execute("SELECT * FROM mystic_migrations").each do |tuple|
-    migrated_filenames << tuple["filename"]
-  end
   
-  if migrated_filenames.count > 0
-    migrated_filenames.sort!{ |a,b| a.split("_").first.to_i <=> b.split("_").first.to_i }
   
+  unless migrated_filenames.empty?
     filename = migrated_filenames.last
-  
-    migration_code = File.read(mig_path() + filename)
-    eval(migration_code)
-  
+    
+    require mig_path() + filename
     migration_name = filename.split("_").last.split(".").first
   
     migration = Object.const_get(migration_name).new
