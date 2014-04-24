@@ -2,7 +2,6 @@
 
 require "mystic"
 require "mystic/adapters/postgres"
-require "pg"
 
 class PostgisAdapter < PostgresAdapter
   def geospatial_sql_type(col)

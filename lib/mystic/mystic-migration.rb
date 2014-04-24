@@ -66,11 +66,10 @@ module Mystic
     end
     
     def add_index(tblname, name, opts={})
-      hash = {
+      index = Mystic::SQL::Index.new({
         :name => name,
         :tblname => tblname
-      }.merge(opts)
-      index = Mystic::SQL::Index.new(hash)
+      }.merge(opts))
       Mystic.execute(index.to_sql)
     end
     
@@ -79,23 +78,23 @@ module Mystic
     end
     
     def rename_column(table, oldname, newname)
-      Mystic.execute("ALTER TABLE #{table} RENAME COLUMN #{oldname} TO #{newname}")
+      Mystic.execute("ALTER TABLE #{table.to_s} RENAME COLUMN #{oldname.to_s} TO #{newname.to_s}")
     end
     
     def rename_table(oldname, newname)
-      Mystic.execute("ALTER TABLE #{oldname} RENAME TO #{newname}")
+      Mystic.execute("ALTER TABLE #{oldname.to_s} RENAME TO #{newname.to_s}")
     end
     
     def drop_columns(table_name, *col_names)
-      Mystic.execute("ALTER TABLE #{table_name} DROP COLUMN #{col_names*","}") unless col_names.empty?
+      Mystic.execute("ALTER TABLE #{table_name.to_s} DROP COLUMN #{col_names*","}") unless col_names.empty?
     end
     
     def add_column(table_name, col_name, kind, opts={})
       col = Mystic::SQL::Column.new({
-          :name => name,
+          :name => col_name,
           :kind => kind
         }.merge(opts))
-      Mystic.execute("ALTER TABLE #{table_name} ADD COLUMN #{col.to_sql}")
+      Mystic.execute("ALTER TABLE #{table_name.to_s} ADD COLUMN #{col.to_sql}")
     end
   end
 end

@@ -17,16 +17,11 @@ class MysqlAdapter < Adapter
   end
   
   def disconnect
-    @pool.shutdown do |instance|
-      instance.close
-    end
+    @pool.shutdown(&:close)
   end
   
   def parse_response(res)
-   # row_names = res.fields
-    #ret = []
-    #res.each_row { |row_array| ret << row_array.merge_keys[row_names] }
-    #ret
+    res.to_a
   end
   
   def exec(sql)

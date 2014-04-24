@@ -3,23 +3,6 @@
 require "pathname"
 
 module Mystic
-  class Array
-    def merge_keys(keys)
-      raise ArgumentError, "Argument array must have the same number of elements as the receiver of this method." if keys.count != self.count
-      Hash[each_with_index.map{ |obj,i| [keys[i],obj] }]
-    end
-  end
-
-  class Hash
-    #def sql_stringify(pair_separator=" ")
-    #  map { |pair| pair * pair_separator } * ","
-    #end
-    
-    def sqlize
-      Hash[reject{ |key, value| value.to_s.empty? }.map{ |pair| "#{pair.first.to_s.sanitize}='#{pair.last.to_s.sanitize}'" }]
-    end
-  end
-
   class String
     def sqlize
       downcase.split("_").map(&:capitalize) * " "
@@ -33,6 +16,27 @@ module Mystic
   class Symbol
     def sqlize
       to_s.sqlize
+    end
+    
+    def sanitize
+      to_s.sanitize
+    end
+  end
+  
+  class Array
+    def merge_keys(keys)
+      raise ArgumentError, "Argument array must have the same number of elements as the receiver of this method." if keys.count != self.count
+      Hash[each_with_index.map{ |obj,i| [keys[i],obj] }]
+    end
+  end
+
+  class Hash
+    def parify(delimiter=" ")
+      map { |pair| pair * delimiter }
+    end
+    
+    def sqlize
+      Hash[reject{ |key, value| value.empty? }.map{ |pair| "#{pair.first.sanitize}='#{pair.last.sanitize}'" }]
     end
   end
 
