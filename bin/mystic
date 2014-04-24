@@ -2,14 +2,7 @@
 
 require "mystic"
 
-MIGRATION_SELECT_SQL = "SELECT * FROM mystic_migrations"
-MIGRATION_SELECT_SQL_ORDERED = MIGRATION_SELECT_SQL + " ORDER BY mig_number ASC"
-
-MIGRATIONS_PATH = "./mystic/migrations/"
-MIGRATIONS_LOCATION = MIGRATIONS_PATH + "*.rb"
-
 FILENAME_REGEX = /^\d+\_[A-Za-z]+\.rb$/
-
 MIG_TEMPLATE = <<-mig_template
 #!/usr/bin/env ruby
 
@@ -36,18 +29,6 @@ end
 
 include Mystic
 
-def mig_path
-  File.app_root + "/mystic/migrations/"
-end
-
-# I know this is really hacky
-def migration_paths(order_matters, paths_to_reject)
-  mp = mig_path()
-  filenames = Dir.entries(mp).select(&FILENAME_REGEX)
-  filenames.sort!{ |a,b| a.split("_").first.to_i <=> b.split("_").first.to_i } if order_matters
-  filenames.map{ |filename| mp + filename }
-end
-
 case ARGV[0]
 when "setup"
 
@@ -57,29 +38,25 @@ when "create"
   
   case ARGV[1]
   when "migration"
-    
-    mg = mig_path()
     mig_name = ARGV[2].strip.capitalize
     
-    Kernel.abort if mig_name.length == 0
+    Kernel.abort if mig_name.empty?
     
-    highest_mig_num = Dir.entries[mp].inject do |highest, filename|
-      mig_num = filename.split("_").first.to_i
-      mig_num if mig_num > highest
-      highest
-    end
+    mp = Mystic.mig_path
     
-    file = File.open(mp + highest_mig_num + "_" + mig_name + ".rb", "w+")
+    mig_num = Dir.entries(mp).map { |fname| fname.split("_").first.to_i }.max+1
+
+    file = File.open(mp + mig_num.to_s + "_" + mig_name + ".rb", "w+")
     file << MIG_TEMPLATE.sub("<MIGRATION_CLASS_NAME>",mig_name)
-    
+    file.close
   end
   
 when "migrate"
   
   migrated_filenames = []
-  Mystic.execute(MIGRATION_SELECT_SQL).each { |tuple| migrated_filenames << tuple["filename"] }
+  Mystic.execute("SELECT filename FROM mystic_migrations").each { |tuple| migrated_filenames << tuple["filename"] }
   
-  mp = Mystic.app_root File.app_root + "/mystic/migrations/"
+  mp = Mystic.mig_path
   filenames = Dir.entries(mp).select(&FILENAME_REGEX)-migrated_filenames
   filenames.sort!{ |a,b| a.split("_").first.to_i <=> b.split("_").first.to_i }
   
@@ -89,26 +66,22 @@ when "migrate"
     mig_number, mig_name = *filename.split("_")
     mig_name.delete!(".rb")
     
-    migration = Object.const_get(mig_name).new
-    migration.up
+    Object.const_get(mig_name).new.up
     Mystic.execute("INSERT INTO mystic_migrations (mig_number, filename) VALUES(#{mig_number},'#{filename}')")
   end
   
 when "rollback"
   
   migrated_filenames = []
-  Mystic.execute(MIGRATION_SELECT_SQL_ORDERED).each { |tuple| migrated_filenames << tuple["filename"] }
-  
-  
+  Mystic.execute("SELECT filename FROM mystic_migrations ORDER BY mig_number ASC").each { |tuple| migrated_filenames << tuple["filename"] }
   
   unless migrated_filenames.empty?
     filename = migrated_filenames.last
     
-    require mig_path() + filename
-    migration_name = filename.split("_").last.split(".").first
+    require Mystic.mig_path + filename
+    migration_name = filename.split("_").last.delete(".rb")
   
-    migration = Object.const_get(migration_name).new
-    migration.down
+    Object.const_get(migration_name).new.down
     Mystic.execute("DELETE FROM mystic_migrations WHERE filename='#{filename}'")
   end
   

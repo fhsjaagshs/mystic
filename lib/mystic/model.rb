@@ -10,7 +10,7 @@ module Mystic
       count = opts.delete(:count) || 0
       pairs = opts.sqlize
       
-      sql = "SELECT #{self.table_name}.* FROM #{self.table_name}"
+      sql = "SELECT #{table_name}.* FROM #{table_name}"
       sql << " WHERE #{pairs*" AND "}" unless pairs.empty?
       sql << " LIMIT #{count.to_i.to_s}" if count > 0
       sql

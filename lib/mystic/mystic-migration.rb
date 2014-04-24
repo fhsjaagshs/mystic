@@ -27,11 +27,11 @@ module Mystic
           :name => col_name,
           :geom_kind => kind,
           :geom_srid => srid
-        }.merge(opts))
+        }.merge(opts)) unless opts.nil?
       end
       
       def index(*columns, opts={})
-        opts[:columns] = opts[:columns].merge(columns) if columns
+        opts[:columns] = opts[:columns].merge(columns) unless columns.empty?
         self << Index.new({ :tblname => @name }.merge(opts))
       end
       
@@ -66,7 +66,6 @@ module Mystic
     end
     
     def add_index(tblname, name, opts={})
-      raise ArgumentError, "opts parameter must be a hash." if opts.is_a?(Hash) == false
       hash = {
         :name => name,
         :tblname => tblname
@@ -88,7 +87,7 @@ module Mystic
     end
     
     def drop_columns(table_name, *col_names)
-      Mystic.execute("ALTER TABLE #{table_name} DROP COLUMN #{col_names.join(",")}") if col_names.count > 0
+      Mystic.execute("ALTER TABLE #{table_name} DROP COLUMN #{col_names*","}") unless col_names.empty?
     end
     
     def add_column(table_name, col_name, kind, opts={})
