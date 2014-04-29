@@ -30,8 +30,10 @@ module Mystic
         }.merge(opts)) unless opts.nil?
       end
       
-      def index(*columns, opts={})
-        opts[:columns] = opts[:columns].merge(columns) unless columns.empty?
+      def index(*cols)
+        opts = cols.delete_at(-1) if cols.last.is_a?(Hash)
+        opts ||= {}
+        opts[:columns] = cols.concat(opts.delete(:columns) || [])
         self << Index.new({ :tblname => @name }.merge(opts))
       end
       
