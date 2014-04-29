@@ -17,7 +17,7 @@ module Mystic
     end
     
     def self.function_sql(funcname, *params)
-      "SELECT " + funcname.to_s "(" + params.map{ |param| "'" + param.to_s.sanitize + "'" }*',' + ");"
+      "SELECT " + funcname.to_s + "(" + params.map{ |param| "'" + param.to_s.sanitize + "'" }*',' + ");"
     end
     
     def self.update_sql(where={}, set={})

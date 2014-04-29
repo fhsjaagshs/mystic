@@ -6,7 +6,9 @@ require "mystic/minify"
 require "mystic/sql"
 require "mystic/adapter"
 require "mystic/model"
-require "mystic/adapters/*"
+
+# require all adapters
+Dir.glob("mystic/adapters/*.rb", &method(:require))
 
 module Mystic
   @@adapter = nil
