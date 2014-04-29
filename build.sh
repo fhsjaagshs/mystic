@@ -1,3 +1,5 @@
 #!/bin/bash
 
-gem uninstall mystic; gem build mystic.gemspec; gem install mystic-*.gem;
+gem uninstall mystic
+gem build mystic.gemspec
+gem install --ignore-dependencies --local mystic-*.gem;
