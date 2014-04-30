@@ -7,8 +7,8 @@ Gem::Specification.new do |s|
   s.email        = "nate@ivytap.com"
   s.homepage     = "https://github.com/ivytap/mystic"
   s.license      = "MIT"
-  s.files        = Dir.glob("{bin,lib,ext}/**/*") + %w(LICENSE)
+  s.files        = Dir.glob("{bin,lib}/**/*") + ["LICENSE"]
   s.require_path = "lib"
-  s.extensions   = ['ext/mystic/extconf.rb']
-  s.executables << "mystic"
+  s.executables.push *Dir.glob("bin/**/*")
+  s.add_development_dependency 'densify', '~> 0'
 end

@@ -2,6 +2,7 @@
 
 require "mystic"
 require "connection_pool"
+require "densify"
 
 UNIVERSAL_TYPES = {
   :date => "DATE",
@@ -32,7 +33,7 @@ class Adapter
   
   def exec(sql)
     nil if @pool.nil?
-    sql = sql.minify
+    sql = sql.densify
   end
   
   def parse_response(res)

@@ -2,7 +2,6 @@
 
 require "mystic/mystic-migration"
 require "mystic/extensions"
-require "mystic/minify"
 require "mystic/sql"
 require "mystic/adapter"
 require "mystic/model"
