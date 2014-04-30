@@ -49,7 +49,7 @@ module Mystic
     end
     
     def create_table(name)
-      raise ArgumentError, "No block provided." unless block_given?
+      raise ArgumentError, "No block provided, blocks are required to create a table." unless block_given?
       table = Mystic::SQL::Table.new(name)
       yield(table)
       Mystic.execute(table.to_sql)

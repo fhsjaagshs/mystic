@@ -23,26 +23,25 @@ class PostgresAdapter < Adapter
   end
   
   def disconnect
-    @pool.shutdown { |instance| instance.close }
+    @pool.shutdown { |inst| inst.close }
   end
   
   def parse_response(res)
-    row_names = res.fields
     ret = []
-    res.each_row { |row_array| ret << row_array.merge_keys(row_names) }
+    res.each_row { |row_array| ret << row_array.merge_keys(res.fields) }
     ret
   end
   
   def exec(sql)
     super
     res = nil
-    @pool.with { |instance| res = instance.exec(sql) }
+    @pool.with { |inst| res = inst.exec(sql) }
     parse_response(res)
   end
   
   def sanitize(string)
     res = nil
-    @pool.with { |instance| res = instance.escape_string(string) }
+    @pool.with { |inst| res = inst.escape_string(string) }
     res
   end
 

@@ -1,7 +1,5 @@
 #!/usr/bin/env ruby
 
-require "pathname"
-
 module Mystic
   class String
     def sqlize
@@ -32,7 +30,7 @@ module Mystic
 
   class Hash
     def parify(delimiter=" ")
-      map { |pair| pair * delimiter }
+      map{ |pair| pair * delimiter }
     end
     
     def sqlize

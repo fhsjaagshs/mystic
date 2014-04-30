@@ -27,13 +27,13 @@ class MysqlAdapter < Adapter
   def exec(sql)
     super
     res = nil
-    @pool.with { |instance| res = instance.query(sql) }
+    @pool.with { |inst| res = inst.query(sql) }
     parse_response(res)
   end
   
   def sanitize(string)
     res = nil
-    @pool.with { |instance| res = instance.escape(string) }
+    @pool.with { |inst| res = inst.escape(string) }
     res
   end
   
@@ -45,7 +45,7 @@ class MysqlAdapter < Adapter
   end
   
   def drop_index_sql(*args)
-    index_name, table_name = *args
+    index_name, table_name = *(args[0..1])
     "DROP INDEX #{index_name} ON #{table_name}"
   end
   
