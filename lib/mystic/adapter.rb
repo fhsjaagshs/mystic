@@ -75,6 +75,7 @@ class Adapter
     sql << "UNIQUE" if col.constraints[:unique]
     sql << "PRIMARY KEY" if col.constraints[:primary_key]
     sql << "REFERENCES " + col.constraints[:references] if col.constraints.member?(:references)
+		sql << "DEFAULT " + col.constraints[:default] if col.constraints.member?(:default)
     sql*" "
   end
   
