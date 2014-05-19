@@ -33,6 +33,10 @@ module Mystic
 		@@adapter.pool_timeout = db_conf.delete("timeout").to_i
 		@@adapter.connect(opts)
 	end
+	
+	def self.disconnect
+		@@adapter.disconnect
+	end
 
   def self.execute(sql)
     adptr = self.adapter
