@@ -4,17 +4,6 @@ require "mystic"
 require "mystic/adapter"
 require "pg"
 
-# http://en.wikibooks.org/wiki/Converting_MySQL_to_PostgreSQL#Data_Types
-POSTGRES_TYPES = {
-  :float => "REAL",
-  :double => "DOUBLE PRECISION",
-  
-  :serial => "SERIAL",
-  :json => "JSON",
-  :xml => "XML",
-  :uuid => "UUID"
-}
-
 class PostgresAdapter < Adapter
   def connect(opts)
     create_pool do

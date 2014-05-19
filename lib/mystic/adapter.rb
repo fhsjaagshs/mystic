@@ -4,23 +4,15 @@ require "mystic"
 require "connection_pool"
 require "densify"
 
-UNIVERSAL_TYPES = {
-  :date => "DATE",
-  :time => "TIME",
-  :timestamp => "TIMESTAMP",
-  :bool => "BOOLEAN",
-  :text => "TEXT",
-  :integer => "INTEGER",
-  :varchar => "VARCHAR"
-}
-
 class Adapter
+	attr_accessor :pool_size, :pool_timeout
+	
   def name
     self.class.name.split('::').last.delete("Adapter").downcase
   end
   
   def create_pool(&block)
-    @pool = ConnectionPool.new(:size => 5, :timeout => 5, &block)
+    @pool = ConnectionPool.new(:size => pool_size || 5, :timeout => pool_timeout || 5, &block)
   end
   
   def connect(opts)
