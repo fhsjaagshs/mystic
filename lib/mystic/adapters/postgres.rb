@@ -3,8 +3,9 @@
 require "mystic"
 require "mystic/adapter"
 require "pg"
+require "mystic/model"
 
-class PostgresAdapter < Adapter
+class PostgresAdapter < Mystic::Adapter
   def connect(opts)
     create_pool do
       PG.connect(opts)
@@ -16,6 +17,8 @@ class PostgresAdapter < Adapter
   end
   
   def parse_response(res)
+    ret = res[0][Mystic::Model::JSON_COL] if res.num_tuples == 1
+    return ret unless ret.nil?
     ret = []
     res.each_row { |row_array| ret << row_array.merge_keys(res.fields) }
     ret

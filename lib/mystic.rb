@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-require "mystic/mystic-migration"
+require "mystic/migration"
 require "mystic/extensions"
 require "mystic/sql"
 require "mystic/adapter"
