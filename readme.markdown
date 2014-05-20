@@ -1,9 +1,16 @@
 Mystic
 ===
 
-**Sinatra is to Rails** as **Mystic is to ActiveRecord**
+*"Ultra-dynamic replacement for ActiveRecord that allows for fine-grain control over database queries."*
 
-Simple database connection that supplies connection pooling, server selection, raw SQL execution, and such.
+**Sinatra** is to **Rails** as **Mystic** is to **ActiveRecord**
+
+Simple database connection that supplies connection pooling, migrations, raw SQL execution, and such.
+
+- Allows the developer to write their own SQL
+- Supports models
+- Supports `ActiveRecord`-esque migrations
+- Allows the developer to write their own adapters
 
 Migrations
 -
@@ -22,22 +29,31 @@ Migrations are subclasses of `Mystic::Migration`. They are similar to ActiveReco
     
 You can also use the following methods in your migrations:
 
-`execute(sql_string)` => executes some raw SQL from a string.
-`create_table` => Creates a table. See above
+> `execute` => String (your SQL code)<br />
+> Executes some raw SQL.
+
+> `create_table` => Proc<br />
+> Creates a table, see above.
 
 You can use the following constraints/options with your columns
 
->`:not_null` => true/false<br />
-> Corresponds to SQL's `NOT NULL`
+> `:null` => true/false<br />
+> Corresponds to SQL's `NULL` and `NOT NULL`.
 
->`:unique` => true/false<br />
-> Corresponds to SQL's `UNIQUE`
+> `:unique` => true/false<br />
+> Corresponds to SQL's `UNIQUE`.
 
->`:primary_key` => true/false<br />
-> Corresponds to SQL's `PRIMARY KEY`
+> `:primary_key` => true/false<br />
+> Corresponds to SQL's `PRIMARY KEY`.
 
->`:references` => String<br />
-> Corresponds to SQL's `REFERENCES`. You must write something like this: `orders (id) ON DELETE CASCADE`
+> `:references` => String<br />
+> Corresponds to SQL's `REFERENCES`.<br />
+> `:references => "orders (id) ON DELETE CASCADE"`
+
+> `:default` => String<br />
+> Corresponds to SQL's `DEFAULT`.<br />
+> `:default => "uuid_generate_v4()::char(36)"`
+
 
 Notes
 -
@@ -49,6 +65,12 @@ Notes
 Constraints:
 -
 
+TODO: Write this section
+
+Adapters:
+-
+
+TODO: Write this section
 
 
 
