@@ -61,7 +61,7 @@ module Mystic
       attr_accessor :geom_kind, :geom_srid
       
       def initialize(opts={})
-        super
+        super(opts)
         @geom_kind = opts[:geom_kind]
         @srid = opts[:geom_srid]
       end
@@ -110,7 +110,7 @@ module Mystic
       end
       
       def method_missing(meth, *args, &block)
-        instance_variable_get("@" + meth.to_s)
+				@opts[meth.to_s.to_sym]
       end
     end
   end

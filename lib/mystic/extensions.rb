@@ -3,7 +3,7 @@
 module Mystic
   class String
     def sqlize
-      downcase.split("_").map(&:capitalize) * " "
+      downcase.split("_").map(&:capitalize)*' '
     end
   
     def sanitize
@@ -16,13 +16,11 @@ module Mystic
       to_s.sqlize
     end
     
-    def sanitize
-      to_s.sanitize
-    end
+		alias_method :sanitize, :sqlize
   end
   
   class Array
-    def merge_keys(keys)
+    def merge_keys(keys=[])
       raise ArgumentError, "Argument array must have the same number of elements as the receiver/callee of this method." if keys.count != self.count
       Hash[each_with_index.map{ |obj,i| [keys[i],obj] }]
     end
@@ -41,8 +39,7 @@ module Mystic
   class File  
     def self.git_root
       res = `git rev-parse --show-toplevel`.strip
-      return nil if res =~ /^fatal.*/
-      res
+      res unless res =~ /^fatal.*/
     end
     
     def self.app_root(path=Dir.pwd)

@@ -58,7 +58,7 @@ module Mystic
     def drop_table(name)
       op = Mystic::SQL::Operation.new(
         :kind => :drop_table,
-        :table_name => name
+        :table_name => name.to_s
       )
       execute(op.to_sql)
     end
