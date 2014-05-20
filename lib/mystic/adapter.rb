@@ -4,99 +4,83 @@ require "mystic"
 require "connection_pool"
 require "densify"
 
-class Adapter
-	attr_accessor :pool_size, :pool_timeout
-	
-  def name
-    self.class.name.split('::').last.delete("Adapter").downcase
-  end
-  
-  def create_pool(&block)
-    @pool = ConnectionPool.new(
-      :size => pool_size || 5,
-      :timeout => pool_timeout || 5,
-      &block
-    )
-  end
-  
-  def connect(opts)
-    
-  end
-  
-  def disconnect
-    
-  end
-  
-  def exec(sql)
-    nil if @pool.nil?
-    sql = sql.densify
-    sql << ";" unless sql[-1] == ";"
-  end
-  
-  def parse_response(res)
-    
-  end
-  
-  def sql_kind(kind)
-    sql_kind = UNIVERSAL_TYPES[kind.to_sym]
-    sql_kind ||= kind.sqlize
-    sql_kind
-  end
-  
-  def drop_index_sql(*args)
-    ""
-  end
-  
-  def geospatial_sql_type(col)
-    ""
-  end
+# TODO: Store blocks in hash to avoid conflicts between adapters
 
-  #
-  # These methods are the same across MySQL and PostgreSQL
-  #
-
-  def foreign_key_sql(fkey)
-    sql = "REFERENCES #{fkey.tbl}(#{fkey.column})"
-    sql << "ON DELETE " + fkey.delete_action.sqlize if fkey.delete_action
-    sql << "ON UPDATE " + fkey.update_action.sqlize if fkey.update_action
-    sql*" "
-  end
-
-  def column_sql(col) 
-    sql = []
-    sql << col.name.to_s
-    sql << sql_kind(col.kind.to_sym)
-    sql << "(" + col.size + ")" if col.size && col.geospatial? == false
-    sql << self.geospatial_sql_type(col) if col.geospatial?
-    sql << "NOT NULL" if col.constraints[:not_null]
-    sql << "UNIQUE" if col.constraints[:unique]
-    sql << "PRIMARY KEY" if col.constraints[:primary_key]
-    sql << "REFERENCES " + col.constraints[:references] if col.constraints.member?(:references)
-		sql << "DEFAULT " + col.constraints[:default] if col.constraints.member?(:default)
-    sql*" "
-  end
+module Mystic
+  class Adapter
+    attr_accessor :pool_size, :pool_timeout
   
-  def index_sql(index)
-    sql = []
-    sql << "CREATE"
-    sql << "UNIQUE" if index.unique
-    sql << "INDEX"
-    sql << index.name unless index.name.nil?
-    sql << "ON"
-    sql << index.tblname
-    sql << "USING #{index.type}" if index.type
-    sql << "(#{index.columns.map { |h| h[:name].to_s + " " + h[:order].to_s } * ","})" if index.columns.is_a?(Hash)
-    sql << "WITH (#{index.with.sql_stringify("=")})" if index.with
-    sql << "TABLESPACE #{index.tablespace}" if index.tablespace
-    sql*" "
-  end
+    def self.adapter
+      name.split('::').last.delete("Adapter").downcase
+    end
   
-  def constraint_sql(constr)
-    case constraint
-    when CheckConstraint
-      "CONSTRAINT #{constr.name} CHECK(#{constr.conditions})"
-    when Constraint
-      constr.sqlize
+    def adapter
+      self.class.adapter
+    end
+  
+    #
+    # Adapter DSL
+    #
+  
+    # Return SQL for an SQL object
+    def self.sql(&block)
+      @@sql_block = block
+    end
+  
+    # Return native Ruby types from an SQL query
+    def self.execute(&block)
+      @@exec_block = block
+    end
+  
+    # Sanitize a string
+    def self.sanitize(&block)
+      @@sanitize_block = block
+    end
+  
+    # Create an instance of a connection gem
+    def self.connect(&block)
+      @@connect_block = block
+    end
+  
+    # Close an instance of a connection gem
+    def self.shutdown(&block)
+      @@shutdown_block = block
+    end
+  
+    #
+    # Adapter methods
+    #
+  
+    def connect(opts)
+      @pool = ConnectionPool.new(
+        :size => pool_size || 5,
+        :timeout => pool_timeout || 5,
+        @@connect_block.call(opts)
+      )
+    end
+  
+    def disconnect
+      @pool.shutdown(&@@shutdown_block)
+    end
+  
+    def execute(sql)
+      nil if @pool.nil?
+      sql = sql.densify
+      sql << ";" unless sql[-1] == ";"
+    
+      res = nil
+      @pool.with { |inst| res = @@exec_block.call(inst,sql) }
+      res
+    end
+  
+    def sanitize(str)
+      res = nil
+      @pool.with { |inst| res = @@sanitize_block.call(inst,sql) }
+      res
+    end
+  
+    def serialize_sql(sql_obj)
+      @@sql_block.call(sql_obj)
     end
   end
 end

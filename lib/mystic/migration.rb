@@ -56,47 +56,87 @@ module Mystic
     end
     
     def drop_table(name)
-      execute("DROP TABLE #{name}")
+      op = Mystic::SQL::Operation.new(
+        :kind => :drop_table,
+        :table_name => name
+      )
+      execute(op.to_sql)
     end
     
     def create_view(name, sql)
-      execute("CREATE VIEW #{name} AS #{sql}")
+      op = Mystic::SQL::Operation.new(
+        :kind => :create_view,
+        :view_name => name.to_s,
+        :view_sql => sql.to_s
+      )
+      execute(op.to_sql)
     end
     
     def drop_view(name)
-      execute("DROP VIEW #{name}")
+      op = Mystic::SQL::Operation.new(
+        :kind => :drop_view,
+        :view_name => name.to_s
+      )
+      execute(op.to_sql)
     end
     
     def add_index(tblname, name, opts={})
       index = Mystic::SQL::Index.new({
-        :name => name,
-        :tblname => tblname
+        :name => name.to_s,
+        :tblname => tblname.to_s
       }.merge(opts))
       execute(index.to_sql)
     end
     
     def drop_index(*args)
-      execute(Mystic.adapter.drop_index_sql(*args))
+      op = Mystic::SQL::Operation.new(
+        :kind => :drop_index,
+        :index_name => args[0].to_s,
+        :table_name => args[1].to_s
+      )
+      execute(op.to_sql)
     end
     
     def rename_column(table, oldname, newname)
-      execute("ALTER TABLE #{table.to_s} RENAME COLUMN #{oldname.to_s} TO #{newname.to_s}")
+      op = Mystic::SQL::Operation.new(
+        :kind => :rename_column,
+        :table_name => table.to_s,
+        :old_col_name => oldname.to_s,
+        :new_col_name => newname.to_s
+      )
+      execute(op.to_sql)
     end
     
     def rename_table(oldname, newname)
-      execute("ALTER TABLE #{oldname.to_s} RENAME TO #{newname.to_s}")
+      op = Mystic::SQL::Operation.new(
+        :kind => :rename_table,
+        :old_name => oldname.to_s,
+        :new_name => newname.to_s
+      )
+      execute(op.to_sql)
     end
     
     def drop_columns(table_name, *col_names)
-      execute("ALTER TABLE #{table_name.to_s} DROP COLUMN #{col_names*","}") unless col_names.empty?
+      op = Mystic::SQL::Operation.new(
+        :kind => :drop_columns,
+        :table_name => table_name.to_s,
+        :column_names => col_names.map(&:to_s)
+      )
+      execute(op.to_sql)
     end
     
     def add_column(table_name, col_name, kind, opts={})
       col = Mystic::SQL::Column.new({
-          :name => col_name,
-          :kind => kind
-        }.merge(opts))
-      execute("ALTER TABLE #{table_name.to_s} ADD COLUMN #{col.to_sql}")
+        :name => col_name,
+        :kind => kind
+      }.merge(opts))
+      
+      op = Mystic::SQL::Operation.new(
+        :kind => :add_column,
+        :table_name => table_name.to_s,
+        :column_names => col_names.map(&:to_s)
+      )
+      execute(op.to_sql)
     end
   end
 end

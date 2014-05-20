@@ -4,7 +4,15 @@ require "mystic"
 
 module Mystic
   module SQL
-    class Index
+    class SQLObject
+      def to_sql
+        Mystic.adapter.serialize_sql(self)
+      end
+      
+      alias_method :to_s, :to_sql
+    end
+    
+    class Index < SQLObject
       attr_accessor :name, :tblname, :opts, :type, :unique, :using, :concurrently, :with, :columns, :tablespace
       
       def initialize(opts={})
@@ -31,15 +39,10 @@ module Mystic
         end
       end
 
-      def to_sql
-        Mystic.adapter.index_sql(self)
-      end
-      
-      alias_method :to_s, :to_sql
       alias_method :push, :<<
     end
   
-    class Column
+    class Column < SQLObject
       attr_accessor :name, :kind, :size, :constraints
       
       def initialize(opts={})
@@ -52,12 +55,6 @@ module Mystic
       def geospatial?
         false
       end
-      
-      def to_sql
-        Mystic.adapter.column_sql(self)
-      end
-      
-      alias_method :to_s, :to_sql
     end
   
     class SpatialColumn < Column
@@ -73,8 +70,8 @@ module Mystic
         true
       end
     end
-  
-    class Table
+    
+    class Table < SQLObject
       attr_accessor :name, :columns, :indeces
       
       def initialize(name)
@@ -101,14 +98,20 @@ module Mystic
     
       def to_sql
         raise ArgumentError, "Table cannot have zero columns." if @columns.empty?
-        cols_sql = @columns.map(&:to_sql)*","
-        sql = "CREATE TABLE #{@name} (#{cols_sql});"
-        sql << @indeces.map(&:to_sql)*";" unless @indeces.empty?
-        sql
+        super
+      end
+
+      alias_method :push, :<<
+    end
+    
+    class Operation < SQLObject
+      def initialize(opts={})
+        @opts = opts
       end
       
-      alias_method :to_s, :to_sql
-      alias_method :push, :<<
+      def method_missing(meth, *args, &block)
+        instance_variable_get("@" + meth.to_s)
+      end
     end
   end
 end

@@ -22,7 +22,7 @@ module Mystic
 		
 		# get adapter name
 		adapter = db_conf.delete("adapter").to_s.downcase
-		adapter = "postgres" if adapter == "postgresql" # our adapter is called postgres not postgresql
+		adapter = "postgres" if adapter == "postgresql" || adapter == "postgis" # Mystic's adapter is 'postgres' and supports PostGIS
 		
 		# setup our adapter
 		require "mystic/adapters/" + adapter
