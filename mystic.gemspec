@@ -9,6 +9,7 @@ Gem::Specification.new do |s|
   s.license      = "MIT"
   s.files        = Dir.glob("{bin,lib}/**/*") + ["LICENSE"]
   s.require_path = "lib"
-  s.executables.push *Dir.glob("bin/**/*")
-  s.add_development_dependency 'densify', '~> 0'
+  s.executables  = Dir.glob("bin/**/*").map{ |path| path.split("/",2).last }
+  s.add_dependency 'densify', '~> 0.0.1'
+  s.add_dependency 'connection_pool', '~> 2.0.0'
 end
