@@ -31,7 +31,7 @@ module Mystic
 		@@adapter = Object.const_get(adapter_class).new
 		@@adapter.pool_size = db_conf.delete("pool").to_i
 		@@adapter.pool_timeout = db_conf.delete("timeout").to_i
-		@@adapter.connect(opts)
+		@@adapter.connect(db_conf)
 	end
 	
 	def self.disconnect
@@ -39,10 +39,12 @@ module Mystic
 	end
 
   def self.execute(sql)
-    @@adapter.exec(sql) unless @@adapter.nil?
+		return [] if @@adapter.nil?
+    @@adapter.exec(sql)
   end
   
   def self.sanitize(str)
-    @@adapter.sanitize(str) unless @@adapter.nil?
+		return str if @@adapter.nil?
+    @@adapter.sanitize(str)
   end
 end
