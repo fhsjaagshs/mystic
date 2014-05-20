@@ -57,7 +57,7 @@ module Mystic
 			return_json = (opts[:return_json] || opts["return_json"]) && ["postgres","postgis"].include?(Mystic.adapter.name)
 			return_rows = true if return_json
 			
-      sql = "INSERT INTO " + table_name + "(" + params.keys*',' + ") VALUES (" + params.values.map { |value| "'" + value.to_s.sanitize + "'" }*',' + ")"
+      sql = "INSERT INTO " + table_napme + "(" + params.keys*',' + ") VALUES (" + params.values.map { |value| "'" + value.to_s.sanitize + "'" }*',' + ")"
 			sql << " RETURNING " + visible_cols*',' if return_rows
 			
 			sql = "WITH res AS (#{sql}) SELECT row_to_json(res) as #{JSON_COL} FROM res" if return_json
@@ -80,26 +80,28 @@ module Mystic
 			sql
     end
     
-    def self.select(params={},opts={})
+    def self.select(params={}, opts={})
       sql = self.select_sql(params,opts)
       Mystic.execute(sql)
     end
     
-    def self.fetch(params={},opts={})
-      self.select(params,(opts || {}).merge({:count => 1}))
+    def self.fetch(params={}, opts={})
+      res = self.select(params,(opts || {}).merge({:count => 1}))
+			return res if res.is_a?(String)
+			res.first
     end
     
-    def self.create(params={},opts={})
+    def self.create(params={}, opts={})
       sql = self.insert_sql(params,opts)
       Mystic.execute(sql)
     end
     
-    def self.update(where={},set={},opts={})
+    def self.update(where={}, set={}, opts={})
       sql = self.update_sql(where,set,opts.merge({ :return_rows => true }))
       Mystic.execute(sql)
     end
     
-    def self.delete(params={},opts{})
+    def self.delete(params={}, opts{})
       sql = self.delete_sql(params,opts)
     end
     
