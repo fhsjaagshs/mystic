@@ -39,12 +39,10 @@ module Mystic
 	end
 
   def self.execute(sql)
-    adptr = self.adapter
-    adptr.nil? ? nil : adptr.exec(sql)
+    @@adapter.exec(sql) unless @@adapter.nil?
   end
   
-  def self.sanitize(string)
-    adptr = self.adapter
-    adptr.nil? ? nil : adptr.sanitize(string)
+  def self.sanitize(str)
+    @@adapter.sanitize(str) unless @@adapter.nil?
   end
 end

@@ -23,7 +23,7 @@ module Mystic
   
   class Array
     def merge_keys(keys)
-      raise ArgumentError, "Argument array must have the same number of elements as the receiver of this method." if keys.count != self.count
+      raise ArgumentError, "Argument array must have the same number of elements as the receiver/callee of this method." if keys.count != self.count
       Hash[each_with_index.map{ |obj,i| [keys[i],obj] }]
     end
   end
@@ -34,14 +34,14 @@ module Mystic
     end
     
     def sqlize
-      Hash[reject{ |key, value| value.empty? }.map{ |pair| "#{pair.first.sanitize}='#{pair.last.sanitize}'" }]
+      Hash[reject{ |k,v| v.empty? }.map{ |k,v| "#{k.sanitize}='#{v.sanitize}'" }]
     end
   end
 
   class File  
     def self.git_root
       res = `git rev-parse --show-toplevel`.strip
-      return nil if res[0..4] == "fatal"
+      return nil if res =~ /^fatal.*/
       res
     end
     

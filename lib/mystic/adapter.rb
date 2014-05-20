@@ -12,7 +12,11 @@ class Adapter
   end
   
   def create_pool(&block)
-    @pool = ConnectionPool.new(:size => pool_size || 5, :timeout => pool_timeout || 5, &block)
+    @pool = ConnectionPool.new(
+      :size => pool_size || 5,
+      :timeout => pool_timeout || 5,
+      &block
+    )
   end
   
   def connect(opts)
@@ -26,6 +30,7 @@ class Adapter
   def exec(sql)
     nil if @pool.nil?
     sql = sql.densify
+    sql << ";" unless sql[-1] == ";"
   end
   
   def parse_response(res)

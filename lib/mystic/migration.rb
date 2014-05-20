@@ -52,19 +52,19 @@ module Mystic
       raise ArgumentError, "No block provided, blocks are required to create a table." unless block_given?
       table = Mystic::SQL::Table.new(name)
       yield(table)
-      Mystic.execute(table.to_sql)
+      execute(table.to_sql)
     end
     
     def drop_table(name)
-      Mystic.execute("DROP TABLE #{name}")
+      execute("DROP TABLE #{name}")
     end
     
     def create_view(name, sql)
-      Mystic.execute("CREATE VIEW #{name} AS #{sql}")
+      execute("CREATE VIEW #{name} AS #{sql}")
     end
     
     def drop_view(name)
-      Mystic.execute("DROP VIEW #{name}")
+      execute("DROP VIEW #{name}")
     end
     
     def add_index(tblname, name, opts={})
@@ -72,23 +72,23 @@ module Mystic
         :name => name,
         :tblname => tblname
       }.merge(opts))
-      Mystic.execute(index.to_sql)
+      execute(index.to_sql)
     end
     
     def drop_index(*args)
-      Mystic.execute(Mystic.adapter.drop_index_sql(*args))
+      execute(Mystic.adapter.drop_index_sql(*args))
     end
     
     def rename_column(table, oldname, newname)
-      Mystic.execute("ALTER TABLE #{table.to_s} RENAME COLUMN #{oldname.to_s} TO #{newname.to_s}")
+      execute("ALTER TABLE #{table.to_s} RENAME COLUMN #{oldname.to_s} TO #{newname.to_s}")
     end
     
     def rename_table(oldname, newname)
-      Mystic.execute("ALTER TABLE #{oldname.to_s} RENAME TO #{newname.to_s}")
+      execute("ALTER TABLE #{oldname.to_s} RENAME TO #{newname.to_s}")
     end
     
     def drop_columns(table_name, *col_names)
-      Mystic.execute("ALTER TABLE #{table_name.to_s} DROP COLUMN #{col_names*","}") unless col_names.empty?
+      execute("ALTER TABLE #{table_name.to_s} DROP COLUMN #{col_names*","}") unless col_names.empty?
     end
     
     def add_column(table_name, col_name, kind, opts={})
@@ -96,7 +96,7 @@ module Mystic
           :name => col_name,
           :kind => kind
         }.merge(opts))
-      Mystic.execute("ALTER TABLE #{table_name.to_s} ADD COLUMN #{col.to_sql}")
+      execute("ALTER TABLE #{table_name.to_s} ADD COLUMN #{col.to_sql}")
     end
   end
 end
