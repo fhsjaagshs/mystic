@@ -11,16 +11,6 @@ module Mystic
           :kind => kind.to_sym
         }.merge(opts))
       end
-      
-      def varchar(name, opts={})
-        raise ArgumentError, "VARCHARs require a size." if opts[:size].nil?
-        column(name, :varchar, opts)
-      end
-      
-      def char(name, opts={})
-        raise ArgumentError, "CHARs require a size." if opts[:size].nil?
-        column(name, :char, opts)
-      end
 
       def geometry(col_name, kind, srid, opts={})
         self << SpatialColumn.new({

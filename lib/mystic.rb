@@ -14,6 +14,10 @@ module Mystic
 		@@adapter
 	end
   
+  # Mystic.connect
+  #   Connects to a database. It's recommended you use it like ActiveRecord::Base.establish_connection
+  # Arguments:
+  #   env - The env from database.yml you wish to use
 	def self.connect(env="")
 		# Load database.yml
 		env = env.to_s
@@ -37,17 +41,29 @@ module Mystic
 		@@adapter.connect(db_conf)
 	end
 	
+  # Mystic.disconnect
+  #   Disconnects from the connected database. Use it like ActiveRecord::Base.connection.disconnect!
 	def self.disconnect
 		@@adapter.disconnect
 		@@adapter = nil
 	end
 
-  def self.execute(sql)
+  # Mystic.execute
+  #   Execute some sql. It will be densified (the densify gem) and sent to the DB
+  # Arguments:
+  #   sql - The SQL to execute
+  # Returns: Native Ruby objects representing the response from the DB (Usually an Array of Hashes)
+  def self.execute(sql="")
 		return [] if @@adapter.nil?
     @@adapter.exec(sql)
   end
   
-  def self.sanitize(str)
+  # Mystic.sanitize
+  #   Escape a string so that it can be used safely as input. Mystic does not support statement preparation, so this is a must.
+  # Arguments:
+  #   str - The string to sanitize
+  # Returns: the sanitized string
+  def self.sanitize(str="")
 		return str if @@adapter.nil?
     @@adapter.sanitize(str)
   end
@@ -56,6 +72,7 @@ module Mystic
 	# Command line
 	#
 	
+  # Runs every yet-to-be-ran migration
 	def self.migrate
 		execute("CREATE TABLE IF NOT EXISTS mystic_migrations (mig_number integer, filename TEXT)")
 	  migrated_filenames = Mystic.execute("SELECT filename FROM mystic_migrations").map{ |r| r["filename"] }
@@ -74,6 +91,7 @@ module Mystic
 			}
 	end
 	
+  # Rolls back a single migration
 	def self.rollback
 		execute("CREATE TABLE IF NOT EXISTS mystic_migrations (mig_number integer, filename TEXT)")
 		fname = Mystic.execute("SELECT filename FROM mystic_migrations ORDER BY mig_number DESC LIMIT 1").first.to_hash.fetch("filename")
@@ -87,6 +105,7 @@ module Mystic
 	  Mystic.execute("DELETE FROM mystic_migrations WHERE filename='#{fname}' and mig_number=#{mig_num}")
 	end
 	
+  # Creates a blank migration in mystic/migrations
 	def self.create_migration(name)
     mig_name = name.strip.capitalize
     
@@ -100,8 +119,9 @@ module Mystic
 		File.open(File.join(mig_path,mig_fname), 'w') { |f| f.write(template(mig_name)) }
 	end
 	
+  # Retuns a blank migration's code in a String
 	def self.template(name=nil)
-		raise ArgumentError, "Migrations must have a name" if name.nil?
+		raise ArgumentError, "Migrations must have a name." if name.nil?
 		<<-mig_template
 		#!/usr/bin/env ruby
 

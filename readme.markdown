@@ -15,7 +15,7 @@ Simple database connection that supplies connection pooling, migrations, raw SQL
 Migrations
 -
 
-Migrations are subclasses of `Mystic::Migration`. They are similar to ActiveRecord, except they support any database data type using `method_missing`. Indeces are also supported using this DSL. *For example:*
+Migrations are `Mystic::Migration` subclasses. Unlike ActiveRecord, you can dynamically specify any datatype and you're in complete control of a columns properties. `Mystic::Migration` also supports indeces. Here's an example of a migration:
 
     # The DB being used is Postgres
     create_table :table do |t|
@@ -27,13 +27,15 @@ Migrations are subclasses of `Mystic::Migration`. They are similar to ActiveReco
       t.index :guid_char
     end
     
-You can also use the following methods in your migrations:
+You can use the following methods in your migrations:
 
 > `execute` => String (your SQL code)<br />
 > Executes some raw SQL.
 
 > `create_table` => Proc<br />
 > Creates a table, see above.
+
+###### TODO: Finish this part
 
 You can use the following constraints/options with your columns
 
@@ -59,8 +61,7 @@ Notes
 -
 
 - Returning rows for a `DELETE` query is super expensive (in `psql`, `DELETE` queries take **10x** longer to execute with the `RETURNING` clause)
-
-
+- Returning JSON from the DB is only supported by Postgres.
 
 Constraints:
 -
@@ -69,6 +70,8 @@ TODO: Write this section
 
 Adapters:
 -
+
+There is a simple DSL for writing adapters.
 
 TODO: Write this section
 
