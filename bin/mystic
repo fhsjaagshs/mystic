@@ -2,87 +2,16 @@
 
 require "mystic"
 
-FILENAME_REGEX = /^\d+\_[A-Za-z]+\.rb$/
-MIG_TEMPLATE = <<-mig_template
-#!/usr/bin/env ruby
-
-require "mystic"
-
-class <MIGRATION_CLASS_NAME> < Mystic::Migration
-  def up
-    
-  end
-  
-  def down
-    
-  end
-end
-mig_template
-
-# 1_MigrationClassName.rb
-
-module Mystic
-  def self.mig_path
-    File.app_root + "/mystic/migrations/"
-  end
-end
-
 include Mystic
 
-case ARGV[0]
-when "setup"
-
-  Mystic.execute("CREATE TABLE IF NOT EXISTS mystic_migrations (mig_number integer, filename TEXT)")
-  
-when "create"
-  
-  case ARGV[1]
-  when "migration"
-    mig_name = ARGV[2].strip.capitalize
-    
-    Kernel.abort if mig_name.empty?
-    
-    mp = Mystic.mig_path
-    
-    mig_num = Dir.entries(mp).map { |fname| fname.split("_").first.to_i }.max+1
-
-    file = File.open(mp + mig_num.to_s + "_" + mig_name + ".rb", "w+")
-    file << MIG_TEMPLATE.sub("<MIGRATION_CLASS_NAME>",mig_name)
-    file.close
+case ARGV[0].to_sym
+when :create
+  case ARGV[1].to_sym
+  when :migration
+		create_migration
   end
-  
-when "migrate"
-  
-  migrated_filenames = []
-  Mystic.execute("SELECT filename FROM mystic_migrations").each { |tuple| migrated_filenames << tuple["filename"] }
-  
-  mp = Mystic.mig_path
-  filenames = Dir.entries(mp).select(&FILENAME_REGEX)-migrated_filenames
-  filenames.sort!{ |a,b| a.split("_").first.to_i <=> b.split("_").first.to_i }
-  
-  filenames.each do |filename|
-    require mp + filename
-    
-    mig_number, mig_name = *filename.split("_")
-    mig_name.delete!(".rb")
-    
-    Object.const_get(mig_name).new.up
-    Mystic.execute("INSERT INTO mystic_migrations (mig_number, filename) VALUES(#{mig_number},'#{filename}')")
-  end
-  
-when "rollback"
-  
-  migrated_filenames = []
-  Mystic.execute("SELECT filename FROM mystic_migrations ORDER BY mig_number ASC").each { |tuple| migrated_filenames << tuple["filename"] }
-  
-  unless migrated_filenames.empty?
-    filename = migrated_filenames.last
-    
-    require Mystic.mig_path + filename
-    migration_name = filename.split("_").last.delete(".rb")
-  
-    Object.const_get(migration_name).new.down
-    Mystic.execute("DELETE FROM mystic_migrations WHERE filename='#{filename}'")
-  end
-  
+when :migrate
+	migrate
+when :rollback
+	rollback
 end

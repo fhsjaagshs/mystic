@@ -1,5 +1,9 @@
 #!/usr/bin/env ruby
 
+require "mystic"
+
 class Something
-	# this is your main app file
+	def self.do
+		Mystic.
+	end
 end
