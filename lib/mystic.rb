@@ -87,8 +87,8 @@ module Mystic
 	  Mystic.execute("DELETE FROM mystic_migrations WHERE filename='#{fname}' and mig_number=#{mig_num}")
 	end
 	
-	def self.create_migration
-    mig_name = ARGV[2].strip.capitalize
+	def self.create_migration(name)
+    mig_name = name.strip.capitalize
     
     Kernel.abort if mig_name.empty?
     

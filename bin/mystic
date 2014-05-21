@@ -2,16 +2,26 @@
 
 require "mystic"
 
+# Examples:
+# mystic create migration InitialMigration
+# mystic development migrate
+# mystic production rollback
+
 include Mystic
 
 case ARGV[0].to_sym
 when :create
   case ARGV[1].to_sym
   when :migration
-		create_migration
+		create_migration(ARGV[2])
   end
-when :migrate
-	migrate
-when :rollback
-	rollback
+else
+  connect(ARGV[0])
+  case ARGV[1].to_sym
+  when :migrate
+  	migrate
+  when :rollback
+  	rollback
+  end
+  disconnect
 end
