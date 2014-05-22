@@ -6,6 +6,13 @@ module Mystic
   module SQL
     class SQLObject
       def to_sql
+        obj = self.dup
+        obj.instance_variables.each do |var|
+          instance_variable_set("@#{var}", eval(var, binding))
+        end
+        variables.each do |var|
+              
+            end
         Mystic.adapter.serialize_sql(self)
       end
       
@@ -107,6 +114,10 @@ module Mystic
     class Operation < SQLObject
       def initialize(opts={})
         @opts = opts
+      end
+      
+      def execute
+        Mystic.execute(self.to_sql)
       end
       
       def method_missing(meth, *args, &block)

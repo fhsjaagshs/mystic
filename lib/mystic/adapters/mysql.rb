@@ -48,7 +48,7 @@ module Mystic
 	      sql << obj.name.to_s
 	      sql << obj.kind.to_s.downcase
 	      sql << "(#{obj.size})" if obj.size
-	      sql << "NOT NULL" if obj.constraints[:not_null]
+	      sql << obj.constraints[:null] ? "NULL" : "NOT NULL" if obj.constraints.member?(:null)
 	      sql << "UNIQUE" if obj.constraints[:unique]
 	      sql << "PRIMARY KEY" if obj.constraints[:primary_key]
 	      sql << "REFERENCES " + obj.constraints[:references] if obj.constraints.member?(:references)
