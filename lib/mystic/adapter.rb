@@ -27,8 +27,8 @@ module Mystic
     end
     
     # Fetch a block for the current adapter
-    def self.block_for(key)
-      @@blocks[adapter][key]
+    def block_for(key)
+      @@blocks[self.class.adapter][key]
     end
     
     #
@@ -71,8 +71,7 @@ module Mystic
       @pool = ConnectionPool.new(
         :size => pool_size || 5,
         :timeout => pool_timeout || 5,
-        block_for(:connect).call(opts)
-      )
+      ) { block_for(:connect).call(opts) }
     end
   
     def disconnect

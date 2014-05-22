@@ -34,7 +34,7 @@ module Mystic
   end
   
   class Migration
-    def add(obj)
+    def exec(obj)
       Mystic.execute(obj.to_sql)
     end
     
@@ -42,7 +42,7 @@ module Mystic
       raise ArgumentError, "No block provided, blocks are required to create a table." unless block_given?
       table = Mystic::SQL::Table.new(name)
       yield(table)
-      add(table)
+      exec(table)
     end
     
     def drop_table(name)
@@ -50,7 +50,7 @@ module Mystic
         :kind => :drop_table,
         :table_name => name.to_s
       )
-      add(op)
+      exec(op)
     end
     
     def create_view(name, sql)
@@ -59,7 +59,7 @@ module Mystic
         :view_name => name.to_s,
         :view_sql => sql.to_s
       )
-      add(op)
+      exec(op)
     end
     
     def drop_view(name)
@@ -67,7 +67,7 @@ module Mystic
         :kind => :drop_view,
         :view_name => name.to_s
       )
-      add(op)
+      exec(op)
     end
     
     def add_index(tblname, name, opts={})
@@ -75,7 +75,7 @@ module Mystic
         :name => name.to_s,
         :tblname => tblname.to_s
       }.merge(opts))
-      add(index)
+      exec(index)
     end
     
     def drop_index(*args)
@@ -84,7 +84,7 @@ module Mystic
         :index_name => args[0].to_s,
         :table_name => args[1].to_s
       )
-      add(op)
+      exec(op)
     end
     
     def rename_column(table, oldname, newname)
@@ -94,7 +94,7 @@ module Mystic
         :old_col_name => oldname.to_s,
         :new_col_name => newname.to_s
       )
-      add(op)
+      exec(op)
     end
     
     def rename_table(oldname, newname)
@@ -103,7 +103,7 @@ module Mystic
         :old_name => oldname.to_s,
         :new_name => newname.to_s
       )
-      add(op)
+      exec(op)
     end
     
     def drop_columns(table_name, *col_names)
@@ -112,7 +112,7 @@ module Mystic
         :table_name => table_name.to_s,
         :column_names => col_names.map(&:to_s)
       )
-      add(op)
+      exec(op)
     end
     
     def add_column(table_name, col_name, kind, opts={})
@@ -124,7 +124,7 @@ module Mystic
           :kind => kind
         }.merge(opts))
       )
-      add(op)
+      exec(op)
     end
   end
 end
