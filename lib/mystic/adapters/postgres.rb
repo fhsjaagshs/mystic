@@ -13,9 +13,7 @@ module Mystic
 			res = inst.exec(sql)
 			ret = res[0][Mystic::Model::JSON_COL] if res.num_tuples == 1
 			return ret unless ret.nil?
-			ret = []
-			res.each_row { |row_array| ret << row_array.merge_keys(res.fields) }
-			ret
+			res.nfields.times.map { |i| res[i] }
 		end
   
 		sanitize do |inst, str|
