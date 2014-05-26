@@ -7,6 +7,11 @@ require "mystic/model"
 
 # Mystic adapter for Postgres, includes PostGIS
 
+def parse_array(obj)
+	return obj[1..-2].split(',').map(&method(:parse_array)) if obj.is_a?(String) && obj[0] == "{" && obj[-1] == "}"
+	obj
+end
+
 module Mystic
 	class PostgresAdapter < Mystic::Adapter
 		execute do |inst, sql|
