@@ -1,9 +1,10 @@
 #!/usr/bin/env ruby
 
-require "mystic/migration"
+require "yaml"
 require "mystic/extensions"
 require "mystic/sql"
 require "mystic/adapter"
+require "mystic/migration"
 require "mystic/model"
 
 module Mystic
@@ -22,9 +23,12 @@ module Mystic
 		# Load database.yml
 		env = env.to_s
 		path = File.join(File.app_root, "/config/database.yml")
-		db_conf = YAML.load_file(path)
+		db_yml = YAML.load_file(path)
+		
+		raise MysticError, "Invalid database.yml config." unless db_yml.member?(env)
+		
+		db_conf = db_yml[env]
 		db_conf["dbname"] = db_conf.delete("database")
-		raise MysticError, "Invalid database.yml config." if db_conf.member?(env)
 		
 		# get adapter name
 		adapter = db_conf.delete("adapter").to_s.downcase
@@ -39,6 +43,8 @@ module Mystic
 		@@adapter.pool_size = db_conf.delete("pool").to_i
 		@@adapter.pool_timeout = db_conf.delete("timeout").to_i
 		@@adapter.connect(db_conf)
+		
+		nil
 	end
 	
   # Mystic.disconnect
@@ -55,7 +61,7 @@ module Mystic
   # Returns: Native Ruby objects representing the response from the DB (Usually an Array of Hashes)
   def self.execute(sql="")
 		return [] if @@adapter.nil?
-    @@adapter.exec(sql)
+    @@adapter.execute(sql)
   end
   
   # Mystic.sanitize

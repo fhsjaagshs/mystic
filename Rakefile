@@ -27,6 +27,15 @@ task :push do
 	`gem push #{gem_name}`
 end
 
+task :console do
+	exec "irb -rubygems -I ./lib -r #{app_name}.rb"
+end
+
+# Runs console for example
+task :econs do
+	exec "cd example; irb -rubygems -I ../lib -r #{app_name}.rb"
+end
+
 task :default do
 	Rake::Task["clean"].invoke
 	Rake::Task["build"].invoke

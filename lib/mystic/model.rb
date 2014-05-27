@@ -101,7 +101,7 @@ module Mystic
       Mystic.execute(sql)
     end
     
-    def self.delete(params={}, opts{})
+    def self.delete(params={}, opts={})
       sql = self.delete_sql(params,opts)
     end
     

@@ -10,9 +10,7 @@ module Mystic
   class Adapter
     attr_accessor :pool_size, :pool_timeout
   
-    def initialize
-      @@blocks = {}
-    end
+    @@blocks = {}
   
     # Get the adapter name (examples: postgres, mysql)
     def self.adapter
@@ -23,7 +21,8 @@ module Mystic
     #   This avoids cases where a subclass' class var
     #   changes that class var on its superclass
     def self.map_block(key, block)
-      @@blocks[adapter][key] = block
+			@@blocks[self.adapter] ||= {}
+      @@blocks[self.adapter][key] = block
     end
     
     # Fetch a block for the current adapter
