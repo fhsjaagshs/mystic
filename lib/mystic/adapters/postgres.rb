@@ -38,8 +38,12 @@ module Mystic
       
 			case obj
 			when SQL::Table
-				sql << "CREATE TABLE #{obj.name} (#{obj.columns.map(&:to_sql)*","});"
+        unless obj.columns.empty?
+          sql << "CREATE TABLE #{obj.name} (#{obj.columns.map(&:to_sql)*","});" if obj.is_create == true
+          sql << "ALTER TABLE #{obj.name} #{obj.columns.map{|c| "ADD COLUMN #{c.to_sql}" }*', '}" if obj.is_create == false
+        end
 				sql << obj.indeces.map(&:to_sql)*";" unless obj.indeces.empty?
+        sql << obj.operations.map(&:to_sql)*";" unless obj.operations.empty?
 			when SQL::Index
 				sql << "CREATE"
 				sql << "UNIQUE" if obj.unique
@@ -81,9 +85,11 @@ module Mystic
 					sql << "ALTER TABLE #{obj.old_name} RENAME TO #{obj.new_name}"
 				when :drop_columns
 					sql << "ALTER TABLE #{obj.table_name} DROP COLUMN #{obj.column_names*","}"
-				when :add_column
-					sql << "ALTER TABLE #{obj.table_name} ADD COLUMN #{obj.column.to_sql}"
-				end
+        when :create_extension
+          sql << "CREATE EXTENSION \"#{obj.name}\""
+        when :drop_extension
+          sql << "DROP EXTENSION \"#{obj.name}\""
+        end
 			end
       
 			sql*" "

@@ -79,13 +79,16 @@ module Mystic
     end
     
     class Table < SQLObject
-      attr_accessor :name, :columns, :indeces
+      attr_accessor :name, :is_create
+      attr_accessor :columns, :indeces, :operations
       
-      def initialize(name)
+      def initialize(name,is_create=true)
         @name = name.to_s
-        raise ArgumentError, "Argument 'name' is invalid." if @name.length == 0
+        raise ArgumentError, "Argument 'name' is invalid." if @name.nil? || @name.empty?
         @columns = []
         @indeces = []
+        @operations = []
+        @is_create = is_create
       end
     
       def <<(obj)
@@ -94,13 +97,11 @@ module Mystic
           @columns << obj;
         when Index
           @indeces << obj;
+        when Operation
+          @operations << obj;
         else
           raise ArgumentError, "Argument is not a Mystic::SQL::Column, Mystic::SQL::Constraint, or Mystic::SQL::Index."
         end
-      end
-      
-      def [](idx)
-        @columns[idx]
       end
     
       def to_sql

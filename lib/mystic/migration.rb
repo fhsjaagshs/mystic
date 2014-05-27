@@ -5,6 +5,44 @@ require "mystic"
 module Mystic
   module SQL
     class Table
+      def drop_index(idx_name)
+        self << Mystic::SQL::Operation.new(
+          :kind => :drop_index,
+          :index_name => idx_name.to_s,
+          :table_name => self.name.to_s
+        )
+      end
+    
+      def rename_column(oldname, newname)
+        self << Mystic::SQL::Operation.new(
+          :kind => :rename_column,
+          :table_name => self.name.to_s,
+          :old_col_name => oldname.to_s,
+          :new_col_name => newname.to_s
+        )
+      end
+    
+      def rename(newname)
+        self.name = newname # you need to change the name of the table after this
+        self << Mystic::SQL::Operation.new(
+          :kind => :rename_table,
+          :old_name => self.name.to_s,
+          :new_name => newname.to_s
+        )
+      end
+    
+      def drop_columns(*col_names)
+        self << Mystic::SQL::Operation.new(
+          :kind => :drop_columns,
+          :table_name => self.name.to_s,
+          :column_names => col_names.map(&:to_s)
+        )
+      end
+      
+      #
+      ## Column DSL
+      #
+      
       def column(col_name, kind, opts={})
         self << Column.new({
           :name => col_name,
@@ -34,15 +72,23 @@ module Mystic
   end
   
   class Migration
-    def exec(obj)
-      Mystic.execute(obj.to_sql)
+    def execute(obj)
+      obj = obj.to_sql if obj.is_a?(SQLObject)
+      Mystic.execute(obj)
     end
-    
+
     def create_table(name)
       raise ArgumentError, "No block provided, blocks are required to create a table." unless block_given?
-      table = Mystic::SQL::Table.new(name)
+      table = Mystic::SQL::Table.new(name, true)
       yield(table)
-      exec(table)
+      execute(table)
+    end
+    
+    def alter_table(name)
+      raise ArgumentError, "No block provided, blocks are required to create a table." unless block_given?
+      table = Mystic::SQL::Table.new(name, false)
+      yield(table)
+      execute(table)
     end
     
     def drop_table(name)
@@ -50,7 +96,23 @@ module Mystic
         :kind => :drop_table,
         :table_name => name.to_s
       )
-      exec(op)
+      execute(op)
+    end
+    
+    def create_ext(extname)
+      op = Mystic::SQL::Operation.new(
+        :kind => :create_extension,
+        :name => extname.to_s
+      )
+      execute(op)
+    end
+    
+    def drop_ext(extname)
+      op = Mystic::SQL::Operation.new(
+        :kind => :drop_extension,
+        :name => extname.to_s
+      )
+      execute(op)
     end
     
     def create_view(name, sql)
@@ -59,7 +121,7 @@ module Mystic
         :view_name => name.to_s,
         :view_sql => sql.to_s
       )
-      exec(op)
+      execute(op)
     end
     
     def drop_view(name)
@@ -67,7 +129,7 @@ module Mystic
         :kind => :drop_view,
         :view_name => name.to_s
       )
-      exec(op)
+      execute(op)
     end
     
     def add_index(tblname, name, opts={})
@@ -75,7 +137,7 @@ module Mystic
         :name => name.to_s,
         :tblname => tblname.to_s
       }.merge(opts))
-      exec(index)
+      execute(index)
     end
     
     def drop_index(*args)
@@ -84,7 +146,7 @@ module Mystic
         :index_name => args[0].to_s,
         :table_name => args[1].to_s
       )
-      exec(op)
+      execute(op)
     end
     
     def rename_column(table, oldname, newname)
@@ -94,7 +156,7 @@ module Mystic
         :old_col_name => oldname.to_s,
         :new_col_name => newname.to_s
       )
-      exec(op)
+      execute(op)
     end
     
     def rename_table(oldname, newname)
@@ -103,7 +165,7 @@ module Mystic
         :old_name => oldname.to_s,
         :new_name => newname.to_s
       )
-      exec(op)
+      execute(op)
     end
     
     def drop_columns(table_name, *col_names)
@@ -112,7 +174,7 @@ module Mystic
         :table_name => table_name.to_s,
         :column_names => col_names.map(&:to_s)
       )
-      exec(op)
+      execute(op)
     end
     
     def add_column(table_name, col_name, kind, opts={})
@@ -124,7 +186,7 @@ module Mystic
           :kind => kind
         }.merge(opts))
       )
-      exec(op)
+      execute(op)
     end
   end
 end
