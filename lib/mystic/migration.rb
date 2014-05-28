@@ -23,11 +23,11 @@ module Mystic
       end
     
       def rename(newname)
-        self.name = newname # you need to change the name of the table after this
         self << Mystic::SQL::Operation.new(
           :kind => :rename_table,
           :old_name => self.name.to_s,
-          :new_name => newname.to_s
+          :new_name => newname.to_s,
+					:callback => lambda { self.name = newname }
         )
       end
     
@@ -47,7 +47,7 @@ module Mystic
         self << Column.new({
           :name => col_name,
           :kind => kind.to_sym
-        }.merge(opts))
+        }.merge(opts || {}))
       end
 
       def geometry(col_name, kind, srid, opts={})
@@ -55,13 +55,13 @@ module Mystic
           :name => col_name,
           :geom_kind => kind,
           :geom_srid => srid
-        }.merge(opts)) unless opts.nil?
+        }.merge(opts || {}))
       end
       
       def index(*cols)
         opts = cols.delete_at(-1) if cols.last.is_a?(Hash)
         opts ||= {}
-        opts[:columns] = cols.concat(opts.delete(:columns) || [])
+        opts[:columns] = cols
         self << Index.new({ :tblname => @name }.merge(opts))
       end
       
@@ -73,7 +73,7 @@ module Mystic
   
   class Migration
     def execute(obj)
-      obj = obj.to_sql if obj.is_a?(SQLObject)
+      obj = obj.to_sql if obj.is_a?(Mystic::SQL::SQLObject)
       Mystic.execute(obj)
     end
 
@@ -128,63 +128,6 @@ module Mystic
       op = Mystic::SQL::Operation.new(
         :kind => :drop_view,
         :view_name => name.to_s
-      )
-      execute(op)
-    end
-    
-    def add_index(tblname, name, opts={})
-      index = Mystic::SQL::Index.new({
-        :name => name.to_s,
-        :tblname => tblname.to_s
-      }.merge(opts))
-      execute(index)
-    end
-    
-    def drop_index(*args)
-      op = Mystic::SQL::Operation.new(
-        :kind => :drop_index,
-        :index_name => args[0].to_s,
-        :table_name => args[1].to_s
-      )
-      execute(op)
-    end
-    
-    def rename_column(table, oldname, newname)
-      op = Mystic::SQL::Operation.new(
-        :kind => :rename_column,
-        :table_name => table.to_s,
-        :old_col_name => oldname.to_s,
-        :new_col_name => newname.to_s
-      )
-      execute(op)
-    end
-    
-    def rename_table(oldname, newname)
-      op = Mystic::SQL::Operation.new(
-        :kind => :rename_table,
-        :old_name => oldname.to_s,
-        :new_name => newname.to_s
-      )
-      execute(op)
-    end
-    
-    def drop_columns(table_name, *col_names)
-      op = Mystic::SQL::Operation.new(
-        :kind => :drop_columns,
-        :table_name => table_name.to_s,
-        :column_names => col_names.map(&:to_s)
-      )
-      execute(op)
-    end
-    
-    def add_column(table_name, col_name, kind, opts={})
-      op = Mystic::SQL::Operation.new(
-        :kind => :add_column,
-        :table_name => table_name.to_s,
-        :column => Mystic::SQL::Column.new({
-          :name => col_name,
-          :kind => kind
-        }.merge(opts))
       )
       execute(op)
     end

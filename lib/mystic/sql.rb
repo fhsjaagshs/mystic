@@ -6,13 +6,6 @@ module Mystic
   module SQL
     class SQLObject
       def to_sql
-        obj = self.dup
-        obj.instance_variables.each do |var|
-          instance_variable_set("@#{var}", eval(var, binding))
-        end
-        variables.each do |var|
-              
-            end
         Mystic.adapter.serialize_sql(self)
       end
       
@@ -79,7 +72,7 @@ module Mystic
     end
     
     class Table < SQLObject
-      attr_accessor :name, :is_create
+      attr_accessor :name
       attr_accessor :columns, :indeces, :operations
       
       def initialize(name,is_create=true)
@@ -90,17 +83,21 @@ module Mystic
         @operations = []
         @is_create = is_create
       end
+			
+			def create?
+				@is_create
+			end
     
       def <<(obj)
         case obj
-        when Column, Constraint
+        when Column
           @columns << obj;
         when Index
           @indeces << obj;
         when Operation
           @operations << obj;
         else
-          raise ArgumentError, "Argument is not a Mystic::SQL::Column, Mystic::SQL::Constraint, or Mystic::SQL::Index."
+          raise ArgumentError, "Argument is not a Mystic::SQL::Column, Mystic::SQL::Operation, or Mystic::SQL::Index."
         end
       end
     
@@ -115,6 +112,7 @@ module Mystic
     class Operation < SQLObject
       def initialize(opts={})
         @opts = opts
+				@callback = opts[:callback]
       end
       
       def execute
@@ -122,7 +120,7 @@ module Mystic
       end
       
       def method_missing(meth, *args, &block)
-				@opts[meth.to_s.to_sym]
+				@opts[meth.to_s.to_sym] rescue nil
       end
     end
   end

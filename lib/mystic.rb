@@ -8,7 +8,7 @@ require "mystic/migration"
 require "mystic/model"
 
 module Mystic
-	MIGNAME_REGEX = /(?<num>\d+)_(?<name>[a-z]+)\.rb$/i # matches migration files (ex '1_MigrationClassName.rb')
+	MIG_REGEX = /(?<num>\d+)_(?<name>[a-z]+)\.rb$/i # matches migration files (ex '1_MigrationClassName.rb')
 	MysticError = Class.new(StandardError)
 	
 	def self.adapter
@@ -81,12 +81,12 @@ module Mystic
   # Runs every yet-to-be-ran migration
 	def self.migrate
 		execute("CREATE TABLE IF NOT EXISTS mystic_migrations (mig_number integer, filename TEXT)")
-	  migrated_filenames = Mystic.execute("SELECT filename FROM mystic_migrations").map{ |r| r["filename"] }
+	  migrated_filenames = execute("SELECT filename FROM mystic_migrations").map{ |r| r["filename"] }
 	  mp = File.join(File.app_root,"/mystic/migrations/")
 		
 	  Dir.entries(mp)
-			.reject{ |e| MIG_REGEX.match(e).nil? && migrated_filenames.include?(e) }
-			.sort{ |a,b| MIG_REGEX.match(a)[:num].to_i <=> MIG_REGEX.match(b)[:num].to_i.to_i }
+			.reject{ |e| MIG_REGEX.match(e).nil? || migrated_filenames.include?(e) }
+			.sort{ |a,b| MIG_REGEX.match(a)[:num].to_i <=> MIG_REGEX.match(b)[:num].to_i }
 			.each{ |fname| 
 		    require File.join(mp,fname)
     
@@ -100,7 +100,9 @@ module Mystic
   # Rolls back a single migration
 	def self.rollback
 		execute("CREATE TABLE IF NOT EXISTS mystic_migrations (mig_number integer, filename TEXT)")
-		fname = Mystic.execute("SELECT filename FROM mystic_migrations ORDER BY mig_number DESC LIMIT 1").first.to_hash.fetch("filename")
+		res = execute("SELECT filename FROM mystic_migrations ORDER BY mig_number DESC LIMIT 1")
+		return if res.empty?
+		fname = res.first.fetch("filename")
 		return if fname.nil?
 
 	  require File.join(File.app_root,"/mystic/migrations/",fname)
