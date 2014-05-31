@@ -115,14 +115,24 @@ module Mystic
 	
   # Creates a blank migration in mystic/migrations
 	def self.create_migration(name)
+		name = "" if name.nil?
     mig_name = name.strip.capitalize
     
     Kernel.abort if mig_name.empty?
     
     mig_path = File.join(File.app_root,"/mystic/migrations/")
+		
+		puts mig_path
     
-    mig_num = Dir.entries(mig_path).map { |fname| MIG_REGEX.match(fname)[:num].to_i }.max.to_i+1
-		mig_fname = mig_num.to_s + "_" + mig_name + ".rb"
+		# 5 is the minimum length of a migration: 1_.rb
+    numbers = Dir.entries(mig_path).select{ |fname| fname.length >= 5 }.map do |fname|
+			match = MIG_REGEX.match(fname)
+			match.nil? ? nil : match[:num].to_i
+		end
+		
+		numbers.compact!
+		
+		mig_fname = numbers.count > 0 ? (numbers.max.to_i+1).to_s + "_" + mig_name + ".rb" : 1
 
 		File.open(File.join(mig_path,mig_fname), 'w') { |f| f.write(template(mig_name)) }
 	end
