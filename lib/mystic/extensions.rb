@@ -27,11 +27,11 @@ end
 
 class Hash
   def parify(delim=" ")
-    map{ |pair| pair * delim }
+    Hash[map{ |pair| pair * delim }]
   end
   
   def sqlize
-    Hash[reject{ |k,v| v.empty? }.map{ |k,v| "#{k.sanitize}='#{v.sanitize}'" }]
+    Hash[reject{ |k,v| v.empty? }.map{ |k,v| "#{k.sanitize}=#{v.is_a?(String) ? "'#{v.sanitize}'" : v }" }]
   end
 end
 

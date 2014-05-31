@@ -14,7 +14,7 @@ module Mystic
   
     # Get the adapter name (examples: postgres, mysql)
     def self.adapter
-      name.split('::').last.delete("Adapter").downcase
+      name.split("::").last.delete("Adapter").downcase
     end
     
     # Map a block to an adapter's block hash

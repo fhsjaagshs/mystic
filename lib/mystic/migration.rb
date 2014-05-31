@@ -92,44 +92,49 @@ module Mystic
     end
     
     def drop_table(name)
-      op = Mystic::SQL::Operation.new(
-        :kind => :drop_table,
-        :table_name => name.to_s
-      )
-      execute(op)
+			execute(
+				Mystic::SQL::Operation.new(
+					:kind => :drop_table,
+					:table_name => name.to_s
+				)
+			)
     end
     
     def create_ext(extname)
-      op = Mystic::SQL::Operation.new(
-        :kind => :create_extension,
-        :name => extname.to_s
-      )
-      execute(op)
+			execute(
+      	Mystic::SQL::Operation.new(
+       		:kind => :create_extension,
+        	:name => extname.to_s
+      	)
+			)
     end
     
     def drop_ext(extname)
-      op = Mystic::SQL::Operation.new(
-        :kind => :drop_extension,
-        :name => extname.to_s
-      )
-      execute(op)
+			execute(
+      	Mystic::SQL::Operation.new(
+        	:kind => :drop_extension,
+        	:name => extname.to_s
+      	)
+			)
     end
     
     def create_view(name, sql)
-      op = Mystic::SQL::Operation.new(
-        :kind => :create_view,
-        :view_name => name.to_s,
-        :view_sql => sql.to_s
-      )
-      execute(op)
+			execute(
+				Mystic::SQL::Operation.new(
+					:kind => :create_view,
+					:view_name => name.to_s,
+					:view_sql => sql.to_s
+				)
+			)
     end
     
     def drop_view(name)
-      op = Mystic::SQL::Operation.new(
-        :kind => :drop_view,
-        :view_name => name.to_s
-      )
-      execute(op)
+			execute(
+				Mystic::SQL::Operation.new(
+					:kind => :drop_view,
+			    :view_name => name.to_s
+				)
+			)
     end
   end
 end

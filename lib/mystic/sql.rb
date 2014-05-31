@@ -33,7 +33,7 @@ module Mystic
         when Column
           @columns << { :name => col.name.to_s }
         when String
-          @columns << { :name => col };
+          @columns << { :name => col }
         else
           raise ArgumentError, "Column must be a String or a Mystic::SQL::Column"
         end
