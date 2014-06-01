@@ -115,17 +115,18 @@ module Mystic
 	
   # Creates a blank migration in mystic/migrations
 	def self.create_migration(name)
-		name = "" if name.nil?
-    mig_name = name.strip.capitalize
-    
-    Kernel.abort if mig_name.empty?
+		if name.nil? || name.empty?
+			puts "Migration name must not be empty."
+			return
+		end
+		
+		name.strip!
+		name[0] = name[0].capitalize
     
     mig_path = File.join(File.app_root,"/mystic/migrations/")
-		
-		puts mig_path
-    
-		# 5 is the minimum length of a migration: 1_.rb
-    numbers = Dir.entries(mig_path).select{ |fname| fname.length >= 5 }.map do |fname|
+
+		# 6 is the minimum length of a migration: 1_a.rb
+    numbers = Dir.entries(mig_path).select{ |fname| fname.length >= 6 }.map do |fname|
 			match = MIG_REGEX.match(fname)
 			match.nil? ? nil : match[:num].to_i
 		end
@@ -141,19 +142,19 @@ module Mystic
 	def self.template(name=nil)
 		raise ArgumentError, "Migrations must have a name." if name.nil?
 		<<-mig_template
-		#!/usr/bin/env ruby
+#!/usr/bin/env ruby
 
-		require "mystic"
+require "mystic"
 
-		class #{name} < Mystic::Migration
-			def up
+class #{name} < Mystic::Migration
+	def up
 		
-			end
+	end
   
-			def down
+	def down
 		
-			end
-		end
+	end
+end
 		mig_template
 	end
 end
