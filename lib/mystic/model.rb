@@ -1,5 +1,7 @@
 #!/usr/bin/env ruby
 
+require "mystic"
+
 module Mystic
   class Model
     JSON_COL = "mystic_return_json"
@@ -45,7 +47,7 @@ module Mystic
       sql = "UPDATE " + table_name + " SET " + set_pairs*',' + " WHERE " + where_pairs*' AND ' 
 			sql << " RETURNING " + visible_cols*',' if return_rows
 			
-			sql = "WITH res AS (#{sql}) SELECT array_to_json(array_agg(row_to_json(res))) as #{JSON_COL} FROM res" if return_json
+			sql = "SELECT array_to_json(array_agg(row_to_json(res))) as #{JSON_COL} FROM (#{sql}) res" if return_json
 			
 			sql
     end
@@ -60,7 +62,7 @@ module Mystic
       sql = "INSERT INTO " + table_napme + "(" + params.keys*',' + ") VALUES (" + params.values.map { |value| "'" + value.to_s.sanitize + "'" }*',' + ")"
 			sql << " RETURNING " + visible_cols*',' if return_rows
 			
-			sql = "WITH res AS (#{sql}) SELECT row_to_json(res) as #{JSON_COL} FROM res" if return_json
+			sql = "SELECT row_to_json(res) as #{JSON_COL} FROM (#{sql}) res" if return_json
       
 			sql
     end
@@ -75,7 +77,7 @@ module Mystic
       sql = "DELETE FROM " + table_name + " WHERE " + opts.sqlize*' AND ' + " RETURNING " + + visible_cols*','
 			sql << " RETURNING " + visible_cols*',' if return_rows
 			
-			sql = "WITH res AS (#{sql}) SELECT array_to_json(array_agg(row_to_json(res))) as #{JSON_COL} FROM res" if return_json
+			sql = "SELECT array_to_json(array_agg(row_to_json(res))) as #{JSON_COL} FROM (#{sql}) res" if return_json
       
 			sql
     end
@@ -86,14 +88,16 @@ module Mystic
     end
     
     def self.fetch(params={}, opts={})
-      res = self.select(params,(opts || {}).merge({:count => 1}))
+      res = self.select(params,opts.merge({:count => 1}))
 			return res if res.is_a?(String)
 			res.first
     end
     
     def self.create(params={}, opts={})
       sql = self.insert_sql(params,opts)
-      Mystic.execute(sql)
+      res = Mystic.execute(sql)
+			return res if res.is_a?(String)
+			res.first
     end
     
     def self.update(where={}, set={}, opts={})
@@ -103,6 +107,7 @@ module Mystic
     
     def self.delete(params={}, opts={})
       sql = self.delete_sql(params,opts)
+			Mystic.execute(sql)
     end
     
     private

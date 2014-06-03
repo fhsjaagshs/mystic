@@ -17,9 +17,9 @@ module Mystic
 	class PostgresAdapter < Mystic::Adapter
 		execute do |inst, sql|
 			res = inst.exec(sql)
-			ret = res[0][Mystic::Model::JSON_COL] if res.num_tuples == 1
-			return ret unless ret.nil?
-			res.ntuples.times.map { |i| res[i] } unless res.nil?
+			ret = res[0][Mystic::Model::JSON_COL] if res.ntuples == 1 && res.nfields == 1
+			ret ||= res.ntuples.times.map { |i| res[i] }
+			ret
 		end
   
 		sanitize do |inst, str|
