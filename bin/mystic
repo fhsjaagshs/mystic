@@ -11,7 +11,7 @@ case ARGV[0].to_sym
 when :create
   case ARGV[1].to_sym
   when :migration
-		Mystic.create_migration(ARGV[2])
+		Mystic.create_migration(ARGV[2].dup)
   end
 else
   Mystic.connect(ARGV[0])

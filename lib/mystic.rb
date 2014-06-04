@@ -133,9 +133,9 @@ module Mystic
 		
 		numbers.compact!
 		
-		mig_fname = numbers.count > 0 ? (numbers.max.to_i+1).to_s + "_" + mig_name + ".rb" : 1
+		mig_fname = numbers.count > 0 ? (numbers.max.to_i+1).to_s + "_" + name + ".rb" : 1
 
-		File.open(File.join(mig_path,mig_fname), 'w') { |f| f.write(template(mig_name)) }
+		File.open(File.join(mig_path,mig_fname), 'w') { |f| f.write(template(name)) }
 	end
 	
   # Retuns a blank migration's code in a String

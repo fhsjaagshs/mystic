@@ -25,7 +25,7 @@ module Mystic
 			
       sql = "SELECT #{visible_cols*','} FROM #{table_name}"
       sql << " WHERE #{pairs*' AND '}" unless pairs.empty?
-      sql << " LIMIT #{count.to_i.to_s}" if count > 0''
+      sql << " LIMIT #{count.to_i.to_s}" if count > 0
       
 			sql = "SELECT row_to_json(res) as #{JSON_COL} FROM (#{sql}) res;" if return_json && count == 1
       sql = "SELECT array_to_json(array_agg(row_to_json(res))) as #{JSON_COL} from (#{sql}) res" if return_json && count != 1
