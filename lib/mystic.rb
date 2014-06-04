@@ -126,14 +126,17 @@ module Mystic
     mig_path = File.join(File.app_root,"/mystic/migrations/")
 
 		# 6 is the minimum length of a migration: 1_a.rb
-    numbers = Dir.entries(mig_path).select{ |fname| fname.length >= 6 }.map do |fname|
+    numbers = 
+		Dir.entries(mig_path)
+		.select{ |fname| fname.length >= 6 }
+		.map { |fname|
 			match = MIG_REGEX.match(fname)
 			match.nil? ? nil : match[:num].to_i
-		end
-		
-		numbers.compact!
-		
-		mig_fname = numbers.count > 0 ? (numbers.max.to_i+1).to_s + "_" + name + ".rb" : 1
+		}
+		.compact
+
+		mig_num = numbers.count > 0 ? numbers.max.to_i+1 : 1
+		mig_fname = "#{mig_num}_#{name}.rb"
 
 		File.open(File.join(mig_path,mig_fname), 'w') { |f| f.write(template(name)) }
 	end
