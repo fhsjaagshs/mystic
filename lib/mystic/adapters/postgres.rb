@@ -26,7 +26,7 @@ def parse_res(res)
 			when 16 # boolean
 				["TRUE","t","true","y","yes","on","1"].include?(getvalue(i, j))
 			else
-				getvalue(i, j)
+				parse_array(getvalue(i, j)) # Parses array the string contains brackets on the start and end
 			end
 			[fname(j), v]
 		}]
