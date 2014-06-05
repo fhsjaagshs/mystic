@@ -9,16 +9,36 @@ require "mystic/sql"
 # Mystic adapter for Postgres, includes PostGIS
 
 def parse_array(obj)
-	return obj[1..-2].split(',').map(&method(:parse_array)) if obj.is_a?(String) && obj[0] == "{" && obj[-1] == "}"
+	obj = obj[1..-2].split('),(').map { |str|
+		return str.split(",") if str[0] != "(" && str[-1] != ")"
+		str = "(" + str if str[0] != "(" && str[-1] == ")"
+		str = str + ")" if str[-1] != ")" && str[0] == "("
+		parse_array(str)
+	} if obj.is_a?(String) && obj[0] == "(" && obj[-1] == ")"
 	obj
+end
+
+def parse_res(res)
+	res.ntuples.times.map do |i|
+		Hash[res.nfields.times.map{ |j|
+			v =
+			case res.ftype(j)
+			when 16 # boolean
+				["TRUE","t","true","y","yes","on","1"].include?(getvalue(i, j))
+			else
+				getvalue(i, j)
+			end
+			[fname(j), v]
+		}]
+	end
 end
 
 module Mystic
 	class PostgresAdapter < Mystic::Adapter
 		execute do |inst, sql|
 			res = inst.exec(sql)
-			ret = res[0][Mystic::Model::JSON_COL] if res.ntuples == 1 && res.nfields == 1
-			ret ||= res.ntuples.times.map { |i| res[i] }
+			ret = res[0][Mystic::Model::JSON_COL] if res.ntuples == 1 && res.nfields == 1 && [114,199].include?(res.ftype(0)) # 114 is the OID of the json datatype, 119 corresponds to _json
+			ret ||= parse_res(res)
 			ret
 		end
   
