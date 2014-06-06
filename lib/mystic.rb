@@ -2,6 +2,7 @@
 
 require "yaml"
 require "irb"
+require 'irb/ext/multi-irb'
 require "mystic/extensions"
 require "mystic/sql"
 require "mystic/adapter"
@@ -12,12 +13,15 @@ module Mystic
 	MIG_REGEX = /(?<num>\d+)_(?<name>[a-z]+)\.rb$/i # matches migration files (ex '1_MigrationClassName.rb')
 	MysticError = Class.new(StandardError)
 	EnvironmentError = Class.new(StandardError)
+	CLIError = Class.new(StandardError)
 	@@adapter = nil
 	
 	def self.adapter
 		@@adapter
 	end
   
+	(/(?<num>\d+)_(?<name>[a-z]+)\.rb$/i.match "1_asdf.rb") ? puts "one" : puts "two"
+	
   # Mystic.connect
   #   Connects to a database. It's recommended you use it like ActiveRecord::Base.establish_connection
   # Arguments:
@@ -35,8 +39,8 @@ module Mystic
 		
 		# get adapter name
 		adapter = db_conf.delete("adapter").to_s.downcase
-		adapter = "postgres" if adapter =~ /^postgr.*$/ # Intentionally includes PostGIS
-		adapter = "mysql" if adapter =~ /^mysql.*$/
+		adapter = "postgres" if adapter =~ /^postgr.*$/i # Intentionally includes PostGIS
+		adapter = "mysql" if adapter =~ /^mysql.*$/i
 		
 		# setup our adapter
 		require "mystic/adapters/" + adapter
@@ -100,7 +104,6 @@ module Mystic
 		IRB.setup nil
 		IRB.conf[:IRB_NAME] = "mystic"
 		IRB.conf[:MAIN_CONTEXT] = IRB::Irb.new.context
-		require 'irb/ext/multi-irb'
 		IRB.irb nil, IRB::WorkSpace.new
 		nil
 	end
@@ -142,27 +145,18 @@ module Mystic
 	
   # Creates a blank migration in mystic/migrations
 	def self.create_migration(name)
-		if name.nil? || name.empty?
-			puts "Migration name must not be empty."
-			return
-		end
-		
 		name.strip!
+		raise CLIError, "Migration name must not be empty." if name.nil? || name.empty?
+		
 		name[0] = name[0].capitalize
     
     mig_path = File.join(File.app_root,"/mystic/migrations/")
 
-		# 6 is the minimum length of a migration: 1_a.rb
-    numbers = 
-		Dir.entries(mig_path)
-		.select{ |fname| fname.length >= 6 }
-		.map { |fname|
-			match = MIG_REGEX.match(fname)
-			match.nil? ? nil : match[:num].to_i
-		}
+    numbers = Dir.entries(mig_path)
+		.map { |fname| MIG_REGEX.match(fname)[:num].to_i rescue nil }
 		.compact
 
-		mig_num = numbers.count > 0 ? numbers.max.to_i+1 : 1
+		mig_num = numbers.max.to_i+1 rescue 1
 		mig_fname = "#{mig_num}_#{name}.rb"
 
 		File.open(File.join(mig_path,mig_fname), 'w') { |f| f.write(template(name)) }
