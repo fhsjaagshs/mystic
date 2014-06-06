@@ -40,10 +40,4 @@ class File
     res = `git rev-parse --show-toplevel`.strip
     res unless res =~ /^fatal.*/
   end
-  
-  def self.app_root(path=Dir.pwd)
-    mystic_dir_path = expand_path("mystic",path)
-    return path if exists?(mystic_dir_path) && directory?(mystic_dir_path)
-    app_root(dirname(path)) unless path.length == 1
-  end
 end
