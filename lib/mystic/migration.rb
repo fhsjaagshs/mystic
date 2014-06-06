@@ -73,19 +73,18 @@ module Mystic
   
   class Migration
     def execute(obj)
-      obj = obj.to_sql if obj.is_a?(Mystic::SQL::SQLObject)
-      Mystic.execute(obj)
+      Mystic.execute(obj.to_s)
     end
 
     def create_table(name)
-      raise ArgumentError, "No block provided, blocks are required to create a table." unless block_given?
+      raise ArgumentError, "No block provided, a block is required to create a table." unless block_given?
       table = Mystic::SQL::Table.new(name, true)
       yield(table)
       execute(table)
     end
     
     def alter_table(name)
-      raise ArgumentError, "No block provided, blocks are required to create a table." unless block_given?
+      raise ArgumentError, "No block provided, a block is required to alter a table." unless block_given?
       table = Mystic::SQL::Table.new(name, false)
       yield(table)
       execute(table)
