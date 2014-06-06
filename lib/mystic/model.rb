@@ -13,73 +13,76 @@ module Mystic
 		def self.visible_cols
 			["*"]
 		end
+		
+		def self.wrapper_sql(sql="SELECT 1",return_rows=true,return_json=false)
+			return_rows = true if return_json
+			op = sql.split(" ",2)[0]
+			
+			s = []
+			s << "WITH res as (" if return_json
+			s << sql
+			s << "RETURNING #{visible_cols*','}" if return_rows
+			s << ") SELECT" if return_json
+			s << "row_to_json(res)" if op == "INSERT"
+			s << "array_to_json(array_agg(row_to_json(res)))" unless op == "INSERT"
+			s << "as #{JSON_COL} FROM res" if return_json
+			s*' '
+		end
     
     def self.function_sql(funcname, *params)
 			"SELECT " + funcname.to_s + "(" + fnc_parameterize(params)*',' + ");"
     end
     
     def self.select_sql(params={}, opts={})
-      count = opts[:count] || opts["count"] || 0
-			return_json = (opts[:return_json] || opt["return_json"]) && Mystic.adapter.name == "postgres"
-      pairs = params.sqlize
+			opts.symbolize!
+      count = opts[:count] || 0
+			return_json = opts[:return_json] && Mystic.adapter.name == "postgres"
 			
-      sql = "SELECT #{visible_cols*','} FROM #{table_name}"
-      sql << " WHERE #{pairs*' AND '}" unless pairs.empty?
-      sql << " LIMIT #{count.to_i.to_s}" if count > 0
-      
-			sql = "SELECT row_to_json(res) as #{JSON_COL} FROM (#{sql}) res;" if return_json && count == 1
-      sql = "SELECT array_to_json(array_agg(row_to_json(res))) as #{JSON_COL} from (#{sql}) res" if return_json && count != 1
-			
-      sql
+			sql = []
+			sql << "SELECT row_to_json(res) as #{JSON_COL} FROM (" if return_json && count == 1
+      sql << "SELECT array_to_json(array_agg(row_to_json(res))) as #{JSON_COL} from (" if return_json && count != 1
+			sql << "SELECT #{visible_cols*','} FROM #{table_name}"
+			sql << "WHERE #{params.sqlize*' AND '}" unless pairs.empty?
+			sql << "LIMIT #{count.to_i.to_s}" if count > 0
+			sql << ") res" if return_json
+      sql*' '
     end
     
     def self.update_sql(where={}, set={}, opts={})
-			return_rows = opts[:return_rows] || opts["return_rows"]
-			return_json = (opts[:return_json] || opts["return_json"]) && Mystic.adapter.name == "postgres"
-			return_rows = true if return_json
-			
       return "" if where.empty?
       return "" if set.empty?
-      
-      where_pairs = where.sqlize
-      set_pairs = set.sqlize
 			
-      sql = "UPDATE " + table_name + " SET " + set_pairs*',' + " WHERE " + where_pairs*' AND ' 
-			sql << " RETURNING " + visible_cols*',' if return_rows
+			opts.symbolize!
 			
-			sql = "WITH res as (#{sql}) SELECT array_to_json(array_agg(row_to_json(res))) as #{JSON_COL} FROM res" if return_json
-			
-			sql
+			wrapper_sql(
+				:sql => "UPDATE #{table_name} SET #{set.sqlize*','} WHERE #{where.sqlize*' AND '}",
+				:return_rows => opts[:return_rows],
+				:return_json => opts[:return_json] && Mystic.adapter.name == "postgres"
+			)
     end
     
     def self.insert_sql(params={}, opts={})
 			return "" if params.empty?
       
-			return_rows = opts[:return_rows] || opts["return_rows"]
-			return_json = (opts[:return_json] || opts["return_json"]) && Mystic.adapter.name == "postgres"
-			return_rows = true if return_json
-			
-      sql = "INSERT INTO " + table_napme + "(" + params.keys*',' + ") VALUES (" + params.values.map { |value| "'" + value.to_s.sanitize + "'" }*',' + ")"
-			sql << " RETURNING " + visible_cols*',' if return_rows
-			
-			sql = "WITH res as (#{sql}) SELECT row_to_json(res) as #{JSON_COL} FROM res" if return_json
-      
-			sql
+			opts.symbolize!
+
+			wrapper_sql(
+				:sql => "INSERT INTO #{table_name} (#{params.keys*','}) VALUES (#{params.values.sqlize*','})",
+				:return_rows => opts[:return_rows],
+				:return_json => opts[:return_json] && Mystic.adapter.name == "postgres"
+			)
     end
     
     def self.delete_sql(params={}, opts={})
       return "" if params.empty?
-      
-			return_rows = opts[:return_rows] || opts["return_rows"]
-			return_json = (opts[:return_json] || opts["return_json"]) && Mystic.adapter.name == "postgres"
-			return_rows = true if return_json
 			
-      sql = "DELETE FROM " + table_name + " WHERE " + opts.sqlize*' AND ' + " RETURNING " + + visible_cols*','
-			sql << " RETURNING " + visible_cols*',' if return_rows
-			
-			sql = "WITH res as (#{sql}) SELECT array_to_json(array_agg(row_to_json(res))) as #{JSON_COL} FROM res" if return_json
-      
-			sql
+			opts.symbolize!
+
+			wrapper_sql(
+				:sql => "DELETE FROM #{table_name} WHERE #{params.sqlize*' AND '}",
+				:return_rows => opts[:return_rows],
+				:return_json => opts[:return_json] && Mystic.adapter.name == "postgres"
+			)
     end
     
     def self.select(params={}, opts={})
