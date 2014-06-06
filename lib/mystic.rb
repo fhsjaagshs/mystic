@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 
 require "yaml"
+require "irb"
 require "mystic/extensions"
 require "mystic/sql"
 require "mystic/adapter"
@@ -10,6 +11,8 @@ require "mystic/model"
 module Mystic
 	MIG_REGEX = /(?<num>\d+)_(?<name>[a-z]+)\.rb$/i # matches migration files (ex '1_MigrationClassName.rb')
 	MysticError = Class.new(StandardError)
+	EnvironmentError = Class.new(StandardError)
+	@@adapter = nil
 	
 	def self.adapter
 		@@adapter
@@ -25,7 +28,7 @@ module Mystic
 		path = File.join(File.app_root, "/config/database.yml")
 		db_yml = YAML.load_file(path)
 		
-		raise MysticError, "Invalid database.yml config." unless db_yml.member?(env)
+		raise EnvironmentError, "Environment doesn't exist." unless db_yml.member?(env)
 		
 		db_conf = db_yml[env]
 		db_conf["dbname"] = db_conf.delete("database")
@@ -39,12 +42,12 @@ module Mystic
 		require "mystic/adapters/" + adapter
 		
 		adapter_class = "Mystic::#{adapter.capitalize}Adapter"
-		@@adapter = Object.const_get(adapter_class).new
+		@@adapter = Object.const_get(adapter_class).new(:env => env)
 		@@adapter.pool_size = db_conf.delete("pool").to_i
 		@@adapter.pool_timeout = db_conf.delete("timeout").to_i
 		@@adapter.connect(db_conf)
 		
-		nil
+		true
 	end
 	
   # Mystic.disconnect
@@ -52,6 +55,7 @@ module Mystic
 	def self.disconnect
 		@@adapter.disconnect
 		@@adapter = nil
+		true
 	end
 
   # Mystic.execute
@@ -74,9 +78,32 @@ module Mystic
     @@adapter.sanitize(str)
   end
 	
+	# Mystic.root
+	#   Get the app root
+	# Aguments:
+	#   To be ignored
+	# Returns:
+	#   The application's root
+  def self.root(path=Dir.pwd)
+    mystic_dir_path = expand_path("mystic",path)
+    return path if exists?(mystic_dir_path) && directory?(mystic_dir_path)
+    app_root(dirname(path)) unless path.length == 1
+  end
+	
 	#
 	# Command line
 	#
+	
+	def self.console
+		require "mystic"
+		puts "Starting Mystic console"
+		IRB.setup nil
+		IRB.conf[:IRB_NAME] = "mystic"
+		IRB.conf[:MAIN_CONTEXT] = IRB::Irb.new.context
+		require 'irb/ext/multi-irb'
+		IRB.irb nil, IRB::WorkSpace.new
+		nil
+	end
 	
   # Runs every yet-to-be-ran migration
 	def self.migrate

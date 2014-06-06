@@ -99,6 +99,15 @@ module Mystic
 				)
 			)
     end
+		
+		def drop_index(*args)
+			execute(
+      	Mystic::SQL::Operation.new(
+       		:index_name => args[0],
+        	:name => args[1]
+      	)
+			)
+		end
     
     def create_ext(extname)
 			execute(

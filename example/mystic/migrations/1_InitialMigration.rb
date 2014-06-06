@@ -18,9 +18,9 @@ class InitialMigration < Mystic::Migration
     end
     
     alter_table :users do |t|
-			t.index "lower(name) DESC NULLS LAST" # instead of column name, you can pass custom SQL
-      t.index :guid # single column index
-			t.index :cool, :likes # multicolumn index
+			t.index "lower(name) DESC NULLS LAST", :name => :custom_sql_idx # instead of column name, you can pass custom SQL
+      t.index :guid, :name => :unicolumn_idx # single column index
+			t.index :cool, :likes, :name => :multicolumn_idx # multicolumn index
       t.drop_columns :drop_me, :drop_me_too
       t.rename_column :cool, :is_cool
       t.varchar :some_string, :size => 255 # adds a column
@@ -33,9 +33,11 @@ class InitialMigration < Mystic::Migration
   end
   
   def down
-    drop_index :guid_idx
-    drop_table :users
-    drop_view :bios
+		drop_view :bios
+		drop_index :custom_sql_idx
+		drop_index :unicolumn_idx
+		drop_index :multicolumn_idx
+		drop_table :subscribers
     drop_ext "uuid-ossp"
   end
 end

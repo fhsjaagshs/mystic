@@ -8,10 +8,14 @@ require "densify"
 
 module Mystic
   class Adapter
-    attr_accessor :pool_size, :pool_timeout
+    attr_accessor :pool_size, :pool_timeout, :env
   
     @@blocks = {}
   
+		def initialize(opts={})
+			@env = opts[:env] || opts["env"]
+		end
+	
     # Get the adapter name (examples: postgres, mysql)
     def self.adapter
       name.split("::").last.delete("Adapter").downcase

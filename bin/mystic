@@ -14,12 +14,18 @@ when :create
 		Mystic.create_migration(ARGV[2].dup)
   end
 else
-  Mystic.connect(ARGV[0])
-  case ARGV[1].to_sym
-  when :migrate
-  	Mystic.migrate
-  when :rollback
-  	Mystic.rollback
-  end
-  Mystic.disconnect
+	begin
+	  Mystic.connect(ARGV[1])
+	  case ARGV[0].to_sym
+	  when :migrate
+	  	Mystic.migrate
+	  when :rollback
+	  	Mystic.rollback
+		when :console
+			Mystic.console
+		end
+	  Mystic.disconnect
+	rescue Mystic::EnvironmentError => e
+		puts e.message
+	end
 end

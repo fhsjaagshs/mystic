@@ -8,13 +8,14 @@ require "mystic/sql"
 
 # Mystic adapter for Postgres, includes PostGIS
 
+# TODO: Make this pretty
 def parse_array(obj)
-	obj = obj[1..-2].split('),(').map { |str|
-		return str.split(",") if str[0] != "(" && str[-1] != ")"
-		str = "(" + str if str[0] != "(" && str[-1] == ")"
-		str = str + ")" if str[-1] != ")" && str[0] == "("
+	obj = obj[1..-2].split('},{').map { |str|
+		return str.split(",") if str[0] != "{" && str[-1] != "}"
+		str = "{" + str if str[0] != "{" && str[-1] == "}"
+		str = str + "}" if str[-1] != "}" && str[0] == "{"
 		parse_array(str)
-	} if obj.is_a?(String) && obj[0] == "(" && obj[-1] == ")"
+	} if obj.is_a?(String) && obj[0] == "{" && obj[-1] == "}"
 	obj
 end
 
@@ -24,11 +25,11 @@ def parse_res(res)
 			v =
 			case res.ftype(j)
 			when 16 # boolean
-				["TRUE","t","true","y","yes","on","1"].include?(getvalue(i, j))
+				["TRUE","t","true","y","yes","on","1"].include?(res.getvalue(i, j))
 			else
-				parse_array(getvalue(i, j)) # Parses array the string contains brackets on the start and end
+				parse_array(res.getvalue(i, j)) # Parses array the string contains brackets on the start and end
 			end
-			[fname(j), v]
+			[res.fname(j), v]
 		}]
 	end
 end
@@ -47,7 +48,9 @@ module Mystic
 		end
   
 		connect do |opts|
-			PG.connect(opts)
+			pg = PG.connect(opts)
+			pg.set_notice_processor {} # { |message| puts "mystic: " + message[9..-1].capitalize} # TODO: Save notices to Mystic's notice queue 
+			pg
 		end
   
 		disconnect do |inst|

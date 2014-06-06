@@ -163,7 +163,10 @@ Unlike ActiveRecord, Mystic adapters are really simple. They're defined using a 
     
     
 
+TODO
+-
 
+1. `quote_ident()` for postgres (pg gem)
 
 
 
