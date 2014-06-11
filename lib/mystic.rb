@@ -158,14 +158,11 @@ module Mystic
 		
 		name[0] = name[0].capitalize
     
-		mig_path = root.join "mystic","migrations"
+		migs = root.join("mystic","migrations")
 
-		numbers = Dir.entries(mig_path.to_s)
-			.map { |fname| MIG_REGEX.match(fname)[:num].to_i rescue -1 }
+		num = migs.entries.map { |e| MIG_REGEX.match(e.to_s)[:num].to_i rescue 0 }.max.to_i+1
 
-		mig_num = numbers.max.to_i+1 rescue 1
-
-		File.open(mig_path.join("#{mig_num}_#{name}.rb").to_s, 'w') { |f| f.write(template(name)) }
+		File.open(migs.join("#{mig_num}_#{name}.rb").to_s, 'w') { |f| f.write(template(name)) }
 	end
 	
   # Retuns a blank migration's code in a String
