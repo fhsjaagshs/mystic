@@ -67,82 +67,123 @@ module Mystic
       
       def method_missing(meth, *args, &block)
         column(args[0], meth.to_s, args[1])
-      end  
+      end
     end
   end
   
   class Migration
+		Error = Class.new(StandardError)
+
+		def initialize
+			@irreversible = false
+			@direction = :neither
+			@up_queue = []
+			@down_queue = []
+		end
+		
+		def migrate
+			@direction = :up
+			@up_queue.clear
+			up
+			exec_queue
+		end
+		
+		def rollback
+			@direction = :down
+			@down_queue.clear
+			down
+			exec_queue
+		end
+		
+		def exec_queue
+			q = @direction == :up ? @up_queue : @down_queue
+			q.map! &:to_sql
+			
+			begin
+				q.each{ |obj| "EXPLAIN #{Mystic.execute(obj)}" }
+			rescue StandardError => e
+				raise Error, e.message
+			end
+			
+			q.each{ |obj| Mystic.execute(obj) }
+		end
+		
+		def queue(obj)
+			case @direction
+			when :up
+				@up_queue << obj
+			when :down
+				@down_queue << obj
+			end
+		end
+		
+		#
+		# DSL
+		#
+		
     def execute(obj)
-      Mystic.execute(obj.to_s)
+			queue Mystic::SQL::Raw.new :sql => obj.to_s
     end
+		
+		def ireversaible!
+			@irreversible = true
+		end
 
     def create_table(name)
       raise ArgumentError, "No block provided, a block is required to create a table." unless block_given?
       table = Mystic::SQL::Table.new(name, true)
-      yield(table)
-      execute(table)
+      yield table
+      queue table
     end
     
     def alter_table(name)
-      raise ArgumentError, "No block provided, a block is required to alter a table." unless block_given?
+			raise ArgumentError, "No block provided, a block is required to alter a table." unless block_given?
       table = Mystic::SQL::Table.new(name, false)
-      yield(table)
-      execute(table)
+      yield table
+      queue table
     end
     
     def drop_table(name)
-			execute(
-				Mystic::SQL::Operation.new(
-					:kind => :drop_table,
-					:table_name => name.to_s
-				)
-			)
+			queue Mystic::SQL::Operation.new(
+							:kind => :drop_table,
+							:table_name => name.to_s
+						)
     end
 		
 		def drop_index(*args)
-			execute(
-      	Mystic::SQL::Operation.new(
-       		:index_name => args[0],
-        	:name => args[1]
-      	)
-			)
+			queue Mystic::SQL::Operation.new(
+       				:index_name => args[0],
+        			:name => args[1]
+      			)
 		end
     
     def create_ext(extname)
-			execute(
-      	Mystic::SQL::Operation.new(
-       		:kind => :create_extension,
-        	:name => extname.to_s
-      	)
-			)
+			queue Mystic::SQL::Operation.new(
+       				:kind => :create_extension,
+        			:name => extname.to_s
+      			)
     end
     
     def drop_ext(extname)
-			execute(
-      	Mystic::SQL::Operation.new(
-        	:kind => :drop_extension,
-        	:name => extname.to_s
-      	)
-			)
+			queue Mystic::SQL::Operation.new(
+        			:kind => :drop_extension,
+        			:name => extname.to_s
+      			)
     end
     
     def create_view(name, sql)
-			execute(
-				Mystic::SQL::Operation.new(
-					:kind => :create_view,
-					:view_name => name.to_s,
-					:view_sql => sql.to_s
-				)
-			)
+			queue Mystic::SQL::Operation.new(
+							:kind => :create_view,
+							:view_name => name.to_s,
+							:view_sql => sql.to_s
+						)
     end
     
     def drop_view(name)
-			execute(
-				Mystic::SQL::Operation.new(
-					:kind => :drop_view,
-			    :view_name => name.to_s
-				)
-			)
+			queue Mystic::SQL::Operation.new(
+							:kind => :drop_view,
+			    		:view_name => name.to_s
+						)
     end
   end
 end

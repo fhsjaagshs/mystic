@@ -131,7 +131,7 @@ module Mystic
 				
 				mig_num,mig_name = MIG_REGEX.match(fname).captures
 				
-		    Object.const_get(mig_name).new.up
+		    Object.const_get(mig_name).new.migrate
 		    execute("INSERT INTO mystic_migrations (mig_number, filename) VALUES (#{mig_num},'#{fname}')")
 			}
 	end
@@ -146,7 +146,7 @@ module Mystic
 		
 		mig_num,mig_name = MIG_REGEX.match(fname).captures
 
-	  Object.const_get(mig_name).new.down
+	  Object.const_get(mig_name).new.rollback
 		
 	  execute("DELETE FROM mystic_migrations WHERE filename='#{fname}' and mig_number=#{mig_num}")
 	end

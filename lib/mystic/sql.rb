@@ -123,5 +123,15 @@ module Mystic
 				@opts[meth.to_s.to_sym] rescue nil
       end
     end
+		
+		class Raw < SQLObject
+			def initialize(opts)
+				@sql = opts[:sql]
+			end
+			
+			def to_sql
+				@sql
+			end
+		end
   end
 end

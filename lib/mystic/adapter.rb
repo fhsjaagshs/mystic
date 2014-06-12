@@ -37,12 +37,7 @@ module Mystic
     #
     # Adapter DSL
     #
-  
-    # Return SQL for an SQL object
-    def self.sql(&block)
-      map_block :sql, block
-    end
-  
+		
     # Return native Ruby types from an SQL query
     def self.execute(&block)
       map_block :execute, block
@@ -62,6 +57,11 @@ module Mystic
     def self.disconnect(&block)
       map_block :disconnect, block
     end
+		
+		# Map missing methods to SQL generation
+		def self.method_missing(meth, *args, &block)
+			map_block meth, block
+		end
   
     #
     # Adapter methods
@@ -98,7 +98,16 @@ module Mystic
     end
   
     def serialize_sql(sql_obj)
-      block_for(:sql).call(sql_obj)
+			case sql_obj
+			when SQL::Table
+				block_for(:table).call(sql_obj)
+			when SQL::Index
+				block_for(:index).call(sql_obj)
+			when SQL::Column
+				block_for(:column).call(sql_obj)
+			when SQL::Operation
+				block_for(:operation).call(sql_obj)
+			end
     end
   end
 end
