@@ -25,21 +25,6 @@ module Mystic
 	  disconnect do |inst|
 	    inst.close
 	  end
-  
-		index do |obj|
-			sql = []
-			sql << "CREATE"
-			sql << "UNIQUE" if obj.unique
-			sql << "INDEX"
-		  sql << obj.name unless obj.name.nil?
-		  sql << "ON"
-			sql << obj.tblname
-			sql << "USING #{obj.type}" if obj.type
-			sql << "(#{obj.columns.map(&:to_s)*","})" if obj.columns.is_a?(Array) && obj.columns
-			sql << "WITH (#{obj.with.sqlize})" if obj.with
-			sql << "TABLESPACE #{obj.tablespace}" if obj.tablespace
-			sql*" "
-		end
 		
 		drop_index do |obj|
 			"DROP INDEX #{obj.name} ON #{obj.table_name}"
