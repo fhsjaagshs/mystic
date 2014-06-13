@@ -22,9 +22,7 @@ module Mystic
 		end
   
 		connect do |opts|
-			pg = PG.connect(opts)
-			pg.set_notice_processor {} # TODO: Save notices to a notice queue
-			pg
+			PG.connect opts
 		end
   
 		disconnect do |inst|

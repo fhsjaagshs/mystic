@@ -47,19 +47,22 @@ class Hash
 	
 	def symbolize!
 		keys.each do |key|
-			self[key] = delete(key).to_sym
+			self[key.to_sym] = delete key
 		end
 		self
 	end
   
   def sqlize
-    Hash[reject{ |k,v| v.empty? }.map{ |k,v| "#{k.sanitize}=#{v.is_a?(String) ? "'#{v.sanitize}'" : v }" }]
+    Hash[reject{ |k,v| v.empty? }.map{ |k,v| "#{k.sanitize}=#{v.is_a? String ? "'#{v.sanitize}'" : v }" }]
   end
 end
 
-class File
-  def self.git_root
-    res = `git rev-parse --show-toplevel`.strip
-    res unless res =~ /^fatal.*/
+class Pathname
+  def relative?
+    @path[0] != File::SEPARATOR
   end
+	
+	def join(*args)
+		Pathname.new(File.join @path, *args.map(&:to_s))
+	end
 end

@@ -10,12 +10,12 @@ module Mystic
       def to_sql
 				obj = self.dup
 				obj.instance_variables.each do |vname|
-					v = obj.instance_variable_get(vname)
+					v = obj.instance_variable_get vname
 					if v.is_a? Symbol
-						obj.instance_variable_set(vname,v.to_s)
+						obj.instance_variable_set vname,v.to_s
 					end
 				end
-        Mystic.adapter.serialize_sql(obj)
+        Mystic.adapter.serialize_sql obj
       end
       
       alias_method :to_s, :to_sql
@@ -27,12 +27,12 @@ module Mystic
       def initialize(opts={})
         @name = opts[:name]
         @tblname = opts[:tblname]
-        @type = opts[:type] || :btree # a string/symbol
+        @type = opts[:type].to_sym || :btree # a string/symbol
         @unique = opts[:unique] # a boolean
         @concurrently = opts[:concurrently] # a boolean
         @with = opts[:with] # a hash (keys => { :fillfactor => 10..100, :fastupdate => true })
         @tablespace = opts[:tablespace]
-        @columns = opts[:columns] || []
+        @columns = opts[:columns].map &:to_sym || []
       end
       
       # can accept shit other than columns like
@@ -40,9 +40,9 @@ module Mystic
       def <<(col)
         case col
         when Column
-          @columns << { :name => col.name.to_s }
+          @columns << col.name.to_s
         when String
-          @columns << { :name => col }
+          @columns << col
         else
           raise ArgumentError, "Column must be a String or a Mystic::SQL::Column"
         end
@@ -100,11 +100,11 @@ module Mystic
       def <<(obj)
         case obj
         when Column
-          @columns << obj;
+          @columns << obj
         when Index
-          @indeces << obj;
+          @indeces << obj
         when Operation
-          @operations << obj;
+          @operations << obj
         else
           raise ArgumentError, "Argument is not a Mystic::SQL::Column, Mystic::SQL::Operation, or Mystic::SQL::Index."
         end
@@ -127,7 +127,7 @@ module Mystic
       end
       
       def execute
-        Mystic.execute(self.to_sql)
+        Mystic.execute to_sql
       end
       
       def method_missing(meth, *args, &block)
@@ -135,7 +135,7 @@ module Mystic
       end
 			
 			def self.method_missing(meth, *args, &block)
-				new(args[0],args[1])
+				new args[0],args[1]
 			end
     end
 		

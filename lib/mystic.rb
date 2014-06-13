@@ -8,13 +8,16 @@ require "mystic/sql"
 require "mystic/adapter"
 require "mystic/migration"
 require "mystic/model"
+require "mystic/access_stack"
 
 module Mystic
+	MysticError = Class.new StandardError
+	RootError = Class.new StandardError
+	EnvironmentError = Class.new StandardError
+	AdapterError = Class.new StandardError
+	CLIError = Class.new StandardError
 	MIG_REGEX = /(?<num>\d+)_(?<name>[a-z]+)\.rb$/i # matches migration files (ex '1_MigrationClassName.rb')
-	MysticError = Class.new(StandardError)
-	RootError = Class.new(StandardError)
-	EnvironmentError = Class.new(StandardError)
-	CLIError = Class.new(StandardError)
+	
 	@@adapter = nil
 	
 	def self.adapter
@@ -26,23 +29,22 @@ module Mystic
   # Arguments:
   #   env - The env from database.yml you wish to use
 	def self.connect(env="")
-		# Load database.yml
-		env = env.to_s
+		@@env = env.to_s
 		path = root.join("config","database.yml").to_s
 		db_yml = YAML.load_file path
 		
-		raise EnvironmentError, "Environment doesn't exist." unless db_yml.member?(env)
+		raise EnvironmentError, "Environment doesn't exist." unless db_yml.member? @@env
 		
-		conf = db_yml[env]
-		conf["dbname"] = conf.delete("database")
+		conf = db_yml[@@env]
+		conf["dbname"] = conf.delete "database"
 		
 		create_adapter(
-			:adapter => conf["adapter"],
+			:adapter => conf.delete("adapter"),
 			:poolsize => conf["pool"],
 			:timeout => conf["timeout"]
 		)
 		
-		@@adapter.connect(conf)
+		@@adapter.connect conf
 	end
 	
   # Mystic.disconnect
@@ -59,8 +61,8 @@ module Mystic
   #   sql - The SQL to execute
   # Returns: Native Ruby objects representing the response from the DB (Usually an Array of Hashes)
   def self.execute(sql="")
-		return [] if @@adapter.nil?
-    @@adapter.execute(sql)
+		raise AdapterError, "Adapter is nil, so Mystic is not connected." if @@adapter.nil?
+    @@adapter.execute sql
   end
   
   # Mystic.sanitize
@@ -69,8 +71,8 @@ module Mystic
   #   str - The string to sanitize
   # Returns: the sanitized string
   def self.sanitize(str="")
-		return str if @@adapter.nil?
-    @@adapter.sanitize(str)
+		raise AdapterError, "Adapter is nil, so Mystic is not connected." if @@adapter.nil?
+    @@adapter.sanitize str
   end
 	
 	# Mystic.root
@@ -80,16 +82,16 @@ module Mystic
 	# Returns:
 	#   A pathname to the application's root
   def self.root(path=Pathname.new(Dir.pwd))
-		raise RootError, "Failed to find application's root." if path == path.parent
-		mystic_path = path.join "mystic"
-		return path if mystic_path.exist? && mystic_path.directory?
-		root(path.parent)
+		raise RootError, "Failed to find the application's root." if path == path.parent
+		mystic_path = path.join "config", "database.yml"
+		return path if mystic_path.file? # exist? is implicit with file?
+		root path.parent
   end
 	
 	# Mystic.create_table
 	#   Create migration tracking table
 	def self.create_table
-		execute("CREATE TABLE IF NOT EXISTS mystic_migrations (mig_number integer, filename text)")
+		execute "CREATE TABLE IF NOT EXISTS mystic_migrations (mig_number integer, filename text)"
 	end
 	
 	#
@@ -115,15 +117,15 @@ module Mystic
 		
 	  Dir.entries(mp)
 			.reject{ |e| MIG_REGEX.match(e).nil? }
-			.reject{ |e| migrated_filenames.include?(e) }
+			.reject{ |e| migrated_filenames.include? e }
 			.sort{ |a,b| MIG_REGEX.match(a)[:num].to_i <=> MIG_REGEX.match(b)[:num].to_i }
 			.each{ |fname|
-		    load File.join(mp,fname)
+				load File.join mp,fname
 				
 				mig_num,mig_name = MIG_REGEX.match(fname).captures
 				
 		    Object.const_get(mig_name).new.migrate
-		    execute("INSERT INTO mystic_migrations (mig_number, filename) VALUES (#{mig_num},'#{fname}')")
+		    execute "INSERT INTO mystic_migrations (mig_number, filename) VALUES (#{mig_num},'#{fname}')"
 			}
 	end
 	
@@ -139,21 +141,21 @@ module Mystic
 
 	  Object.const_get(mig_name).new.rollback
 		
-	  execute("DELETE FROM mystic_migrations WHERE filename='#{fname}' and mig_number=#{mig_num}")
+	  execute "DELETE FROM mystic_migrations WHERE filename='#{fname}' and mig_number=#{mig_num}"
 	end
 	
   # Creates a blank migration in mystic/migrations
-	def self.create_migration(name)
+	def self.create_migration(name="")
 		name.strip!
-		raise CLIError, "Migration name must not be empty." if name.nil? || name.empty?
+		raise CLIError, "Migration name must not be empty." if name.empty?
 		
 		name[0] = name[0].capitalize
     
-		migs = root.join("mystic","migrations")
+		migs = root.join "mystic","migrations"
 
 		num = migs.entries.map { |e| MIG_REGEX.match(e.to_s)[:num].to_i rescue 0 }.max.to_i+1
 
-		File.open(migs.join("#{mig_num}_#{name}.rb").to_s, 'w') { |f| f.write(template(name)) }
+		File.open(migs.join("#{mig_num}_#{name}.rb").to_s, 'w') { |f| f.write(template name) }
 	end
 	
   # Retuns a blank migration's code in a String
@@ -177,24 +179,18 @@ end
 	end
 	
 	#
-	## Private
+	# Private helpers
 	#
 	
-	private
-
-	def create_adapter(opts={})
-		# get adapter name
-		adapter = opts[:adapter].to_s.downcase
-		adapter = "postgres" if adapter =~ /^postg.*$/i # Intentionally includes PostGIS
-		adapter = "mysql" if adapter =~ /^mysql.*$/i
+	def self.create_adapter(opts={})
+		name = opts[:adapter].to_s.downcase.strip
+		name = "postgres" if name =~ /^postg.*$/i # Includes PostGIS
+		name = "mysql" if name =~ /^mysql.*$/i
 		
-		# setup our adapter
-		require "mystic/adapters/" + adapter
+		require "mystic/adapters/" + name
 		
-		adapter_class = "Mystic::#{adapter.capitalize}Adapter"
-		@@adapter = Object.const_get(adapter_class).new(:env => env)
+		@@adapter = Object.const_get("Mystic::#{name.capitalize}Adapter").new
 		@@adapter.pool_size = opts[:pool_size].to_i
 		@@adapter.pool_timeout = opts[:timeout].to_i
 	end
-	
 end
