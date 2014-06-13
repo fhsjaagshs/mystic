@@ -17,6 +17,13 @@ module Mystic
 	CLIError = Class.new(StandardError)
 	@@adapter = nil
 	
+	
+	# Mystic configuration
+	# :convert_types => Defaults to `false`. Uses potentially correct information to guess the type of data returned from the DB. Applies only to postgres for now.
+	# 
+	
+	attr_accessor :config
+	
 	def self.adapter
 		@@adapter
 	end

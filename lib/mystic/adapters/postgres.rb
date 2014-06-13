@@ -8,31 +8,39 @@ require "mystic/sql"
 
 # Mystic adapter for Postgres, includes PostGIS
 
-ARY_REGEX = /^\{+.*\}+$/
+module Mystic
+	module PGHelpers
+		def parse_array(obj)
+			obj = obj[1..-2].split('},{').map { |s|
+				return str.split(",") if s[0] != "{" && s[-1] != "}"
+				s = s + "}" unless str[-1] == "}"
+				s = "{" + s unless s[0] == "{"
+				parse_array(s)
+			} if obj.match /^\{+.*\}+$/ rescue false
+			obj
+		end
 
-# TODO: Make this pretty
-def parse_array(obj)
-	obj = obj[1..-2].split('},{').map { |s|
-		return str.split(",") if s[0] != "{" && s[-1] != "}"
-		s = s + "}" unless str[-1] == "}"
-		s = "{" + s unless s[0] == "{"
-		parse_array(s)
-	} if obj.match ARY_REGEX rescue false
-	obj
-end
-
-def parse_res(res)
-	res.ntuples.times.map do |i|
-		Hash[res.nfields.times.map{ |j|
-			v =
-			case res.ftype(j)
-			when 16 # boolean
-				["TRUE","t","true","y","yes","on","1"].include?(res.getvalue(i, j))
-			else
-				parse_array(res.getvalue(i, j)) # Parses array the string contains brackets on the start and end
+		def parse_res(res)
+			res.ntuples.times.map do |i|
+				Hash[res.nfields.times.map{ |j|
+					v = nil
+					if (Mystic.config[:convert_types] || false) == true
+						v =
+						# These are Postgres OIDs
+						case res.ftype(j)
+						when 16 # boolean
+							["TRUE","t","true","y","yes","on","1"].include?(res.getvalue(i, j))
+						else
+							parse_array(res.getvalue(i, j)) # Parses array the string contains brackets on the start and end
+						end
+					else
+						v = res.getvalue(i, j)
+					end
+			
+					[res.fname(j), v]
+				}].rehash
 			end
-			[res.fname(j), v]
-		}].rehash
+		end
 	end
 end
 
@@ -41,7 +49,7 @@ module Mystic
 		execute do |inst, sql|
 			res = inst.exec(sql)
 			ret = res[0][Mystic::Model::JSON_COL] if res.ntuples == 1 && res.nfields == 1 && [114,199].include?(res.ftype(0)) # 114 is the OID of the json datatype, 119 corresponds to _json
-			ret ||= parse_res(res)
+			ret ||= Mystic::PGHelpers.parse_res(res)
 			ret
 		end
   
@@ -51,7 +59,7 @@ module Mystic
   
 		connect do |opts|
 			pg = PG.connect(opts)
-			pg.set_notice_processor {} # TODO: Save notices to Mystic's notice queue
+			pg.set_notice_processor {} # TODO: Save notices to a notice queue
 			pg
 		end
   
@@ -88,31 +96,21 @@ module Mystic
 			sql << "CHECK(#{obj.constraints[:check]})" if obj.constraints.member?(:check)
 			sql*" "
 		end
+		
+		#
+		## Operations
+		#
 	  
-		operation do |obj|
-			sql = []
-			case obj.kind
-			when :drop_index
-				sql << "DROP INDEX #{obj.index_name}"
-			when :drop_table
-				sql << "DROP TABLE #{obj.table_name}"
-			when :create_view
-				sql << "CREATE VIEW #{obj.view_name} AS #{obj.view_sql}"
-			when :drop_view
-				sql << "DROP VIEW #{obj.view_name}"
-			when :rename_column
-				sql << "ALTER TABLE #{obj.table_name} RENAME COLUMN #{obj.old_col_name} TO #{obj.new_col_name}"
-			when :rename_table
-				sql << "ALTER TABLE IF EXISTS #{obj.old_name} RENAME TO #{obj.new_name}"
-			when :drop_columns
-				sql << "ALTER TABLE #{obj.table_name} #{obj.column_names.map{|c| "DROP COLUMN #{c.to_s}" }*', '}"
-      when :create_extension
-        sql << "CREATE EXTENSION \"#{obj.name}\""
-      when :drop_extension
-        sql << "DROP EXTENSION \"#{obj.name}\""
-      end
-			obj.callback.call unless obj.callback.nil?
-			sql*" "
+		drop_index do |obj|
+			"DROP INDEX #{obj.index_name}"
+		end
+		
+		create_extension do |obj|
+			"CREATE EXTENSION \"#{obj.name}\""
+		end
+		
+		drop_extension do |obj|
+			"DROP EXTENSION \"#{obj.name}\""
 		end
 	end
 end

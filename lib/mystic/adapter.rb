@@ -30,8 +30,9 @@ module Mystic
     end
     
     # Fetch a block for the current adapter
-    def block_for(key)
-      @@blocks[self.class.adapter][key]
+    def block_for(*args)
+			key = args.delete(-1)
+      @@blocks[args.first || self.class.adapter][key] rescue lambda { "" }
     end
     
     #
@@ -97,16 +98,17 @@ module Mystic
       res
     end
   
-    def serialize_sql(sql_obj)
-			case sql_obj
+    def serialize_sql(obj)
+			case obj
 			when SQL::Table
-				block_for(:table).call(sql_obj)
+				block_for(:table).call(obj)
 			when SQL::Index
-				block_for(:index).call(sql_obj)
+				block_for(:index).call(obj)
 			when SQL::Column
-				block_for(:column).call(sql_obj)
+				block_for(:column).call(obj)
 			when SQL::Operation
-				block_for(:operation).call(sql_obj)
+				block_for(obj.kind).call(sql_obj)
+				obj.callback.call unless obj.callback.nil?
 			end
     end
   end

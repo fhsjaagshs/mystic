@@ -55,27 +55,9 @@ module Mystic
 			sql << "CHECK(#{obj.constraints[:check]})" if obj.constraints.member?(:check)
 			sql*" "
 		end
-	  
-		operation do |obj|
-			sql = []
-			case obj.kind
-			when :drop_index
-				sql << "DROP INDEX #{obj.index_name}"
-			when :drop_table
-				sql << "DROP TABLE #{obj.table_name}"
-			when :create_view
-				sql << "CREATE VIEW #{obj.view_name} AS #{obj.view_sql}"
-			when :drop_view
-				sql << "DROP VIEW #{obj.view_name}"
-			when :rename_column
-				sql << "ALTER TABLE #{obj.table_name} RENAME COLUMN #{obj.old_col_name} TO #{obj.new_col_name}"
-			when :rename_table
-				sql << "ALTER TABLE IF EXISTS #{obj.old_name} RENAME TO #{obj.new_name}"
-			when :drop_columns
-				sql << "ALTER TABLE #{obj.table_name} #{obj.column_names.map{|c| "DROP COLUMN #{c.to_s}" }*', '}"
-      end
-			obj.callback.call unless obj.callback.nil?
-			sql*" "
+		
+		drop_index do |obj|
+			"DROP INDEX #{obj.name} ON #{obj.table_name}"
 		end
 	end
 end

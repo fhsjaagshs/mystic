@@ -4,6 +4,8 @@ require "mystic"
 
 module Mystic
   module SQL
+		Error = Class.new(StandardError)
+		
     class SQLObject
       def to_sql
         Mystic.adapter.serialize_sql(self)
@@ -72,7 +74,7 @@ module Mystic
     end
     
     class Table < SQLObject
-      attr_accessor :name
+      attr_reader :name
       attr_accessor :columns, :indeces, :operations
       
       def initialize(name,is_create=true)
@@ -110,8 +112,10 @@ module Mystic
     end
     
     class Operation < SQLObject
-      def initialize(opts={})
+			attr_reader :kind, :callback
+      def initialize(kind, opts={})
         @opts = opts
+				@kind = kind
 				@callback = opts[:callback]
       end
       
@@ -122,6 +126,10 @@ module Mystic
       def method_missing(meth, *args, &block)
 				@opts[meth.to_s.to_sym] rescue nil
       end
+			
+			def self.method_missing(meth, *args, &block)
+				new(args[0],args[1])
+			end
     end
 		
 		class Raw < SQLObject
