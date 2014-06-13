@@ -46,21 +46,6 @@ module Mystic
 			sql*" "
 		end
 		
-		column do |obj|
-			sql = []
-			sql << obj.name.to_s
-			sql << obj.kind.to_s.downcase
-			sql << "(#{obj.size})" if obj.size && !obj.size.empty? && obj.geospatial? == false
-			sql << "(#{obj.geom_kind}, #{obj.geom_srid})" if obj.geospatial?
-      sql << obj.constraints[:null] ? "NULL" : "NOT NULL" if obj.constraints.member?(:null)
-			sql << "UNIQUE" if obj.constraints[:unique]
-			sql << "PRIMARY KEY" if obj.constraints[:primary_key]
-			sql << "REFERENCES " + obj.constraints[:references] if obj.constraints.member?(:references)
-			sql << "DEFAULT " + obj.constraints[:default] if obj.constraints.member?(:default)
-			sql << "CHECK(#{obj.constraints[:check]})" if obj.constraints.member?(:check)
-			sql*" "
-		end
-		
 		#
 		## Operations
 		#
