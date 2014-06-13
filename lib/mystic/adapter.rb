@@ -76,6 +76,7 @@ module Mystic
         :size => pool_size || 5,
         :timeout => pool_timeout || 5,
       ) { block_for(:connect).call(opts) }
+			true
     end
   
     def disconnect

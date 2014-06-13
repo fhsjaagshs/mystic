@@ -16,6 +16,7 @@ module Mystic
 	EnvironmentError = Class.new(StandardError)
 	CLIError = Class.new(StandardError)
 	@@adapter = nil
+	@@root = nil
 	
 	
 	# Mystic configuration
@@ -40,24 +41,16 @@ module Mystic
 		
 		raise EnvironmentError, "Environment doesn't exist." unless db_yml.member?(env)
 		
-		db_conf = db_yml[env]
-		db_conf["dbname"] = db_conf.delete("database")
+		conf = db_yml[env]
+		conf["dbname"] = conf.delete("database")
 		
-		# get adapter name
-		adapter = db_conf.delete("adapter").to_s.downcase
-		adapter = "postgres" if adapter =~ /^postg.*$/i # Intentionally includes PostGIS
-		adapter = "mysql" if adapter =~ /^mysql.*$/i
+		create_adapter(
+			:adapter => conf["adapter"],
+			:poolsize => conf["pool"],
+			:timeout => conf["timeout"]
+		)
 		
-		# setup our adapter
-		require "mystic/adapters/" + adapter
-		
-		adapter_class = "Mystic::#{adapter.capitalize}Adapter"
-		@@adapter = Object.const_get(adapter_class).new(:env => env)
-		@@adapter.pool_size = db_conf.delete("pool").to_i
-		@@adapter.pool_timeout = db_conf.delete("timeout").to_i
-		@@adapter.connect(db_conf)
-		
-		true
+		@@adapter.connect(conf)
 	end
 	
   # Mystic.disconnect
@@ -191,4 +184,26 @@ class #{name} < Mystic::Migration
 end
 		mig_template
 	end
+	
+	#
+	## Private
+	#
+	
+	private
+
+	def create_adapter(opts={})
+		# get adapter name
+		adapter = opts[:adapter].to_s.downcase
+		adapter = "postgres" if adapter =~ /^postg.*$/i # Intentionally includes PostGIS
+		adapter = "mysql" if adapter =~ /^mysql.*$/i
+		
+		# setup our adapter
+		require "mystic/adapters/" + adapter
+		
+		adapter_class = "Mystic::#{adapter.capitalize}Adapter"
+		@@adapter = Object.const_get(adapter_class).new(:env => env)
+		@@adapter.pool_size = opts[:pool_size].to_i
+		@@adapter.pool_timeout = opts[:timeout].to_i
+	end
+	
 end
