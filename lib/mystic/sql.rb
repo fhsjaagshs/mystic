@@ -8,7 +8,14 @@ module Mystic
 		
     class SQLObject
       def to_sql
-        Mystic.adapter.serialize_sql(self)
+				obj = self.dup
+				obj.instance_variables.each do |vname|
+					v = obj.instance_variable_get(vname)
+					if v.is_a? Symbol
+						obj.instance_variable_set(vname,v.to_s)
+					end
+				end
+        Mystic.adapter.serialize_sql(obj)
       end
       
       alias_method :to_s, :to_sql

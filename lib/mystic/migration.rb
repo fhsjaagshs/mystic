@@ -6,7 +6,7 @@ module Mystic
   module SQL
     class Table
       def drop_index(idx_name)
-				raise Mystic::SQL::Error, "Cannot drop an index on a table that doesn't exist." if @is_create
+				raise Mystic::SQL::Error, "Cannot drop an index on a table that doesn't exist." if create?
         self << Mystic::SQL::Operation.drop_index(
           :index_name => idx_name.to_s,
           :table_name => self.name.to_s
@@ -14,7 +14,7 @@ module Mystic
       end
     
       def rename_column(oldname, newname)
-				raise Mystic::SQL::Error, "Cannot rename a column on a table that doesn't exist." if @is_create
+				raise Mystic::SQL::Error, "Cannot rename a column on a table that doesn't exist." if create?
         self << Mystic::SQL::Operation.rename_column(
           :table_name => self.name.to_s,
           :old_col_name => oldname.to_s,
@@ -23,7 +23,7 @@ module Mystic
       end
     
       def rename(newname)
-				raise Mystic::SQL::Error, "Cannot rename a table that doesn't exist." if @is_create
+				raise Mystic::SQL::Error, "Cannot rename a table that doesn't exist." if create?
         self << Mystic::SQL::Operation.rename_table(
           :old_name => self.name.to_s,
           :new_name => newname.to_s,
@@ -32,7 +32,7 @@ module Mystic
       end
     
       def drop_columns(*col_names)
-				raise Mystic::SQL::Error, "Cannot drop a column(s) on a table that doesn't exist." if @is_create
+				raise Mystic::SQL::Error, "Cannot drop a column(s) on a table that doesn't exist." if create?
         self << Mystic::SQL::Operation.drop_columns(
           :table_name => self.name.to_s,
           :column_names => col_names.map(&:to_s)
@@ -59,10 +59,11 @@ module Mystic
       end
       
       def index(*cols)
-        opts = cols.delete_at(-1) if cols.last.is_a?(Hash)
+        opts = cols.delete_at(-1) if cols.last.is_a? Hash
         opts ||= {}
         opts[:columns] = cols
-        self << Index.new({ :tblname => @name }.merge(opts))
+				opts[:tblname] = @name
+        self << Index.new(opts)
       end
       
       def method_missing(meth, *args, &block)
