@@ -16,14 +16,6 @@ module Mystic
 	EnvironmentError = Class.new(StandardError)
 	CLIError = Class.new(StandardError)
 	@@adapter = nil
-	@@root = nil
-	
-	
-	# Mystic configuration
-	# :convert_types => Defaults to `false`. Uses potentially correct information to guess the type of data returned from the DB. Applies only to postgres for now.
-	# 
-	
-	attr_accessor :config
 	
 	def self.adapter
 		@@adapter
@@ -88,7 +80,6 @@ module Mystic
 	# Returns:
 	#   A pathname to the application's root
   def self.root(path=Pathname.new(Dir.pwd))
-		return @@root unless @@root.nil?
 		raise RootError, "Failed to find application's root." if path == path.parent
 		mystic_path = path.join "mystic"
 		return path if mystic_path.exist? && mystic_path.directory?

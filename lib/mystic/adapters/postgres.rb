@@ -9,47 +9,11 @@ require "mystic/sql"
 # Mystic adapter for Postgres, includes PostGIS
 
 module Mystic
-	module PGHelpers
-		def parse_array(obj)
-			obj = obj[1..-2].split('},{').map { |s|
-				return str.split(",") if s[0] != "{" && s[-1] != "}"
-				s = s + "}" unless str[-1] == "}"
-				s = "{" + s unless s[0] == "{"
-				parse_array(s)
-			} if obj.match /^\{+.*\}+$/ rescue false
-			obj
-		end
-
-		def parse_res(res)
-			res.ntuples.times.map do |i|
-				Hash[res.nfields.times.map{ |j|
-					v = nil
-					if (Mystic.config[:convert_types] || false) == true
-						v =
-						# These are Postgres OIDs
-						case res.ftype(j)
-						when 16 # boolean
-							["TRUE","t","true","y","yes","on","1"].include?(res.getvalue(i, j))
-						else
-							parse_array(res.getvalue(i, j)) # Parses array the string contains brackets on the start and end
-						end
-					else
-						v = res.getvalue(i, j)
-					end
-			
-					[res.fname(j), v]
-				}].rehash
-			end
-		end
-	end
-end
-
-module Mystic
 	class PostgresAdapter < Mystic::Adapter
 		execute do |inst, sql|
 			res = inst.exec(sql)
-			ret = res[0][Mystic::Model::JSON_COL] if res.ntuples == 1 && res.nfields == 1 && [114,199].include?(res.ftype(0)) # 114 is the OID of the json datatype, 119 corresponds to _json
-			ret ||= Mystic::PGHelpers.parse_res(res)
+			ret = res[0][Mystic::Model::JSON_COL] if res.ntuples == 1 && res.nfields == 1
+			ret ||= res.ntuples.times.map { |i| res[i] } unless res.nil?
 			ret
 		end
   

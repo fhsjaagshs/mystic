@@ -4,7 +4,7 @@ require "mystic"
 
 module Mystic
   class Model
-    JSON_COL = "mystic_return_json"
+    JSON_COL = "mystic_return_json89788"
     
     def self.table_name
       to_s.downcase
