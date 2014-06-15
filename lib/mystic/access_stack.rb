@@ -5,7 +5,8 @@ require "thread"
 =begin
 AccessStack.new(
 	:size => 10,
-	:timeout => 3,
+	:timeout => 3, # how long to wait for access to the stack
+	:expires => 5, # how long an object lasts in the stack
 	:create => lambda {
 		PG.connect {}
 	},
@@ -26,6 +27,8 @@ module Mystic
 		def initialize(opts={})
 			@timeout = opts[:timeout] || opts["timeout"] || -1
 			@size = opts[:size] || opts["size"] || 5
+			@expires = opts[:expires] || opts["expires"] || -1
+			@expr_hash = {}
 			@stack = []
 			@count = 0
 			@mutex = Mutex.new
@@ -46,6 +49,12 @@ module Mystic
 			@mutex.unlock
 			true
 		end
+		
+		def create_obj
+			obj = @create_block.call
+			@expr_hash[obj] = Time.now
+			obj
+		end
 				
 		def with(&block)
 			begin
@@ -53,9 +62,15 @@ module Mystic
 				
 				threadsafe @timeout do
 					obj = @stack.pop
+					
+					if @expr_hash[obj]-Time.now > @expires
+						obj = nil
+						@count -= 1
+					end
+					
 					if @count < @size && obj.nil?
 						@count += 1
-						obj = @create_block.call
+						obj = create_obj
 					end
 				end
 
@@ -70,6 +85,7 @@ module Mystic
 		def empty
 			threadsafe do
 				@stack.each { |instance| @destroy_block.call(instance) }
+				@expr_hash.clear
 				@stack.clear
 				@count = 0
 			end
@@ -83,7 +99,7 @@ module Mystic
 			threadsafe do
 				num.times do
 					if @count < @size
-						@stack.push @create_block.call
+						@stack.push create_obj
 						@count += 1
 						created_count += 1
 					end
