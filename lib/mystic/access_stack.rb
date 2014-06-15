@@ -8,7 +8,7 @@ AccessStack.new(
 	:timeout => 3, # how long to wait for access to the stack
 	:expires => 5, # how long an object lasts in the stack
 	:create => lambda {
-		PG.connect {}
+		PG.connect
 	},
 	:destroy => lambda { |instance|
 		instance.close
@@ -21,6 +21,7 @@ AccessStack.new(
 module Mystic	
 	class AccessStack
 		attr_reader :count
+		attr_accessor :expires, :size, :create, :destroy
 		
 		TimeoutError = Class.new StandardError
 		
@@ -32,8 +33,8 @@ module Mystic
 			@stack = []
 			@count = 0
 			@mutex = Mutex.new
-			@create_block = opts[:create] || opts["create"]
-			@destroy_block = opts[:destroy] || opts["destroy"]
+			@create = opts[:create] || opts["create"]
+			@destroy = opts[:destroy] || opts["destroy"]
 		end
 		
 		def threadsafe(timeout=-1,&block)
@@ -51,7 +52,7 @@ module Mystic
 		end
 		
 		def create_obj
-			obj = @create_block.call
+			obj = @create.call
 			@expr_hash[obj] = Time.now
 			obj
 		end
@@ -84,7 +85,7 @@ module Mystic
 		
 		def empty
 			threadsafe do
-				@stack.each { |instance| @destroy_block.call(instance) }
+				@stack.each { |instance| @destroy.call instance }
 				@expr_hash.clear
 				@stack.clear
 				@count = 0
