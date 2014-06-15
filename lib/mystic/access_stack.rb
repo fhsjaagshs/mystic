@@ -60,5 +60,19 @@ module Mystic
 				@count = 0
 			end
 		end
+		
+		# Creates #{num} objects and adds them to the stack
+		# Returns: the number of objects created
+		def create(num=1)
+			created_count = 0
+			num.times do
+				if @count < @size
+					@count += 1
+					created_count += 1
+					@stack.push @create_block.call
+				end
+			end
+			created_count
+		end
 	end
 end

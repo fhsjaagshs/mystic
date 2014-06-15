@@ -1,5 +1,15 @@
 #!/usr/bin/env ruby
 
+module Kernel
+	def self.silent
+		v = $VERBOSE
+		$VERBOSE = false
+		yield
+		$VERBOSE = v
+		nil
+	end
+end
+
 class String
   def sqlize
     downcase.split("_").map(&:capitalize)*' '
@@ -58,11 +68,13 @@ class Hash
 end
 
 class Pathname
-  def relative?
-    @path[0] != File::SEPARATOR
-  end
+	Kernel.silent do
+	  def relative?
+	    @path[0] != File::SEPARATOR
+	  end
 	
-	def join(*args)
-		Pathname.new(File.join @path, *args.map(&:to_s))
+		def join(*args)
+			Pathname.new(File.join @path, *args.map(&:to_s))
+		end
 	end
 end
