@@ -1,7 +1,5 @@
 #!/usr/bin/env ruby
 
-require "mystic"
-
 module Mystic
   class Model
     JSON_COL = "mystic_return_json89788"

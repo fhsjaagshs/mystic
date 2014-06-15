@@ -1,6 +1,5 @@
 #!/usr/bin/env ruby
 
-require "mystic"
 require "connection_pool"
 require "densify"
 
@@ -30,9 +29,8 @@ module Mystic
     end
     
     # Fetch a block for the current adapter
-    def block_for(*args)
-			key = args.delete -1
-      @@blocks[args.first || adapter][key] rescue lambda { "" }
+    def block_for(key)
+      @@blocks[adapter][key] rescue lambda { "" }
     end
     
     #
@@ -72,7 +70,7 @@ module Mystic
     #
   
     def connect(opts)
-			@pool = AccessStack.new 
+			@pool = AccessStack.new(
 				:size => @pool_size,
 				:timeout => @pool_timeout,
 				:create => lambda {
@@ -81,6 +79,7 @@ module Mystic
 				:destroy => lambda { |instance|
 					block_for(:disconnect).call(instance)
 				}
+			)
     end
   
     def disconnect

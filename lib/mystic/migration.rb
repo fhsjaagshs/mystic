@@ -1,10 +1,10 @@
 #!/usr/bin/env ruby
 
-require "mystic"
+require "mystic/sql"
 
 module Mystic
   module SQL
-    class Table
+    class Table < SQLObject
       def drop_index(idx_name)
 				raise Mystic::SQL::Error, "Cannot drop an index on a table that doesn't exist." if create?
         self << Mystic::SQL::Operation.drop_index(
@@ -98,7 +98,7 @@ module Mystic
 		
 		def exec_queue
 			q = @direction == :up ? @up_queue : @down_queue
-			q.map! &:to_sql
+			q.map!(&:to_sql)
 			
 			begin
 				q.each{ |obj| "EXPLAIN #{Mystic.execute(obj)}" }

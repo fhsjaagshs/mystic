@@ -153,9 +153,9 @@ module Mystic
     
 		migs = root.join "mystic","migrations"
 
-		num = migs.entries.map { |e| MIG_REGEX.match(e.to_s)[:num].to_i rescue 0 }.max.to_i+1
+		num = migs.entries.map{ |e| MIG_REGEX.match(e.to_s)[:num].to_i rescue 0 }.max.to_i+1
 
-		File.open(migs.join("#{mig_num}_#{name}.rb").to_s, 'w') { |f| f.write(template name) }
+		File.open(migs.join("#{num}_#{name}.rb").to_s, 'w') { |f| f.write(template name) }
 	end
 	
   # Retuns a blank migration's code in a String

@@ -1,7 +1,5 @@
 #!/usr/bin/env ruby
 
-require "mystic"
-
 module Mystic
   module SQL
 		Error = Class.new(StandardError)
@@ -32,7 +30,7 @@ module Mystic
         @concurrently = opts[:concurrently] # a boolean
         @with = opts[:with] # a hash (keys => { :fillfactor => 10..100, :fastupdate => true })
         @tablespace = opts[:tablespace]
-        @columns = opts[:columns].map &:to_sym || []
+        @columns = opts[:columns].map(&:to_sym) || []
       end
       
       # can accept shit other than columns like

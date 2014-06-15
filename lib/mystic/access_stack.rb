@@ -1,7 +1,10 @@
 #!/usr/bin/env ruby
 
+
+require "thread"
+
 =begin
-AccessStack.new 
+AccessStack.new(
 	:size => 10,
 	:timeout => 3,
 	:create => lambda {
@@ -10,6 +13,7 @@ AccessStack.new
 	:destroy => lambda { |instance|
 		instance.close
 	}
+)
 =end
 
 module Mystic	
@@ -22,7 +26,7 @@ module Mystic
 			@stack = []
 			@count = 0
 			@mutex = Mutex.new
-			@cvar = ConditionalVariable.new
+			@cvar = ConditionVariable.new
 			@create_block = opts[:create] || opts["create"]
 			@destroy_block = opts[:destroy] || opts["destroy"]
 		end
