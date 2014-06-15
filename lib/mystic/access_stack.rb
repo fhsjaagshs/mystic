@@ -15,6 +15,8 @@ AccessStack.new(
 )
 =end
 
+# TODO: Expire objects
+
 module Mystic	
 	class AccessStack
 		attr_reader :count
