@@ -1,6 +1,5 @@
 #!/usr/bin/env ruby
 
-
 require "thread"
 
 =begin
@@ -21,7 +20,7 @@ module Mystic
 		attr_reader :count
 		
 		def initialize(opts={})
-			@timeout = opts[:timeout] || opts["timeout"] || 5
+			@timeout = opts[:timeout] || opts["timeout"] || -1
 			@size = opts[:size] || opts["size"] || 5
 			@stack = []
 			@count = 0
@@ -38,13 +37,13 @@ module Mystic
 				@mutex.synchronize do
 					@cvar.wait(@mutex) if @stack.count == 0 && @count > 0
 					obj = @stack.pop
+					if @count < @size && obj.nil?
+						@count += 1
+						obj = @create_block.call
+					end
+					@cvar.signal
 				end
-				
-				if @count < @size && !obj.nil?
-					@count += 1
-					obj = @create_block.call
-				end
-				
+
 				return block.call obj
 			ensure
 				@mutex.synchronize do
@@ -55,9 +54,9 @@ module Mystic
 		end
 		
 		def empty
-			@mutex.synchonize do
-				@stack.each { |instance| @shutdown_block.call(instance) }
-				@stack.empty
+			@mutex.synchronize do
+				@stack.each { |instance| @destroy_block.call(instance) }
+				@stack.clear
 				@count = 0
 			end
 		end

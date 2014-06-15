@@ -12,15 +12,15 @@ describe Mystic::AccessStack do
 			:size => 10,
 			:timeout => 3,
 			:create => lambda {
-				""
+				"THIS"
 			},
 			:destroy => lambda { |instance|
 				instance = ""
 			}
 		)
 		
-		res = stack.with{ |inst| inst + "FOOBAR" } || "FOOBAR"
-		stack.shutdown
+		res = stack.with{ |inst| inst + "FOOBAR" } || "THISFOOBAR"
+		stack.empty
 		res
 	end
 

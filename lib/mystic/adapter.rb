@@ -1,9 +1,7 @@
 #!/usr/bin/env ruby
 
-require "connection_pool"
 require "densify"
-
-# TODO: Store blocks in hash to avoid conflicts between adapters
+require "mystic/access_stack"
 
 module Mystic
   class Adapter
