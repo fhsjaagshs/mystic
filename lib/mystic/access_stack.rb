@@ -113,9 +113,28 @@ module Mystic
 		
 		def threadsafe(timeout=-1,&block)
 			begin
-				@mutex.lock
+				
+				start_time = Time.now
+				while @mutex.try_lock do
+					sleep timeout/10 if timeout > 0
+					sleep 0.5 if timeout == -1
+					puts "loop"
+					raise TimeoutError, "Took too long for the mutex to get a lock." if (Time.now-start_time).to_f >= timeout && timeout > 0
+				end
+				
+				begin
+				  Timeout::timeout(timeout) do
+						sleep 10
+				    @mutex.lock
+				  end
+				rescue Timeout::Error
+					return false
+				end
+				
+				
 				block.call
 				@mutex.unlock
+				return true
 			rescue
 				
 			end
