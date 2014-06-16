@@ -28,6 +28,10 @@ module Mystic
 		disconnect do |inst|
 			inst.close
 		end
+		
+		validate do |inst|
+			inst.status == CONNECTION_OK
+		end
 	  
 		drop_index do |obj|
 			"DROP INDEX #{obj.index_name}"

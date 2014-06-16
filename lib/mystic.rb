@@ -41,7 +41,8 @@ module Mystic
 		create_adapter(
 			:adapter => conf.delete("adapter"),
 			:poolsize => conf["pool"],
-			:timeout => conf["timeout"]
+			:timeout => conf["checkout_timeout"],
+			:expires => conf["dead_connection_timeout"]
 		)
 		
 		@@adapter.connect conf
@@ -198,5 +199,6 @@ end
 		@@adapter = Object.const_get("Mystic::#{name.capitalize}Adapter").new
 		@@adapter.pool_size = opts[:pool_size].to_i
 		@@adapter.pool_timeout = opts[:timeout].to_i
+		@@adapter.expire_interval = opts[:expires].to_i
 	end
 end
