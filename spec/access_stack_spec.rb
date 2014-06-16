@@ -56,5 +56,16 @@ describe Mystic::AccessStack do
 		
 		stack.count == 3
 	end
+	
+	it "should be able to time out" do
+		stack = create_stack
+		stack.timeout = 0.0000000000000001
+		begin
+			res = stack.with{ |inst| inst + "FOOBAR" } 
+		rescue
+			return false
+		end
+		true
+	end
 
 end

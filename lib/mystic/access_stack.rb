@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 
 require "thread"
+require "timeout"
 
 =begin
 AccessStack.new(
@@ -19,12 +20,10 @@ AccessStack.new(
 )
 =end
 
-# TODO: Expire objects on a timer
-
 module Mystic	
 	class AccessStack
 		attr_reader :count
-		attr_accessor :expires, :size, :create, :destroy, :validate
+		attr_accessor :expires, :size, :timeout, :create, :destroy, :validate
 		
 		TimeoutError = Class.new StandardError
 		
@@ -45,7 +44,7 @@ module Mystic
 			begin
 				obj = nil
 				
-				threadsafe @timeout do
+				threadsafe do
 					obj = @stack.pop
 				end
 				
@@ -69,7 +68,7 @@ module Mystic
 		
 		def empty
 			return if @count == 0
-			threadsafe @timeout do
+			threadsafe do
 				@stack.each(&@destroy.method(:call))
 				@expr_hash.clear
 				@stack.clear
@@ -79,7 +78,7 @@ module Mystic
 		
 		def reap
 			return true if @count == 0
-			threadsafe @timeout do
+			threadsafe do
 				@stack.reject(&method(:obj_valid)).each do |instance|
 					@destroy.call instance
 					@expr_hash.delete instance
@@ -92,7 +91,7 @@ module Mystic
 		def create_objects(num=1)
 			created_count = 0
 			
-			threadsafe @timeout do
+			threadsafe do
 				num.times do
 					if @count < @size
 						@stack.push create_obj
@@ -111,56 +110,21 @@ module Mystic
 		
 		private
 		
-		def threadsafe(timeout=-1,&block)
+		def threadsafe(&block)
 			begin
-				
-				start_time = Time.now
-				while @mutex.try_lock do
-					sleep timeout/10 if timeout > 0
-					sleep 0.5 if timeout == -1
-					puts "loop"
-					raise TimeoutError, "Took too long for the mutex to get a lock." if (Time.now-start_time).to_f >= timeout && timeout > 0
-				end
-				
-				begin
-				  Timeout::timeout(timeout) do
-						sleep 10
-				    @mutex.lock
-				  end
-				rescue Timeout::Error
-					return false
-				end
-				
+			  Timeout::timeout(@timeout) do
+			    @mutex.lock
+			  end
 				
 				block.call
 				@mutex.unlock
-				return true
-			rescue
-				
+				true
+			rescue Timeout::Error
+				raise TimeoutError, "Failed to obtain a lock fast enough."
 			end
+			false
 		end
-=begin
-		def threadsafe(timeout=-1,&block)
-			puts "threadsafe()"
-			start_time = Time.now
-			while @mutex.locked? do
-				sleep timeout/10 if timeout > 0
-				sleep 0.5 if timeout == -1
-				puts "loop"
-				raise TimeoutError, "Took too long for the mutex to get a lock." if (Time.now-start_time).to_f >= timeout && timeout > 0
-			end
-			
-			puts "about to lock"
-			
-			if @mutex.try_lock
-				@mutex.lock 
-				block.call
-				@mutex.unlock
-			end
-			
-			true
-		end
-=end
+
 		def create_obj
 			obj = @create.call
 			@expr_hash[obj] = Time.now
