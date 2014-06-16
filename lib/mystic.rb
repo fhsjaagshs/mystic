@@ -47,6 +47,12 @@ module Mystic
 		@@adapter.connect conf
 	end
 	
+	self.alias_method :env=, :connect
+	
+	def self.env
+		@@env
+	end
+	
   # Mystic.disconnect
   #   Disconnects from the connected database. Use it like ActiveRecord::Base.connection.disconnect!
 	def self.disconnect
