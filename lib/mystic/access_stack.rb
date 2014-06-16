@@ -40,7 +40,7 @@ module Mystic
 		def threadsafe(timeout=-1,&block)
 			start_time = Time.now
 			while @mutex.locked?
-				sleep timeout/7
+				sleep timeout/7 || 0.5
 				raise TimeoutError, "Took too long for the mutex to get a lock." if (Time.now-start_time).to_f >= timeout && timeout > 0
 			end
 			
@@ -84,7 +84,7 @@ module Mystic
 		end
 		
 		def empty
-			threadsafe do
+			threadsafe @timeout do
 				@stack.each { |instance| @destroy.call instance }
 				@expr_hash.clear
 				@stack.clear
