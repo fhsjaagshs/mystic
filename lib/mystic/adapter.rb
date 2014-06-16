@@ -70,7 +70,7 @@ module Mystic
     def connect(opts)
 			@pool = AccessStack.new(
 				:size => @pool_size,
-				:timeout => @pool_timeout,
+				:timeout => @pool_timeout || 5,
 				:create => lambda {
 					block_for(:connect).call opts
 				},
