@@ -25,6 +25,10 @@ module Mystic
 	  disconnect do |inst|
 	    inst.close
 	  end
+	  
+	  validate do |inst|
+	  	inst.ping
+	  end
 		
 		drop_index do |obj|
 			"DROP INDEX #{obj.name} ON #{obj.table_name}"
