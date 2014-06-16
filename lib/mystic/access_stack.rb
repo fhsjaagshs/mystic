@@ -38,7 +38,7 @@ module Mystic
 			@mutex = Mutex.new
 			@create = opts[:create] || opts["create"]
 			@destroy = opts[:destroy] || opts["destroy"]
-			@validate = opts[:validate || opts["validate"]
+			@validate = opts[:validate] || opts["validate"]
 		end
 		
 		def with(&block)
@@ -47,16 +47,16 @@ module Mystic
 				
 				threadsafe @timeout do
 					obj = @stack.pop
-					
-					if !obj_valid obj && 
-						obj = nil
-						@count -= 1
-					end
-					
-					if @count < @size && obj.nil?
-						@count += 1
-						obj = create_obj
-					end
+				end
+				
+				if !(obj_valid obj)
+					obj = nil
+					@count -= 1
+				end
+				
+				if @count < @size && obj.nil?
+					@count += 1
+					obj = create_obj
 				end
 
 				return block.call obj
@@ -70,13 +70,12 @@ module Mystic
 		def empty
 			return if @count == 0
 			threadsafe @timeout do
-				@stack.each { |instance| @destroy.call instance }
+				@stack.each(&@destroy.method(:call))
 				@expr_hash.clear
 				@stack.clear
 				@count = 0
 			end
 		end
-		
 		
 		def reap
 			return true if @count == 0
@@ -90,10 +89,10 @@ module Mystic
 			end
 		end
 
-		def create(num=1)
+		def create_objects(num=1)
 			created_count = 0
 			
-			threadsafe do
+			threadsafe @timeout do
 				num.times do
 					if @count < @size
 						@stack.push create_obj
@@ -113,20 +112,36 @@ module Mystic
 		private
 		
 		def threadsafe(timeout=-1,&block)
+			begin
+				@mutex.lock
+				block.call
+				@mutex.unlock
+			rescue
+				
+			end
+		end
+=begin
+		def threadsafe(timeout=-1,&block)
+			puts "threadsafe()"
 			start_time = Time.now
-			while @mutex.locked?
+			while @mutex.locked? do
 				sleep timeout/10 if timeout > 0
 				sleep 0.5 if timeout == -1
+				puts "loop"
 				raise TimeoutError, "Took too long for the mutex to get a lock." if (Time.now-start_time).to_f >= timeout && timeout > 0
 			end
 			
-			@mutex.lock if @mutex.try_lock
-			return false unless @mutex.owned?
-			block.call	
-			@mutex.unlock
+			puts "about to lock"
+			
+			if @mutex.try_lock
+				@mutex.lock 
+				block.call
+				@mutex.unlock
+			end
+			
 			true
 		end
-		
+=end
 		def create_obj
 			obj = @create.call
 			@expr_hash[obj] = Time.now
@@ -135,7 +150,7 @@ module Mystic
 		
 		def obj_valid(obj)
 			block_valid = @vaildate.call obj rescue true
-			expired = (@expr_hash[obj]-Time.now > @expires && @expires > 0)
+			expired = (@expires > 0 && (@expr_hash[obj] || 0).to_f-Time.now.to_f > @expires)
 			!expired && block_valid
 		end
 	end

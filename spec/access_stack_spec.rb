@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 require "rspec"
-require "mystic"
+require "mystic/access_stack"
 
 def create_stack
 	Mystic::AccessStack.new(
@@ -12,6 +12,9 @@ def create_stack
 		},
 		:destroy => lambda { |instance|
 			instance = nil
+		},
+		:validate => lambda { |instance|
+			instance.is_a? String && instance.length > 0
 		}
 	)
 end
@@ -20,14 +23,15 @@ describe Mystic::AccessStack do
 	
 	it "should create objects" do
 		stack = create_stack
-		res = stack.with{ |inst| inst + "FOOBAR" } || "THISFOOBAR"
+		res = stack.with{ |inst| inst + "FOOBAR" } 
+		puts res
 		stack.empty
-		res
+		res == "THISFOOBAR"
 	end
 	
 	it "should work concurrently" do
 		stack = create_stack
-		stack.create 1
+		stack.create_objects 1
 		
 		begin
 			t = []
@@ -45,7 +49,8 @@ describe Mystic::AccessStack do
 			}
 			
 			t.each(&:join)
-		rescue StandardError
+		rescue StandardError => e
+			puts e.message
 			return false
 		end
 		
