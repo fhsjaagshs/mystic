@@ -54,9 +54,10 @@ module Mystic
 		def env
 			@@env
 		end
-	
-	  # Mystic.disconnect
-	  #   Disconnects from the connected database. Use it like ActiveRecord::Base.connection.disconnect!
+		
+		
+		# Mystic.disconnect
+		#   Disconnects from the connected database. Use it like ActiveRecord::Base.connection.disconnect!
 		def disconnect
 			@@adapter.disconnect
 			@@adapter = nil
@@ -69,7 +70,7 @@ module Mystic
 	  #   sql - The SQL to execute
 	  # Returns: Native Ruby objects representing the response from the DB (Usually an Array of Hashes)
 	  def execute(sql="")
-			raise AdapterError, "Adapter is nil, so Mystic is not connected." if @@adapter.nil?
+		raise AdapterError, "Adapter is nil, so Mystic is not connected." if @@adapter.nil?
 	    @@adapter.execute sql
 	  end
   
@@ -79,7 +80,7 @@ module Mystic
 	  #   str - The string to sanitize
 	  # Returns: the sanitized string
 	  def sanitize(str="")
-			raise AdapterError, "Adapter is nil, so Mystic is not connected." if @@adapter.nil?
+		raise AdapterError, "Adapter is nil, so Mystic is not connected." if @@adapter.nil?
 	    @@adapter.sanitize str
 	  end
 	
@@ -120,10 +121,10 @@ module Mystic
 	  # Runs every yet-to-be-ran migration
 		def migrate
 			create_table
-		  migrated_filenames = execute("SELECT filename FROM mystic_migrations").map{ |r| r["filename"] }
-		  mp = root.join("mystic","migrations").to_s
+			migrated_filenames = execute("SELECT filename FROM mystic_migrations").map{ |r| r["filename"] }
+			mp = root.join("mystic","migrations").to_s
 		
-		  Dir.entries(mp)
+			Dir.entries(mp)
 				.reject{ |e| MIG_REGEX.match(e).nil? }
 				.reject{ |e| migrated_filenames.include? e }
 				.sort{ |a,b| MIG_REGEX.match(a)[:num].to_i <=> MIG_REGEX.match(b)[:num].to_i }
@@ -170,25 +171,23 @@ module Mystic
 		def template(name=nil)
 			raise ArgumentError, "Migrations must have a name." if name.nil?
 			<<-mig_template
-	#!/usr/bin/env ruby
+#!/usr/bin/env ruby
 
-	require "mystic"
+require "mystic"
 
-	class #{name} < Mystic::Migration
-		def up
+class #{name} < Mystic::Migration
+	def up
 		
-		end
-  
-		def down
-		
-		end
 	end
+  
+	def down
+		
+	end
+end
 			mig_template
 		end
 	
-		#
-		# Private helpers
-		#
+		private
 	
 		def create_adapter(opts={})
 			name = opts[:adapter].to_s.downcase.strip
