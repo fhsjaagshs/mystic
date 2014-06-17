@@ -10,13 +10,13 @@ module Mystic
     @@blocks = {}
     
     def self.create(name="",opts={})
-		name = name.to_s.downcase.strip
-		name = "postgres" if name =~ /^postg.*$/i # Includes PostGIS
-		name = "mysql" if name =~ /^mysql.*$/i
+			name = name.to_s.downcase.strip
+			name = "postgres" if name =~ /^postg.*$/i # Includes PostGIS
+			name = "mysql" if name =~ /^mysql.*$/i
 		
-		require "mystic/adapters/" + name
+			require "mystic/adapters/" + name
 		
-		Object.const_get("Mystic::#{name.capitalize}Adapter").new opts
+			Object.const_get("Mystic::#{name.capitalize}Adapter").new opts
     end
     
     def initialize(opts={})
@@ -31,15 +31,15 @@ module Mystic
       name.split("::").last.sub("Adapter","").downcase
     end
 		
-	def adapter
-		self.class.adapter
-	end
+		def adapter
+			self.class.adapter
+		end
     
     # Map a block to an adapter's block hash
     #   This avoids cases where a subclass' class var
     #   changes that class var on its superclass
     def self.map_block(key, block)
-		@@blocks[adapter] ||= {}
+			@@blocks[adapter] ||= {}
     	@@blocks[adapter][key] = block
     end
     
@@ -75,11 +75,11 @@ module Mystic
     # validate(inst)
     # Checks if inst is a valid connection
 
-	# Map missing methods to blocks
-	# DB ops or SQL generation
-	def self.method_missing(meth, *args, &block)
-		map_block meth, block
-	end
+		# Map missing methods to blocks
+		# DB ops or SQL generation
+		def self.method_missing(meth, *args, &block)
+			map_block meth, block
+		end
   
     #
     # Adapter methods
@@ -87,21 +87,20 @@ module Mystic
     #   They are called by class methods
     #   in ../mystic.rb
     #
-  
-    def connect(opts)
-		@pool = AccessStack.new(
-			:size => @pool_size,
-			:timeout => @pool_timeout,
-			:expires => @pool_expires,
-			:create => lambda {
-				block_for(:connect).call opts
-			}
-		)
+		def connect(opts)
+			@pool = AccessStack.new(
+				:size => @pool_size,
+				:timeout => @pool_timeout,
+				:expires => @pool_expires,
+				:create => lambda {
+					block_for(:connect).call opts
+				}
+			)
     end
   
     def disconnect
     	@pool.destroy ||= block_for :disconnect
-		@pool.empty
+			@pool.empty
     end
     
     def reap
@@ -110,28 +109,28 @@ module Mystic
     end
   
     def execute(sql)
-		raise AdapterError, "Adapter's connection pool doesn't exist and so Mystic has not connected to the database." if @pool.nil?
-		sql = sql.densify
-		sql << ";" unless sql[-1] == ";"
-		@pool.with { |inst| block_for(:execute).call inst,sql }
+			raise AdapterError, "Adapter's connection pool doesn't exist and so Mystic has not connected to the database." if @pool.nil?
+			sql = sql.densify
+			sql << ";" unless sql.end_with? ";"
+			@pool.with { |inst| block_for(:execute).call inst,sql }
     end
   
     def sanitize(str)
-		@pool.with { |inst| block_for(:sanitize).call inst,sql }
+			@pool.with { |inst| block_for(:sanitize).call inst,sql }
     end
   
     def serialize_sql(obj)
-		case obj
-		when SQL::Table
-			block_for(:table).call obj
-		when SQL::Index
-			block_for(:index).call obj
-		when SQL::Column
-			block_for(:column).call obj
-		when SQL::Operation
-			block_for(obj.kind).call obj
-			obj.callback.call unless obj.callback.nil?
-		end
+			case obj
+			when SQL::Table
+				block_for(:table).call obj
+			when SQL::Index
+				block_for(:index).call obj
+			when SQL::Column
+				block_for(:column).call obj
+			when SQL::Operation
+				block_for(obj.kind).call obj
+				obj.callback.call unless obj.callback.nil?
+			end
     end
   end
 end

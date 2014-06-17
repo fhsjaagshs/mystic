@@ -6,6 +6,7 @@ module Mystic
 		
     class SQLObject
       def to_sql
+=begin
 				obj = self.dup
 				obj.instance_variables.each do |vname|
 					v = obj.instance_variable_get vname
@@ -13,6 +14,7 @@ module Mystic
 						obj.instance_variable_set vname,v.to_s
 					end
 				end
+=end
         Mystic.adapter.serialize_sql obj
       end
       
@@ -20,17 +22,42 @@ module Mystic
     end
     
     class Index < SQLObject
-      attr_accessor :name, :tblname, :opts, :type, :unique, :using, :concurrently, :with, :columns, :tablespace
+      attr_accessor :name, # Symbol or string
+										:table_name, # Symbol or string
+										:type, # Symbol
+										:unique, # TrueClass/FalseClass
+										:columns, # Array of Strings
+										:opts # Hash, see below
       
+			# opts
+			# It's a Hash that represents options
+			#
+			# MYSQL ONLY
+			# Key => Value (type)
+			# :comment => A string that's up to 1024 chars (String)
+			# :algorithm => The algorithm to use (Symbol)
+			# :lock => The lock to use (Symbol)
+			#
+			# POSTGRES ONLY
+			# Key => Value (type)
+			# :fillfactor => A value in the range 10..100 (Integer)
+			# :fastupdate => true/false (TrueClass/FalseClass)
+			# :concurrently => true/false (TrueClass/FalseClass)
+			# :tablespace => The name of the desired tablespace (String)
+			# :buffering => :on/:off/:auto (Symbol)
+			# :concurrently => true/false (TrueClass/FalseClass)
+			# :where => The conditions for including entries in your index, same as SELECT * FROM table WHERE ____ (String)
+			
       def initialize(opts={})
-        @name = opts[:name]
-        @tblname = opts[:tblname]
-        @type = opts[:type].to_sym || :btree # a string/symbol
-        @unique = opts[:unique] # a boolean
-        @concurrently = opts[:concurrently] # a boolean
-        @with = opts[:with] # a hash (keys => { :fillfactor => 10..100, :fastupdate => true })
-        @tablespace = opts[:tablespace]
-        @columns = opts[:columns].map(&:to_sym) || []
+				opts.symbolize!
+				raise ArgumentError, "Indeces need a table_name or else what's the point?." unless opts.member? :table_name
+				raise ArgumentError, "Indeces need columns or else what's the point?" unless opts.member? :columns
+        @name = opts.delete(:name).to_sym
+        @table_name = opts.delete(:table_name).to_sym
+        @type = (opts.delete :type || :btree).to_s.downcase.to_sym
+				@unique = opts.delete :unique || false
+        @columns = opts.delete(:columns).symbolize rescue []
+				@opts = opts
       end
       
       # can accept shit other than columns like
@@ -47,6 +74,11 @@ module Mystic
       end
 
       alias_method :push, :<<
+			
+			def method_missing(meth, *args, &block)
+				return @opts[meth] if @opts.member? meth
+				nil
+			end
     end
   
     class Column < SQLObject

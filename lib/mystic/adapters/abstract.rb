@@ -39,19 +39,15 @@ module Mystic
 			sql*" "
 		end
 		
-		# TODO: Check this
-		index do |obj|
+		index do |index|
 			sql = []
 			sql << "CREATE"
-			sql << "UNIQUE" if obj.unique
+			sql << "UNIQUE" if index.unique
 			sql << "INDEX"
-		  sql << obj.name unless obj.name.nil?
+		  sql << index.name if index.name
 		  sql << "ON"
-			sql << obj.tblname
-			sql << "USING #{obj.type}" if obj.type
-			sql << "(#{obj.columns.map(&:to_s).join(',')})" if obj.columns.is_a?(Array) && obj.columns
-			sql << "WITH (#{obj.with.sqlize})" if obj.with
-			sql << "TABLESPACE #{obj.tablespace}" if obj.tablespace # TODO: This is postgres only...
+			sql << index.table_name
+			sql << "(#{index.columns.map(&:to_s).join(',')})"
 			sql*" "
 		end
 		

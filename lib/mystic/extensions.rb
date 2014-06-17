@@ -18,6 +18,10 @@ class String
   def sanitize
     Mystic.sanitize(self).untaint
   end
+	
+	def truncate(len)
+		self[0..len-1]
+	end
 end
 
 class Symbol
@@ -29,10 +33,19 @@ class Symbol
 end
 
 class Array
-  def merge_keys(keys=[])
+  def merge_keys(*keys)
+		raise ArgumentError, "No keys to merge." if keys.nil? || keys.empty?
     raise ArgumentError, "Argument array must have the same number of elements as self." if keys.count != self.count
-    Hash[each_with_index.map{ |obj,i| [keys[i],obj] }]
+    Hash[each_with_index.map{ |v,i| [keys[i],v] }]
   end
+	
+	def symbolize
+		map(&:to_sym)
+	end
+	
+	def symbolize!
+		map!(&:to_sym)
+	end
 	
 	def sqlize
 		map do |o|
@@ -47,6 +60,14 @@ class Array
 end
 
 class Hash
+	def multi(*keys)
+		keys.map { |k| fetch(k) }
+	end
+	
+	def subhash(*keys)
+		Hash[keys.map { |k| [k,fetch(k)] }]
+	end
+	
   def parify(delim=" ")
     Hash[map{ |pair| pair * delim }]
   end
@@ -56,10 +77,7 @@ class Hash
 	end
 	
 	def symbolize!
-		keys.each do |key|
-			self[key.to_sym] = delete key
-		end
-		self
+		keys.each { |key| self[key.to_sym] = delete key }
 	end
   
   def sqlize

@@ -6,32 +6,36 @@ require "mysql2"
 
 # TODO:
 # 1. Implement geometry
-# 2. Check syntax, this is adapted from the Postgres adapter
 
 module Mystic
 	class MysqlAdapter < Mystic::Adapter
-	  execute do |inst, sql|
-			inst.query(sql).to_a
-	  end
-  
-	  sanitize do |inst, str|
-	    inst.escape(string)
-	  end
-  
-	  connect do |opts|
-	    Mysql2::Client.new(opts)
-	  end
-  
-	  disconnect do |inst|
-	    inst.close
-	  end
-	  
-	  validate do |inst|
-	  	inst.ping
-	  end
+		ALGORITHMS = [:default, :inplace, :copy]
+		LOCKS = [:default, :none, :shared, :exclusive]
 		
-		drop_index do |obj|
-			"DROP INDEX #{obj.name} ON #{obj.table_name}"
+		connect { |opts| Mysql2::client.new opts }
+		disconnect { |mysql| mysql.close }
+		validate { |mysql| mysql.ping }
+		execute { |mysql, sql| mysql.query(sql).to_a }
+		sanitize { |mysql, str| mysql.escape str }
+		
+		drop_index do |index|
+			"DROP INDEX #{index.name} ON #{index.table_name}"
+		end
+		
+		index do |index|
+			sql = []
+			sql << "CREATE"
+			sql << "UNIQUE" if index.unique
+			sql << "INDEX"
+		  sql << index.name if index.name
+		  sql << "ON"
+			sql << index.table_name
+			sql << "USING #{obj.type.to_s.capitalize}" if index.type
+			sql << "(#{index.columns.map(&:to_s).join ',' })"
+			sql << "COMMENT #{index.comment.truncate 1024}" if index.comment
+			sql << "ALGORITHM #{index.algorithm.to_s.upcase}" if !index.lock && ALGORITHMS.include? index.algorithm
+			sql << "LOCK #{index.lock.to_s.upcase}" if !index.algorithm && LOCKS.include? index.lock
+			sql*" "
 		end
 	end
 end
