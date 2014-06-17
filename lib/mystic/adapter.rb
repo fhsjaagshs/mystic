@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 require "densify"
-require "mystic/access_stack"
+require "access_stack"
 
 module Mystic
   class Adapter

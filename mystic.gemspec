@@ -11,6 +11,6 @@ Gem::Specification.new do |s|
   s.require_path = "lib"
   s.executables  = Dir.glob("bin/**/*").map{ |path| path.split("/",2).last }
   s.add_dependency 'densify', "~> 0"
-  #s.add_dependency 'connection_pool', "~> 2"
-	s.add_development_dependency 'rspec'
+  s.add_dependency 'access_stack', "~> 0"
+  s.add_development_dependency 'rspec', "~> 3"
 end
