@@ -5,9 +5,26 @@ require "access_stack"
 
 module Mystic
   class Adapter
-    attr_accessor :pool_size, :pool_timeout, :expire_interval
+    attr_accessor :pool_size, :pool_timeout, :pool_expires
   
     @@blocks = {}
+    
+    def self.create(name="",opts={})
+		name = name.to_s.downcase.strip
+		name = "postgres" if name =~ /^postg.*$/i # Includes PostGIS
+		name = "mysql" if name =~ /^mysql.*$/i
+		
+		require "mystic/adapters/" + name
+		
+		Object.const_get("Mystic::#{name.capitalize}Adapter").new opts
+    end
+    
+    def initialize(opts={})
+    	opts.symbolize.each do |k,v|
+    		k = ('@' + k.to_s).to_sym
+    		instance_variable_set k,v if instance_variables.include? k
+    	end
+    end
 	
     # Gets the adapter name (examples: postgres, mysql)
     def self.adapter
@@ -75,7 +92,7 @@ module Mystic
 		@pool = AccessStack.new(
 			:size => @pool_size,
 			:timeout => @pool_timeout,
-			:expires => @expire_interval,
+			:expires => @pool_expires,
 			:create => lambda {
 				block_for(:connect).call opts
 			}

@@ -38,12 +38,12 @@ module Mystic
 		
 			conf = db_yml[@@env]
 			conf["dbname"] = conf.delete "database"
-		
-			create_adapter(
-				:adapter => conf.delete("adapter"),
-				:poolsize => conf["pool"],
-				:timeout => conf["checkout_timeout"],
-				:expires => conf["dead_connection_timeout"]
+			
+			@@adapter = Adapter.create (
+				conf.delete("adapter")
+				:pool_size => opts[:pool_size].to_i,
+				:pool_timeout => opts[:timeout].to_i,
+				:pool_expires => opts[:expires].to_i
 			)
 		
 			@@adapter.connect conf
@@ -167,20 +167,7 @@ module Mystic
 		end
 	
 		private
-	
-		def create_adapter(opts={})
-			name = opts[:adapter].to_s.downcase.strip
-			name = "postgres" if name =~ /^postg.*$/i # Includes PostGIS
-			name = "mysql" if name =~ /^mysql.*$/i
-		
-			require "mystic/adapters/" + name
-		
-			@@adapter = Object.const_get("Mystic::#{name.capitalize}Adapter").new
-			@@adapter.pool_size = opts[:pool_size].to_i
-			@@adapter.pool_timeout = opts[:timeout].to_i
-			@@adapter.expire_interval = opts[:expires].to_i
-		end
-		
+			
 		# Retuns a blank migration's code in a String
 		def template(name=nil)
 			raise ArgumentError, "Migrations must have a name." if name.nil?
