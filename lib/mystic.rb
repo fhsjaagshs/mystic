@@ -25,10 +25,10 @@ module Mystic
 			@@adapter
 		end
 		
-	  # Mystic.connect
-	  #   Connects to a database. It's recommended you use it like ActiveRecord::Base.establish_connection
-	  # Arguments:
-	  #   env - The env from database.yml you wish to use
+		# Mystic.connect
+		#   Connects to a database. It's recommended you use it like ActiveRecord::Base.establish_connection
+		# Arguments:
+		#   env - The env from database.yml you wish to use
 		def connect(env="")
 			@@env = env.to_s
 			path = root.join("config","database.yml").to_s
@@ -64,25 +64,25 @@ module Mystic
 			true
 		end
 
-	  # Mystic.execute
-	  #   Execute some sql. It will be densified (the densify gem) and sent to the DB
-	  # Arguments:
-	  #   sql - The SQL to execute
-	  # Returns: Native Ruby objects representing the response from the DB (Usually an Array of Hashes)
-	  def execute(sql="")
-		raise AdapterError, "Adapter is nil, so Mystic is not connected." if @@adapter.nil?
-	    @@adapter.execute sql
-	  end
+		# Mystic.execute
+		#   Execute some sql. It will be densified (the densify gem) and sent to the DB
+		# Arguments:
+		#   sql - The SQL to execute
+		# Returns: Native Ruby objects representing the response from the DB (Usually an Array of Hashes)
+		def execute(sql="")
+			raise AdapterError, "Adapter is nil, so Mystic is not connected." if @@adapter.nil?
+			@@adapter.execute sql
+		end
   
-	  # Mystic.sanitize
-	  #   Escape a string so that it can be used safely as input. Mystic does not support statement preparation, so this is a must.
-	  # Arguments:
-	  #   str - The string to sanitize
-	  # Returns: the sanitized string
-	  def sanitize(str="")
-		raise AdapterError, "Adapter is nil, so Mystic is not connected." if @@adapter.nil?
-	    @@adapter.sanitize str
-	  end
+		# Mystic.sanitize
+		#   Escape a string so that it can be used safely as input. Mystic does not support statement preparation, so this is a must.
+		# Arguments:
+		#   str - The string to sanitize
+		# Returns: the sanitized string
+		def sanitize(str="")
+			raise AdapterError, "Adapter is nil, so Mystic is not connected." if @@adapter.nil?
+			@@adapter.sanitize str
+		end
 	
 		# Mystic.root
 		#   Get the app root
@@ -90,12 +90,12 @@ module Mystic
 		#   To be ignored
 		# Returns:
 		#   A pathname to the application's root
-	  def root(path=Pathname.new(Dir.pwd))
+		def root(path=Pathname.new(Dir.pwd))
 			raise RootError, "Failed to find the application's root." if path == path.parent
 			mystic_path = path.join "config", "database.yml"
 			return path if mystic_path.file? # exist? is implicit with file?
 			root path.parent
-	  end
+		end
 	
 		# Mystic.create_table
 		#   Create migration tracking table
@@ -117,8 +117,8 @@ module Mystic
 			IRB.irb nil, IRB::WorkSpace.new
 			nil
 		end
-	
-	  # Runs every yet-to-be-ran migration
+		
+		# Runs every yet-to-be-ran migration
 		def migrate
 			create_table
 			migrated_filenames = execute("SELECT filename FROM mystic_migrations").map{ |r| r["filename"] }
@@ -132,25 +132,24 @@ module Mystic
 					load File.join mp,fname
 				
 					mig_num,mig_name = MIG_REGEX.match(fname).captures
-				
-			    Object.const_get(mig_name).new.migrate
-			    execute "INSERT INTO mystic_migrations (mig_number, filename) VALUES (#{mig_num},'#{fname}')"
+					Object.const_get(mig_name).new.migrate
+					execute "INSERT INTO mystic_migrations (mig_number, filename) VALUES (#{mig_num},'#{fname}')"
 				}
 		end
 	
-	  # Rolls back a single migration
+		# Rolls back a single migration
 		def rollback
 			create_table
 			fname = execute("SELECT filename FROM mystic_migrations ORDER BY mig_number DESC LIMIT 1")[0]["filename"] rescue nil
 			return if fname.nil?
 
-		  load root.join("mystic","migrations",fname).to_s
+			load root.join("mystic","migrations",fname).to_s
 		
 			mig_num,mig_name = MIG_REGEX.match(fname).captures
 
-		  Object.const_get(mig_name).new.rollback
+			Object.const_get(mig_name).new.rollback
 		
-		  execute "DELETE FROM mystic_migrations WHERE filename='#{fname}' and mig_number=#{mig_num}"
+			execute "DELETE FROM mystic_migrations WHERE filename='#{fname}' and mig_number=#{mig_num}"
 		end
 	
 	  # Creates a blank migration in mystic/migrations
@@ -167,26 +166,6 @@ module Mystic
 			File.open(migs.join("#{num}_#{name}.rb").to_s, 'w') { |f| f.write(template name) }
 		end
 	
-	  # Retuns a blank migration's code in a String
-		def template(name=nil)
-			raise ArgumentError, "Migrations must have a name." if name.nil?
-			<<-mig_template
-#!/usr/bin/env ruby
-
-require "mystic"
-
-class #{name} < Mystic::Migration
-	def up
-		
-	end
-  
-	def down
-		
-	end
-end
-			mig_template
-		end
-	
 		private
 	
 		def create_adapter(opts={})
@@ -200,6 +179,26 @@ end
 			@@adapter.pool_size = opts[:pool_size].to_i
 			@@adapter.pool_timeout = opts[:timeout].to_i
 			@@adapter.expire_interval = opts[:expires].to_i
+		end
+		
+		# Retuns a blank migration's code in a String
+		def template(name=nil)
+			raise ArgumentError, "Migrations must have a name." if name.nil?
+			<<-mig_template
+#!/usr/bin/env ruby
+
+require "mystic"
+
+class #{name} < Mystic::Migration
+  def up
+		
+  end
+  
+  def down
+		
+  end
+end
+			mig_template
 		end
 	end
 end
