@@ -54,5 +54,21 @@ module Mystic
 			sql << "WHERE #{index.where}" unless index.nil?
 			sql*' '
 		end
+
+		table do |table|
+			sql = []
+			
+			if obj.create?
+				sql << "CREATE TABLE #{table.name} (#{table.columns.map(&:to_sql)*","})"
+				sql << "INHERITS " + table.inherits if table.inherits
+				sql << "TABLESPACE " + table.tablespace if table.tablespace
+			else
+				sql << "ALTER TABLE #{table.name} #{table.columns.map{ |c| "ADD COLUMN #{c.to_sql}" }*', ' }"
+			end
+      
+			sql.push *(table.indeces.map(&:to_sql)) unless table.indeces.empty?
+	    sql.push *(table.operations.map(&:to_sql)) unless table.operations.empty?
+			sql*"; "
+		end
 	end
 end

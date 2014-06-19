@@ -14,16 +14,13 @@ module Mystic
 	class Adapter
 		table do |obj|
 			sql = []
-	    unless obj.columns.empty?
-	      sql << "CREATE TABLE #{obj.name} (#{obj.columns.map(&:to_sql)*","});" if obj.create? == true
-	      sql << "ALTER TABLE #{obj.name} #{obj.columns.map{|c| "ADD COLUMN #{c.to_sql}" }*', '};" if obj.create? == false
-	    end
-			sql << obj.indeces.map(&:to_sql).join(';') + ';' unless obj.indeces.empty?
-	    sql << obj.operations.map(&:to_sql).join(';') + ';' unless obj.operations.empty?
-			sql*" "
+      sql.push "CREATE TABLE #{obj.name} (#{obj.columns.map(&:to_sql)*","})" if obj.create?
+      sql.push "ALTER TABLE #{obj.name} #{obj.columns.map{|c| "ADD COLUMN #{c.to_sql}" }*', '}" unless obj.create?
+			sql.push *(obj.indeces.map(&:to_sql)) unless obj.indeces.empty?
+	    sql.push *(obj.operations.map(&:to_sql)) unless obj.operations.empty?
+			sql*"; "
 		end
 		
-		# TODO: Check this
 		column do |obj|
 			sql = []
 			sql << obj.name

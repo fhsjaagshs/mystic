@@ -112,15 +112,28 @@ module Mystic
     
     class Table < SQLObject
       attr_reader :name
-      attr_accessor :columns, :indeces, :operations
+      attr_accessor :columns,
+										:indeces,
+										:operations,
+										:opts
+										
+			def self.create(opts={})
+				new true,opts
+			end
+			
+			def self.alter(opts={})
+				new false,opts
+			end
       
-      def initialize(name,is_create=true)
-        @name = name.to_s
-        raise ArgumentError, "Argument 'name' is invalid." if @name.nil? || @name.empty?
+      def initialize(is_create=true, opts={})
+				@is_create = is_create
+				@opts = opts.symbolize
         @columns = []
         @indeces = []
         @operations = []
-        @is_create = is_create
+				
+        @name = @opts.delete(:name).to_s
+        raise ArgumentError, "Argument 'name' is invalid." if @name.empty?
       end
 			
 			def create?
@@ -146,6 +159,11 @@ module Mystic
       end
 
       alias_method :push, :<<
+			
+			def method_missing(meth, *args, &block)
+				return @opts[meth] if @opts.member? meth
+				nil
+			end
     end
     
     class Operation < SQLObject

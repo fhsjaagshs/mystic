@@ -8,23 +8,38 @@ Mystic
 Simple database connection that supplies connection pooling, migrations, raw SQL execution, and such.
 
 - Allows the developer to write their own SQL
-- Supports models
-- Supports `ActiveRecord`-esque migrations
+- Supports 'models'
+- Supports `ActiveRecord`-style migrations
 - Allows the developer to write their own adapters
+
+Philosophy
+-
+
+Mystic aims to provide **generic SQL generation where it's appropriate** (migrations, basic CRUD), but **back off when there is work to do** (complex queries, etc).
+
+Mystic embraces Ruby's dynamicity, but only in Ruby. Once queries are required, they're raw SQL written by the programmer (except in the cases of basic CRUD).
+
+Get out there and DIY.
 
 Migrations
 -
 
-Migrations are `Mystic::Migration` subclasses. Unlike ActiveRecord, you can dynamically specify any datatype and you're in complete control of a column's properties. `Mystic::Migration` also supports indeces. Here's an example of a migration:
+Migrations are `Mystic::Migration` subclasses. Unlike ActiveRecord, you can dynamically specify any datatype and you're in complete control of a column's *every* property. `Mystic::Migration` also supports indeces. Here's an example of a migration:
 
     # The DB being used is Postgres
     create_table :table do |t|
-      t.smallint :smallint
-      t.char :guid_char, :size => 36, :unique => true
-      t.guid :guid, :default => "uuid_generate_v4()"
+      t.guid :guid, :default => "uuid_generate_v4()", :primary_key => true, :unique => true
+      t.smallint :age
+      t.text :name
+      t.char :data, :size => 36
       t.json :json
       
-      t.index :guid_char
+      t.index :indexname, :guid_char, :unique
+    end
+    
+    alter_table :table do |t|
+      t.rename_column :json, :json_data
+      t.drop_columns :age
     end
     
 #### Migration operations

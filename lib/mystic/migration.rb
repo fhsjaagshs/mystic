@@ -132,14 +132,14 @@ module Mystic
 
     def create_table(name)
       raise ArgumentError, "No block provided, a block is required to create a table." unless block_given?
-      table = Mystic::SQL::Table.new(name, true)
+      table = Mystic::SQL::Table.create :name => name
       yield table
       queue table
     end
     
     def alter_table(name)
 			raise ArgumentError, "No block provided, a block is required to alter a table." unless block_given?
-      table = Mystic::SQL::Table.new(name, false)
+      table = Mystic::SQL::Table.alter :name => name
       yield table
       queue table
     end
