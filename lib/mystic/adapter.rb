@@ -100,7 +100,7 @@ module Mystic
   
     def disconnect
     	@pool.destroy ||= block_for :disconnect
-			@pool.empty
+			@pool.empty!
     end
     
     def reap

@@ -1,7 +1,5 @@
 #!/usr/bin/env ruby
 
-require "mystic/sql"
-
 module Mystic
   module SQL
     class Table < SQLObject

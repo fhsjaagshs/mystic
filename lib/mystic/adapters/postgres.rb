@@ -1,18 +1,15 @@
 #!/usr/bin/env ruby
 
-require "mystic"
-require "mystic/adapter"
 require "pg"
-require "mystic/model"
-require "mystic/sql"
 
 # Mystic adapter for Postgres, includes PostGIS
 
 module Mystic
 	class PostgresAdapter < Mystic::Adapter
 		INDEX_TYPES = [:btree, :hash, :gist, :spgist, :gin]
+		FIELDS = [:host, :hostaddr, :port, :dbname, :user, :password, :connect_timeout, :options, :tty, :sslmode, :krbsrvname, :gsslib]
 		
-		connect { |opts| PG.connect opts }
+		connect { |opts| PG.connect opts.subhash(*FIELDS) }
 		disconnect { |pg| pg.close }
 		validate { |pg| pg.status == CONNECTION_OK }
 		sanitize { |pg, str| pg.escape_string string }

@@ -8,7 +8,6 @@ require "mystic/sql"
 require "mystic/adapter"
 require "mystic/migration"
 require "mystic/model"
-require "mystic/access_stack"
 
 module Mystic
 	MysticError = Class.new StandardError
@@ -36,17 +35,18 @@ module Mystic
 		
 			raise EnvironmentError, "Environment doesn't exist." unless db_yml.member? @@env
 		
-			conf = db_yml[@@env]
-			conf["dbname"] = conf.delete "database"
+			conf = db_yml[@@env].symbolize
+			conf[:dbname] = conf[:database]
 			
-			@@adapter = Adapter.create (
-				conf.delete("adapter")
-				:pool_size => opts[:pool_size].to_i,
-				:pool_timeout => opts[:timeout].to_i,
-				:pool_expires => opts[:expires].to_i
+			@@adapter = Adapter.create(
+				conf[:adapter],
+				:pool_size => conf[:pool_size].to_i,
+				:pool_timeout => conf[:timeout].to_i,
+				:pool_expires => conf[:expires].to_i
 			)
 		
 			@@adapter.connect conf
+			true
 		end
 	
 		alias_method :env=, :connect
@@ -54,7 +54,6 @@ module Mystic
 		def env
 			@@env
 		end
-		
 		
 		# Mystic.disconnect
 		#   Disconnects from the connected database. Use it like ActiveRecord::Base.connection.disconnect!
@@ -108,10 +107,8 @@ module Mystic
 		#
 	
 		def console
-			require "mystic"
 			puts "Starting Mystic console"
 			IRB.setup nil
-			IRB.conf[:IRB_NAME] = "mystic"
 			IRB.conf[:MAIN_CONTEXT] = IRB::Irb.new.context
 			require 'irb/ext/multi-irb'
 			IRB.irb nil, IRB::WorkSpace.new

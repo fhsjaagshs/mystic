@@ -61,19 +61,19 @@ end
 
 class Hash
 	def multi(*keys)
-		keys.map { |k| fetch(k) }
+		keys.map { |k| fetch k, nil }.compact
 	end
 	
 	def subhash(*keys)
-		Hash[keys.map { |k| [k,fetch(k)] }]
+		Hash[keys.map { |k| [k,fetch(k, nil)] }.reject{ |k,v| v.nil? }]
 	end
 	
   def parify(delim=" ")
-    Hash[map{ |pair| pair * delim }]
+    map { |pair| pair * delim }
   end
 	
 	def symbolize
-		Hash[map{ |k,v| [k.to_sym, v]}]
+		Hash[map { |k,v| [k.to_sym, v]}]
 	end
 	
 	def symbolize!
@@ -81,7 +81,7 @@ class Hash
 	end
   
   def sqlize
-    Hash[reject{ |k,v| v.empty? }.map{ |k,v| "#{k.sanitize}=#{v.is_a? String ? "'#{v.sanitize}'" : v }" }]
+    Hash[reject { |k,v| v.empty? }.map{ |k,v| "#{k.sanitize}=#{v.is_a? String ? "'#{v.sanitize}'" : v }" }]
   end
 end
 

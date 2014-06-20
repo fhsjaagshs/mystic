@@ -15,7 +15,7 @@ when :create
   end
 else
 	begin
-	  Mystic.connect(ARGV[1])
+	 	Mystic.connect(ARGV[1])
 	  case ARGV[0].to_sym
 	  when :migrate
 	  	Mystic.migrate
@@ -24,7 +24,7 @@ else
 		when :console
 			Mystic.console
 		end
-	  Mystic.disconnect
+	 	Mystic.disconnect
 	rescue Mystic::EnvironmentError => e
 		puts e.message
 	end
