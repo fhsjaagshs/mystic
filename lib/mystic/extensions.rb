@@ -60,12 +60,8 @@ class Array
 end
 
 class Hash
-	def multi(*keys)
-		keys.map { |k| fetch k, nil }.compact
-	end
-	
 	def subhash(*keys)
-		Hash[keys.map { |k| [k,fetch(k, nil)] }.reject{ |k,v| v.nil? }]
+		Hash[values_at(*keys).merge_keys(*keys).reject{ |k,v| v.nil? }]
 	end
 	
   def parify(delim=" ")

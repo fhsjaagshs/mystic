@@ -5,10 +5,12 @@ require "access_stack"
 
 module Mystic
   class Adapter
-    attr_accessor :pool_size, :pool_timeout, :pool_expires
+    attr_accessor :pool_size,
+									:pool_timeout,
+									:pool_expires
   
     @@blocks = {}
-    
+
     def self.create(name="",opts={})
 			name = name.to_s.downcase.strip
 			name = "postgres" if name =~ /^postg.*$/i # Includes PostGIS
@@ -80,7 +82,7 @@ module Mystic
 		def self.method_missing(meth, *args, &block)
 			map_block meth, block
 		end
-  
+		
     #
     # Adapter methods
     #   These are called internally
@@ -88,13 +90,12 @@ module Mystic
     #   in ../mystic.rb
     #
 		def connect(opts)
+			disconnect unless @pool.nil?
 			@pool = AccessStack.new(
 				:size => @pool_size,
 				:timeout => @pool_timeout,
 				:expires => @pool_expires,
-				:create => lambda {
-					block_for(:connect).call opts
-				}
+				:create => lambda { block_for(:connect).call opts }
 			)
     end
   
@@ -112,11 +113,11 @@ module Mystic
 			raise AdapterError, "Adapter's connection pool doesn't exist and so Mystic has not connected to the database." if @pool.nil?
 			sql = sql.densify
 			sql << ";" unless sql.end_with? ";"
-			@pool.with { |inst| block_for(:execute).call inst,sql }
+			@pool.with { |inst| block_for(:execute).call inst, sql }
     end
   
     def sanitize(str)
-			@pool.with { |inst| block_for(:sanitize).call inst,sql }
+			@pool.with { |inst| block_for(:sanitize).call inst, sql }
     end
   
     def serialize_sql(obj)

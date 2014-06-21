@@ -2,7 +2,6 @@
 
 require "yaml"
 require "pathname"
-require "irb"
 require "mystic/extensions"
 require "mystic/sql"
 require "mystic/adapter"
@@ -105,15 +104,6 @@ module Mystic
 		#
 		# Command line
 		#
-	
-		def console
-			puts "Starting Mystic console"
-			IRB.setup nil
-			IRB.conf[:MAIN_CONTEXT] = IRB::Irb.new.context
-			require 'irb/ext/multi-irb'
-			IRB.irb nil, IRB::WorkSpace.new
-			nil
-		end
 		
 		# Runs every yet-to-be-ran migration
 		def migrate

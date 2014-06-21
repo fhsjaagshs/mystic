@@ -1,18 +1,39 @@
 #!/usr/bin/env ruby
 
+gem 'pg', '~> 0.11'
 require "pg"
 
 # Mystic adapter for Postgres, includes PostGIS
 
 module Mystic
 	class PostgresAdapter < Mystic::Adapter
-		INDEX_TYPES = [:btree, :hash, :gist, :spgist, :gin]
-		FIELDS = [:host, :hostaddr, :port, :dbname, :user, :password, :connect_timeout, :options, :tty, :sslmode, :krbsrvname, :gsslib]
+		INDEX_TYPES = [
+			:btree,
+			:hash,
+			:gist,
+			:spgist,
+			:gin
+		].freeze
 		
-		connect { |opts| PG.connect opts.subhash(*FIELDS) }
+		CONNECT_FIELDS = [
+			:host,
+			:hostaddr,
+			:port,
+			:dbname,
+			:user,
+			:password,
+			:connect_timeout,
+			:options,
+			:tty,
+			:sslmode,
+			:krbsrvname,
+			:gsslib
+		].freeze
+		
+		connect { |opts| PG.connect opts.subhash(*CONNECT_FIELDS) }
 		disconnect { |pg| pg.close }
 		validate { |pg| pg.status == CONNECTION_OK }
-		sanitize { |pg, str| pg.escape_string string }
+		sanitize { |pg, str| pg.escape_string str }
 		
 		execute do |inst, sql|
 			res = inst.exec sql
@@ -35,7 +56,7 @@ module Mystic
 		end
 		
 		index do |index|
-			storage_params = index.opts.subhash :fillfactor,:buffering,:fastupdate
+			storage_params = index.opts.subhash :fillfactor, :buffering, :fastupdate
 			
 			sql = []
 			sql << "CREATE"
@@ -57,15 +78,15 @@ module Mystic
 			
 			if obj.create?
 				sql << "CREATE TABLE #{table.name} (#{table.columns.map(&:to_sql)*","})"
-				sql << "INHERITS " + table.inherits if table.inherits
-				sql << "TABLESPACE " + table.tablespace if table.tablespace
+				sql << "INHERITS #{table.inherits}" if table.inherits
+				sql << "TABLESPACE #{table.tablespace}" if table.tablespace
 			else
 				sql << "ALTER TABLE #{table.name} #{table.columns.map{ |c| "ADD COLUMN #{c.to_sql}" }*', ' }"
 			end
       
-			sql.push *(table.indeces.map(&:to_sql)) unless table.indeces.empty?
-	    sql.push *(table.operations.map(&:to_sql)) unless table.operations.empty?
-			sql*"; "
+			sql.push(*table.indeces.map(&:to_sql)) unless table.indeces.empty?
+	    sql.push(*table.operations.map(&:to_sql)) unless table.operations.empty?
+			sql*'; '
 		end
 	end
 end

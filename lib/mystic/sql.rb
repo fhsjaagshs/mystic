@@ -6,15 +6,6 @@ module Mystic
 		
     class SQLObject
       def to_sql
-=begin
-				obj = self.dup
-				obj.instance_variables.each do |vname|
-					v = obj.instance_variable_get vname
-					if v.is_a? Symbol
-						obj.instance_variable_set vname,v.to_s
-					end
-				end
-=end
         Mystic.adapter.serialize_sql obj
       end
       
@@ -97,10 +88,11 @@ module Mystic
     end
   
     class SpatialColumn < Column
-      attr_accessor :geom_kind, :geom_srid
+      attr_accessor :geom_kind,
+										:geom_srid
       
       def initialize(opts={})
-        super(opts)
+        super opts
         @geom_kind = opts[:geom_kind]
         @srid = opts[:geom_srid]
       end
@@ -162,20 +154,18 @@ module Mystic
 			
 			def method_missing(meth, *args, &block)
 				return @opts[meth] if @opts.member? meth
-				nil
+				super
 			end
     end
     
     class Operation < SQLObject
-			attr_reader :kind, :callback
+			attr_reader :kind,
+									:callback
+			
       def initialize(kind, opts={})
-        @opts = opts
+				@opts = opts.dup
+				@callback = @opts.delete :callback
 				@kind = kind
-				@callback = opts[:callback]
-      end
-      
-      def execute
-        Mystic.execute to_sql
       end
       
       def method_missing(meth, *args, &block)
@@ -183,7 +173,7 @@ module Mystic
       end
 			
 			def self.method_missing(meth, *args, &block)
-				new args[0],args[1]
+				new args[0], args[1]
 			end
     end
 		

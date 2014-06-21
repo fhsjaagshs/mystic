@@ -27,6 +27,12 @@ task :push do
 	`gem push #{gem_name}`
 end
 
+task :validate do
+	`git diff --name-only --cached`.strip.split("\n").each do |fpath|
+		puts fpath unless `ruby -wc #{fpath}`.strip == "Syntax OK"
+	end
+end
+
 task :default do
 	Rake::Task["clean"].invoke
 	Rake::Task["build"].invoke
