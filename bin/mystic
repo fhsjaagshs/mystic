@@ -1,14 +1,12 @@
 #!/usr/bin/env ruby
 
 require "mystic"
-require "pry"
 require "irb"
 
 # Examples:
 # mystic create migration InitialMigration
-# mystic development migrate
-# mystic production rollback
-
+# mystic migrate development
+# mystic rollback production
 
 case ARGV[0].to_sym
 when :create
