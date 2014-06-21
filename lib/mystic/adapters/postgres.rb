@@ -1,6 +1,5 @@
 #!/usr/bin/env ruby
 
-gem 'pg', '~> 0.11'
 require "pg"
 
 # Mystic adapter for Postgres, includes PostGIS
