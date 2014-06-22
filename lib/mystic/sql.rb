@@ -43,7 +43,7 @@ module Mystic
 				opts.symbolize!
 				raise ArgumentError, "Indeces need a table_name or else what's the point?." unless opts.member? :table_name
 				raise ArgumentError, "Indeces need columns or else what's the point?" unless opts.member? :columns
-        @name = opts.delete(:name).to_sym
+        @name = opts.delete(:name).to_sym if opts.member? :name
         @table_name = opts.delete(:table_name).to_sym
         @type = (opts.delete :type || :btree).to_s.downcase.to_sym
 				@unique = opts.delete :unique || false
