@@ -45,7 +45,7 @@ module Mystic
         self << Column.new({
           :name => col_name,
           :kind => kind.to_sym
-        }.merge opts)
+        }.merge(opts || {}))
       end
 
       def geometry(col_name, kind, srid, opts={})
@@ -53,11 +53,11 @@ module Mystic
           :name => col_name,
           :geom_kind => kind,
           :geom_srid => srid
-        }.merge opts)
+        }.merge(opts || {}))
       end
       
       def index(*cols)
-        opts = cols.delete_at(-1) if cols.last.is_a? Hash
+        opts = cols.delete_at -1 if cols.last.is_a? Hash
         opts ||= {}
         opts[:columns] = cols
 				opts[:table_name] = @name
@@ -65,7 +65,7 @@ module Mystic
       end
       
       def method_missing(meth, *args, &block)
-        column(args[0], meth.to_s, args[1])
+        column args[0], meth.to_s, args[1]
       end
     end
   end
@@ -99,12 +99,13 @@ module Mystic
 			q.map!(&:to_sql)
 			
 			begin
-				q.each{ |obj| "EXPLAIN #{Mystic.execute(obj)}" }
+				q.each{ |sql| Mystic.execute "EXPLAIN #{sql}" }
 			rescue StandardError => e
 				raise Error, e.message
 			end
 			
-			q.each{ |obj| Mystic.execute(obj) }
+			q.each{ |sql| Mystic.execute sql }
+			q.clear
 		end
 		
 		def queue(obj)
