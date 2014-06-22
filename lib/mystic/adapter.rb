@@ -125,8 +125,6 @@ module Mystic
     end
   
     def serialize_sql(obj)
-			require "pry"
-			binding.pry
 			return case obj
 			when SQL::Table
 				block_for(:table).call obj
