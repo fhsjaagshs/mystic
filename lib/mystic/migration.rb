@@ -45,7 +45,7 @@ module Mystic
         self << Column.new({
           :name => col_name,
           :kind => kind.to_sym
-        }.merge(opts || {}))
+        }.merge opts)
       end
 
       def geometry(col_name, kind, srid, opts={})
@@ -53,14 +53,14 @@ module Mystic
           :name => col_name,
           :geom_kind => kind,
           :geom_srid => srid
-        }.merge(opts || {}))
+        }.merge opts)
       end
       
       def index(*cols)
         opts = cols.delete_at(-1) if cols.last.is_a? Hash
         opts ||= {}
         opts[:columns] = cols
-				opts[:tblname] = @name
+				opts[:table_name] = @name
         self << Index.new(opts)
       end
       
