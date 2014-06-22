@@ -42,14 +42,14 @@ module Mystic
       #
       
       def column(col_name, kind, opts={})
-        self << Column.new({
+        self << Mystic::SQL::Column.new({
           :name => col_name,
           :kind => kind.to_sym
         }.merge(opts || {}))
       end
 
       def geometry(col_name, kind, srid, opts={})
-        self << SpatialColumn.new({
+        self << Mystic::SQL::SpatialColumn.new({
           :name => col_name,
           :geom_kind => kind,
           :geom_srid => srid
@@ -61,7 +61,7 @@ module Mystic
         opts ||= {}
         opts[:columns] = cols
 				opts[:table_name] = @name
-        self << Index.new(opts)
+        self << Mystic::SQL::Index.new(opts)
       end
       
       def method_missing(meth, *args, &block)
@@ -96,7 +96,11 @@ module Mystic
 		
 		def exec_queue
 			q = @direction == :up ? @up_queue : @down_queue
+
 			q.map!(&:to_sql)
+			
+			require "pry"
+			binding.pry
 			
 			begin
 				q.each{ |sql| Mystic.execute "EXPLAIN #{sql}" }
@@ -157,13 +161,13 @@ module Mystic
 		end
     
     def create_ext(extname)
-			queue Mystic::SQL::Operation.create_extension(
+			queue Mystic::SQL::Operation.create_ext(
 				:name => extname.to_s
 			)
     end
     
     def drop_ext(extname)
-			queue Mystic::SQL::Operation.drop_extension(
+			queue Mystic::SQL::Operation.drop_ext(
 				:name => extname.to_s
 			)
     end

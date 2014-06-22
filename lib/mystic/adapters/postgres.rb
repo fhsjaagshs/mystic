@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 
+require "mystic/adapters/abstract"
 require "pg"
 
 # Mystic adapter for Postgres, includes PostGIS
@@ -46,11 +47,11 @@ module Mystic
 			"DROP INDEX #{index.index_name}"
 		end
 		
-		create_extension do |ext| 
+		create_ext do |ext| 
 			"CREATE EXTENSION \"#{ext.name}\""
 		end
 		
-		drop_extension do |ext|
+		drop_ext do |ext|
 			"DROP EXTENSION \"#{ext.name}\"" 
 		end
 		
@@ -75,7 +76,7 @@ module Mystic
 		table do |table|
 			sql = []
 			
-			if obj.create?
+			if table.create?
 				sql << "CREATE TABLE #{table.name} (#{table.columns.map(&:to_sql)*","})"
 				sql << "INHERITS #{table.inherits}" if table.inherits
 				sql << "TABLESPACE #{table.tablespace}" if table.tablespace

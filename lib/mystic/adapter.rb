@@ -30,7 +30,9 @@ module Mystic
 	
     # Gets the adapter name (examples: postgres, mysql)
     def self.adapter
-      name.split("::").last.sub("Adapter","").downcase
+      a = name.split("::").last.sub("Adapter","").downcase
+			a = "abstract" if a.empty?
+			a
     end
 		
 		def adapter
@@ -47,7 +49,9 @@ module Mystic
     
     # Fetch a block for the current adapter
     def block_for(key)
-    	@@blocks[adapter][key] rescue lambda { "" }
+    	b = @@blocks[adapter][key] rescue nil
+			b ||= @@blocks["abstract"][key] rescue lambda { "" }
+			b
     end
     
     #
@@ -121,7 +125,9 @@ module Mystic
     end
   
     def serialize_sql(obj)
-			case obj
+			require "pry"
+			binding.pry
+			return case obj
 			when SQL::Table
 				block_for(:table).call obj
 			when SQL::Index
@@ -129,8 +135,9 @@ module Mystic
 			when SQL::Column
 				block_for(:column).call obj
 			when SQL::Operation
-				block_for(obj.kind).call obj
+				res = block_for(obj.kind).call obj
 				obj.callback.call unless obj.callback.nil?
+				res
 			end
     end
   end

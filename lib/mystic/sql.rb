@@ -6,7 +6,7 @@ module Mystic
 		
     class SQLObject
       def to_sql
-        Mystic.adapter.serialize_sql obj
+        Mystic.adapter.serialize_sql self
       end
       
       alias_method :to_s, :to_sql
@@ -110,11 +110,11 @@ module Mystic
 										:opts
 										
 			def self.create(opts={})
-				new true,opts
+				new true, opts
 			end
 			
 			def self.alter(opts={})
-				new false,opts
+				new false, opts
 			end
       
       def initialize(is_create=true, opts={})
