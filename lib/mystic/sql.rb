@@ -173,7 +173,8 @@ module Mystic
       end
 			
 			def self.method_missing(meth, *args, &block)
-				new args[0], args[1]
+				#new args[0], args[1]
+				new meth, args[0]
 			end
     end
 		
