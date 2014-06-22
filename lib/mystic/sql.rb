@@ -77,8 +77,8 @@ module Mystic
       
       def initialize(opts={})
         @name = opts.delete(:name).to_s
-        @kind = opts.delete(:kind).to_sym
-        @size = opts.delete(:size).to_s
+        @kind = opts.delete(:kind).to_sym unless opts.member? :geom_kind
+        @size = opts.delete(:size).to_s if opts.member? :size
         @constraints = opts
       end
       
@@ -92,7 +92,7 @@ module Mystic
 										:geom_srid
       
       def initialize(opts={})
-        super opts
+        super #opts
         @geom_kind = opts[:geom_kind]
         @srid = opts[:geom_srid]
       end
