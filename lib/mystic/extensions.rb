@@ -77,7 +77,7 @@ class Hash
 	end
   
   def sqlize
-    Hash[reject { |k,v| v.empty? }.map{ |k,v| "#{k.sanitize}=#{v.is_a? String ? "'#{v.sanitize}'" : v }" }]
+    Hash[reject { |k,v| v.nil? || v.empty? }.map{ |k,v| "#{k.sanitize}=#{v.is_a? String ? "'#{v.sanitize}'" : v }" }]
   end
 end
 
