@@ -68,6 +68,14 @@ class Hash
     map { |pair| pair * delim }
   end
 	
+	def compact
+		reject { |k,v| v.nil? }
+	end
+	
+	def compact!
+		reject! { |k,v| v.nil? }
+	end
+	
 	def symbolize
 		Hash[map { |k,v| [k.to_sym, v]}]
 	end
