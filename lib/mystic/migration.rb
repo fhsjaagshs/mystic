@@ -51,7 +51,7 @@ module Mystic
       def geometry(col_name, kind, srid, opts={})
 				self << Mystic::SQL::Column.new({
           :name => col_name,
-					:kind => "geometry",
+					:kind => :geometry,
           :geom_kind => kind,
           :geom_srid => srid
         }.merge(opts || {}))
@@ -73,117 +73,102 @@ module Mystic
   
   class Migration
 		Error = Class.new(StandardError)
+		IrreversibleError = Class.new(StandardError)
 
 		def initialize
 			@irreversible = false
-			@direction = :neither
-			@up_queue = []
-			@down_queue = []
 		end
 		
 		def migrate
-			@direction = :up
-			@up_queue.clear
-			up
-			exec_queue
+			exec_migration :up
 		end
 		
 		def rollback
-			@direction = :down
-			@down_queue.clear
-			down
-			exec_queue
+			exec_migration :down
 		end
 		
-		def exec_queue
-			q = @direction == :up ? @up_queue : @down_queue
-
-			q.map!(&:to_sql)
-			
-			Mystic::SQL::Transaction.start
-			
+		# TODO: This is ugly... It needs cleaning up.
+		def exec_migration(direction)
+			direction = direction.to_sym
+			raise ArgumentError, "Direction must be either :up or :down." if [:up, :down].include? direction
+			raise IrreversibleError, "Impossible to roll back an irreversible migration." if direction == :down && irreversible?
 			begin
-				q.each { |sql| Mystic.execute sql }
-			rescue StandardError => e
+				Mystic::SQL::Transaction.start
+				method(direction).call
+			rescue => e
 				Mystic::SQL::Transaction.rollback
 				puts "Error encountered, rolling back..."
-				raise Error, e.message
+				raise e
+			else
+				Mystic::SQL::Transaction.commit
 			end
-			
-			Mystic::SQL::Transaction.commit
-	
-			q.clear
 		end
 		
-		def queue(obj)
-			case @direction
-			when :up
-				@up_queue << obj
-			when :down
-				@down_queue << obj
-			end
-		end
 		
 		#
 		# DSL
 		#
 		
     def execute(obj)
-			queue Mystic::SQL::Raw.new :sql => obj.to_s
+			Mystic.execute obj.to_s # to_sql isn't defined for strings, to_sql is aliased to to_s
     end
 		
-		def ireversaible!
+		def irreversible!
 			@irreversible = true
+		end
+		
+		def irreversible?
+			@irreversible
 		end
 
     def create_table(name)
       raise ArgumentError, "No block provided, a block is required to create a table." unless block_given?
       table = Mystic::SQL::Table.create :name => name
       yield table
-      queue table
+      execute table
     end
     
     def alter_table(name)
 			raise ArgumentError, "No block provided, a block is required to alter a table." unless block_given?
       table = Mystic::SQL::Table.alter :name => name
       yield table
-      queue table
+      execute table
     end
     
     def drop_table(name)
-			queue Mystic::SQL::Operation.drop_table(
+			execute Mystic::SQL::Operation.drop_table(
 				:table_name => name.to_s
 			)
     end
 		
 		def drop_index(*args)
-			queue Mystic::SQL::Operation.drop_index(
+			execute Mystic::SQL::Operation.drop_index(
 				:index_name => args[0],
 				:table_name => args[1]
 			)
 		end
     
     def create_ext(extname)
-			queue Mystic::SQL::Operation.create_ext(
+			execute Mystic::SQL::Operation.create_ext(
 				:name => extname.to_s
 			)
     end
     
     def drop_ext(extname)
-			queue Mystic::SQL::Operation.drop_ext(
+			execute Mystic::SQL::Operation.drop_ext(
 				:name => extname.to_s
 			)
     end
     
     def create_view(name, sql)
-			queue Mystic::SQL::Operation.create_view(
+			execute Mystic::SQL::Operation.create_view(
 				:name => name.to_s,
 				:sql => sql.to_s
 			)
     end
     
     def drop_view(name)
-			queue Mystic::SQL::Operation.drop_view(
+			execute Mystic::SQL::Operation.drop_view(
 				:name => name.to_s
 			)
     end
