@@ -57,7 +57,7 @@ module Mystic
 		end
 		
 		rename_column do |obj|
-			"ALTER TABLE IF EXISTS #{obj.old_name} RENAME TO #{obj.new_name}"
+			"ALTER TABLE #{obj.table_name} RENAME COLUMN #{obj.old_name} TO #{obj.new_name}"
 		end
 		
 		create_view do |obj|
@@ -80,7 +80,7 @@ module Mystic
 		## Transaction Operations
 		#
 		
-		start_transaction { "START TRANSACTION" }
+		start_transaction { "BEGIN" }
 		commit_transaction { "COMMIT" }
 		rollback_transaction { "ROLLBACK" }
 	end

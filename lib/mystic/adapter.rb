@@ -50,7 +50,8 @@ module Mystic
     # Fetch a block for the current adapter
     def block_for(key)
     	b = @@blocks[adapter][key] rescue nil
-			b ||= @@blocks["abstract"][key] rescue lambda { "" }
+			b ||= @@blocks["abstract"][key] rescue nil
+			b ||= lambda { "" }
 			b
     end
     
@@ -117,6 +118,7 @@ module Mystic
 			raise AdapterError, "Adapter's connection pool doesn't exist and so Mystic has not connected to the database." if @pool.nil?
 			sql = sql.densify
 			sql << ";" unless sql.end_with? ";"
+			puts sql
 			@pool.with { |inst| block_for(:execute).call inst, sql }
     end
   

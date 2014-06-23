@@ -69,7 +69,7 @@ module Mystic
 			sql << "(#{index.columns.map(&:to_s).join ',' })"
 			sql << "WITH (#{storage_params.sqlize})" unless storage_params.empty?
 			sql << "TABLESPACE #{index.tablespace}" unless index.tablespace.nil?
-			sql << "WHERE #{index.where}" unless index.nil?
+			sql << "WHERE #{index.where}" unless index.where.nil?
 			sql*' '
 		end
 
@@ -77,9 +77,11 @@ module Mystic
 			sql = []
 			
 			if table.create?
-				sql << "CREATE TABLE #{table.name} (#{table.columns.map(&:to_sql)*","})"
-				sql << "INHERITS #{table.inherits}" if table.inherits
-				sql << "TABLESPACE #{table.tablespace}" if table.tablespace
+				tbl = []
+				tbl << "CREATE TABLE #{table.name} (#{table.columns.map(&:to_sql)*","})"
+				tbl << "INHERITS #{table.inherits}" if table.inherits
+				tbl << "TABLESPACE #{table.tablespace}" if table.tablespace
+				sql << tbl*' '
 			else
 				sql << "ALTER TABLE #{table.name} #{table.columns.map{ |c| "ADD COLUMN #{c.to_sql}" }*', ' }"
 			end

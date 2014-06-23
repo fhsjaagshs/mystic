@@ -4,4 +4,4 @@ production:
   timeout: 5
   host: localhost
   port: 5432
-  database: misc
+  database: mystic-prod
