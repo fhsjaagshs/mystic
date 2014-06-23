@@ -49,7 +49,7 @@ module Mystic
       end
 
       def geometry(col_name, kind, srid, opts={})
-        self << Mystic::SQL::SpatialColumn.new({
+				self << Mystic::SQL::Column.new({
           :name => col_name,
 					:kind => "geometry",
           :geom_kind => kind,
@@ -100,18 +100,18 @@ module Mystic
 
 			q.map!(&:to_sql)
 			
-			Mystic.execute "BEGIN TRANSACTION"
+			Mystic::SQL::Transaction.start
 			
 			begin
-				q.each{ |sql| Mystic.execute sql }
+				q.each { |sql| Mystic.execute sql }
 			rescue StandardError => e
-				Mystic.execute "ROLLBACK"
+				Mystic::SQL::Transaction.rollback
 				puts "Error encountered, rolling back..."
 				raise Error, e.message
 			end
 			
-			Mystic.execute "COMMIT"
-			
+			Mystic::SQL::Transaction.commit
+	
 			q.clear
 		end
 		

@@ -71,37 +71,24 @@ module Mystic
 				nil
 			end
     end
-  
+		
     class Column < SQLObject
-      attr_accessor :name, :kind, :size, :constraints
+      attr_accessor :name, :kind, :size, :constraints, :geom_kind, :geom_srid
       
       def initialize(opts={})
         @name = opts.delete(:name).to_s
         @kind = opts.delete(:kind).to_sym
         @size = opts.delete(:size).to_s if opts.member? :size
+        @geom_kind = opts.delete(:geom_kind)
+        @geom_srid = opts.delete(:geom_srid).to_i
         @constraints = opts
       end
       
       def geospatial?
-        false
+				@geom_kind && @geom_srid
       end
     end
-  
-    class SpatialColumn < Column
-      attr_accessor :geom_kind,
-										:geom_srid
-      
-      def initialize(opts={})
-        super
-        @geom_kind = opts[:geom_kind]
-        @srid = opts[:geom_srid]
-      end
-      
-      def geospatial?
-        true
-      end
-    end
-    
+
     class Table < SQLObject
       attr_reader :name
       attr_accessor :columns,
@@ -163,9 +150,9 @@ module Mystic
 									:callback
 			
       def initialize(kind, opts={})
+				@kind = kind
 				@opts = opts.dup
 				@callback = @opts.delete :callback
-				@kind = kind
       end
       
       def method_missing(meth, *args, &block)
@@ -173,10 +160,23 @@ module Mystic
       end
 			
 			def self.method_missing(meth, *args, &block)
-				#new args[0], args[1]
-				new meth, args[0]
+				new meth, (args[0] || {})
 			end
     end
+		
+		class Transaction
+			def self.start
+				Mystic.execute Operation.start_transaction.to_sql
+			end
+			
+			def self.commit
+				Mystic.execute Operation.commit_transaction.to_sql
+			end
+			
+			def self.rollback
+				Mystic.execute Operation.rollback_transaction.to_sql
+			end
+		end
 		
 		class Raw < SQLObject
 			def initialize(opts)

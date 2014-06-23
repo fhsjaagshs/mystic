@@ -75,5 +75,13 @@ module Mystic
 		rename_table do |obj|
 			"ALTER TABLE #{obj.old_name} RENAME TO #{obj.new_name}"
 		end
+		
+		#
+		## Transaction Operations
+		#
+		
+		start_transaction { "START TRANSACTION" }
+		commit_transaction { "COMMIT" }
+		rollback_transaction { "ROLLBACK" }
 	end
 end
