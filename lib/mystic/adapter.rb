@@ -116,13 +116,11 @@ module Mystic
   
     def execute(sql)
 			raise AdapterError, "Adapter's connection pool doesn't exist and so Mystic has not connected to the database." if @pool.nil?
-			sql = sql.densify
-			sql << ";" unless sql.end_with? ";"
-			@pool.with { |inst| block_for(:execute).call inst, sql }
+			@pool.with { |inst| block_for(:execute).call inst, sql.standardize }
     end
   
     def sanitize(str)
-			@pool.with { |inst| block_for(:sanitize).call inst, sql }
+			@pool.with { |inst| block_for(:sanitize).call inst, str }
     end
   
     def serialize_sql(obj)

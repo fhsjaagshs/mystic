@@ -231,22 +231,6 @@ module Mystic
 			end
     end
 		
-		class Transaction
-			def self.start
-				require "pry"
-				binding.pry
-				Operation.start_transaction.to_sql
-			end
-			
-			def self.commit
-				Operation.commit_transaction.to_sql
-			end
-			
-			def self.rollback
-				Operation.rollback_transaction.to_sql
-			end
-		end
-		
 		class Raw < SQLObject
 			def initialize(opts)
 				@sql = opts[:sql]
