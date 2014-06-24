@@ -118,7 +118,6 @@ module Mystic
 			raise AdapterError, "Adapter's connection pool doesn't exist and so Mystic has not connected to the database." if @pool.nil?
 			sql = sql.densify
 			sql << ";" unless sql.end_with? ";"
-			puts sql
 			@pool.with { |inst| block_for(:execute).call inst, sql }
     end
   

@@ -235,15 +235,15 @@ module Mystic
 			def self.start
 				require "pry"
 				binding.pry
-				Mystic.execute Operation.start_transaction.to_sql
+				Operation.start_transaction.to_sql
 			end
 			
 			def self.commit
-				Mystic.execute Operation.commit_transaction.to_sql
+				Operation.commit_transaction.to_sql
 			end
 			
 			def self.rollback
-				Mystic.execute Operation.rollback_transaction.to_sql
+				Operation.rollback_transaction.to_sql
 			end
 		end
 		

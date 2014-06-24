@@ -35,5 +35,17 @@ module Mystic
 			sql << "LOCK #{index.lock.to_s.upcase}" if !index.algorithm && LOCKS.include? index.lock
 			sql*" "
 		end
+		
+		# Leverage MySQL savepoints to make up for transactions' flaws
+		start_transaction { <<-sql
+			BEGIN;
+			SAVEPOINT mystic_migration8889;
+			DECLARE EXIT HANDLER FOR SQLWARNING ROLLBACK TO mystic_migration8889;
+			DECLARE EXIT HANDLER FOR NOT FOUND ROLLBACK TO mystic_migration8889;
+			DECLARE EXIT HANDLER FOR SQLEXCEPTION ROLLBACK TO mystic_migration8889;
+			sql
+		}
+		commit_transaction { "RELEASE SAVEPOINT mystic_migration8889;COMMIT" }
+		rollback_transaction { "ROLLBACK TO mystic_migration8889; RELEASE SAVEPOINT mystic_migration8889; ROLLBACK" }
 	end
 end

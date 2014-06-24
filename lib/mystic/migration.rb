@@ -20,19 +20,18 @@ module Mystic
 		
 		# TODO: This is ugly... It needs cleaning up.
 		def exec_migration(direction)
+			@sql = ""
+			
 			direction = direction.to_sym
+			
 			raise ArgumentError, "Direction must be either :up or :down." unless [:up, :down].include? direction
 			raise IrreversibleError, "Impossible to roll back an irreversible migration." if direction == :down && irreversible?
-			begin
-				Mystic::SQL::Transaction.start
-				method(direction).call
-			rescue => e
-				Mystic::SQL::Transaction.rollback
-				puts "Error encountered, rolling back..."
-				raise e
-			else
-				Mystic::SQL::Transaction.commit
-			end
+			
+			execute Mystic::SQL::Operation.start_transaction.to_sql
+			method(direction).call
+			execute Mystic::SQL::Operation.commit_transaction.to_sql
+			
+			Mystic.execute @sql
 		end
 		
 		
@@ -41,7 +40,7 @@ module Mystic
 		#
 		
     def execute(obj)
-			Mystic.execute obj.to_s # to_sql isn't defined for strings, to_sql is aliased to to_s
+			@sql << obj.to_s.standardize # to_sql isn't defined for strings, to_sql is aliased to to_s
     end
 		
 		def irreversible!
