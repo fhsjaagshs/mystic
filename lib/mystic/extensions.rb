@@ -23,10 +23,8 @@ class String
 		self[0..len-1]
 	end
 	
-	def standardize
-		sql = self.densify
-		sql << ";" unless sql.end_with? ";"
-		sql
+	def cterminate
+		self << ";" unless end_with? ";"
 	end
 end
 
