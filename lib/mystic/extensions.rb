@@ -23,8 +23,9 @@ class String
 		self[0..len-1]
 	end
 	
-	def cterminate
-		self << ";" unless end_with? ";"
+	def sql_terminate
+		return self + ";" unless dup.strip.end_with? ";"
+		self
 	end
 end
 

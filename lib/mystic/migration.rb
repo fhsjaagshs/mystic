@@ -31,6 +31,8 @@ module Mystic
 			method(direction).call
 			execute Mystic::SQL::Operation.commit_transaction
 			
+			puts @sql
+			
 			Mystic.adapter.execute @sql # bypass densification
 		end
 		
@@ -41,7 +43,7 @@ module Mystic
 		
 		# All migration SQL goes through here
     def execute(obj)
-			@sql << obj.to_s.standardize # to_sql isn't defined for strings, to_sql is aliased to to_s
+			@sql << obj.to_s.sql_terminate # to_sql isn't defined for strings, to_sql is aliased to to_s
     end
 		
 		def irreversible!

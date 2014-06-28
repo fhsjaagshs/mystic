@@ -69,7 +69,7 @@ module Mystic
 		# Returns: Native Ruby objects representing the response from the DB (Usually an Array of Hashes)
 		def execute(sql="")
 			raise AdapterError, "Adapter is nil, so Mystic is not connected." if @@adapter.nil?
-			@@adapter.execute sql.cterminate.densify
+			@@adapter.execute sql.sql_terminate.densify
 		end
   
 		# Mystic.sanitize
