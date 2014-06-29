@@ -67,7 +67,7 @@ module Mystic
 			wrapper_sql(
 				:sql => "INSERT INTO #{table_name} (#{params.keys*','}) VALUES (#{params.values.sqlize*','})",
 				:return_rows => opts[:return_rows],
-				:return_json => opts[:return_json] && Mystic.adapter.name == "postgres"
+				:return_json => opts[:return_json] && Mystic.adapter.adapter == "postgres"
 			)
     end
     
@@ -79,7 +79,7 @@ module Mystic
 			wrapper_sql(
 				:sql => "DELETE FROM #{table_name} WHERE #{params.sqlize*' AND '}",
 				:return_rows => opts[:return_rows],
-				:return_json => opts[:return_json] && Mystic.adapter.name == "postgres"
+				:return_json => opts[:return_json] && Mystic.adapter.adapter == "postgres"
 			)
     end
     
