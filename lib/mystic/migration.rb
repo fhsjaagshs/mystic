@@ -31,8 +31,6 @@ module Mystic
 			method(direction).call
 			execute Mystic::SQL::Operation.commit_transaction
 			
-			puts @sql
-			
 			Mystic.adapter.execute @sql # bypass densification
 		end
 		
