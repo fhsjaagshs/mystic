@@ -3,20 +3,13 @@
 require "yaml"
 require "pathname"
 require "mystic/extensions"
+require "mystic/constants"
 require "mystic/sql"
 require "mystic/adapter"
 require "mystic/migration"
 require "mystic/model"
 
-module Mystic
-	MysticError = Class.new StandardError
-	RootError = Class.new StandardError
-	EnvironmentError = Class.new StandardError
-	AdapterError = Class.new StandardError
-	CLIError = Class.new StandardError
-	MIG_REGEX = /(?<num>\d+)_(?<name>[a-z]+)\.rb$/i # matches migration files (ex '1_MigrationClassName.rb')
-	JSON_COL = "mystic_return_json89788"
-	
+module Mystic	
 	@@adapter = nil
 	
 	class << self
