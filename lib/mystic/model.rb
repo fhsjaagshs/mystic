@@ -2,7 +2,7 @@
 
 module Mystic
   class Model
-    JSON_COL = "mystic_return_json89788"
+    JSON_COL = Mystic::JSON_COL
     
     def self.table_name
       to_s.downcase

@@ -15,6 +15,7 @@ module Mystic
 	AdapterError = Class.new StandardError
 	CLIError = Class.new StandardError
 	MIG_REGEX = /(?<num>\d+)_(?<name>[a-z]+)\.rb$/i # matches migration files (ex '1_MigrationClassName.rb')
+	JSON_COL = "mystic_return_json89788"
 	
 	@@adapter = nil
 	
