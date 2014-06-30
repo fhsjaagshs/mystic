@@ -37,8 +37,8 @@ module Mystic
 			s*' '
 		end
 
-    def self.function_sql(retuns_rows, funcname, *params)
-			"SELECT #{returns_rows ? "* FROM" : ""} #{funcname} (#{fnc_parameterize(params)*','})"
+    def self.function_sql(returns_rows, funcname, *params)
+			"SELECT #{returns_rows ? "* FROM" : ""} #{funcname}(#{params.sqlize*','})"
     end
     
     def self.select_sql(params={}, opts={})
@@ -123,22 +123,5 @@ module Mystic
 		def self.exec_func_rows(funcname, *params)
 			Mystic.execute function_sql(true, funcname, *params)
 		end
-    
-    private
-    
-    def self.fnc_parameterize(params)
-      params.map do |param| 
-        case param
-        when String
-          "'" + param.to_s.sanitize + "'" 
-        when Integer, Float
-          param.to_s.sanitize
-        when Array, Hash
-          # TODO: Turn into SQL params
-        else
-          nil
-        end
-      end
-    end
   end
 end
