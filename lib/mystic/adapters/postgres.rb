@@ -34,13 +34,14 @@ module Mystic
 		disconnect { |pg| pg.close }
 		validate { |pg| pg.status == CONNECTION_OK }
 		sanitize { |pg, str| pg.escape_string str }
+		json_supported { true }
 		
-		execute do |inst, sql|
-			res = inst.exec sql
-			ret = res[0][Mystic::Model::JSON_COL] if res.ntuples == 1 && res.nfields == 1
-			ret ||= res.ntuples.times.map { |i| res[i] } unless res.nil?
-			ret ||= []
-			ret
+		execute do |pg, sql|
+			res = pg.exec sql
+			v = res[0][Mystic::JSON_COL] if res.ntuples == 1 && res.nfields == 1
+			v ||= res.ntuples.times.map { |i| res[i] } unless res.nil?
+			v ||= []
+			v
 		end
 		
 		drop_index do |index| 

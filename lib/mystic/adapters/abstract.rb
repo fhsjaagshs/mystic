@@ -12,6 +12,9 @@ require "mystic/sql"
 
 module Mystic
 	class Adapter
+		
+		json_supported { false }
+		
 		table do |obj|
 			sql = []
       sql.push "CREATE TABLE #{obj.name} (#{obj.columns.map(&:to_sql)*","})" if obj.create?

@@ -122,6 +122,10 @@ module Mystic
     def sanitize(str)
 			@pool.with { |inst| block_for(:sanitize).call inst, str }
     end
+		
+		def json_supported?
+			block_for(:json_supported).call
+		end
   
     def serialize_sql(obj)
 			return case obj

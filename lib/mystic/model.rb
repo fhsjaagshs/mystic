@@ -2,8 +2,6 @@
 
 module Mystic
   class Model
-    JSON_COL = Mystic::JSON_COL
-    
     def self.table_name
       to_s.downcase
     end
@@ -21,7 +19,7 @@ module Mystic
 			return_json = opts[:return_json].dup || false
 			return_rows = true if return_json
 			
-			op = sql.split(" ",2).first
+			op = sql.split(/\s+/,2).first
 			
 			sql << " RETURNING #{visible_cols*','}" if return_rows && op != "SELECT"
 			
@@ -33,7 +31,7 @@ module Mystic
 			if return_json
 				s << "row_to_json(res)" if op == "INSERT"
 				s << "array_to_json(array_agg(res))" unless op == "INSERT"
-				s << "AS #{JSON_COL}"
+				s << "AS #{Mystic::JSON_COL}"
 			else
 				s << "*"
 			end
@@ -49,7 +47,6 @@ module Mystic
     def self.select_sql(params={}, opts={})
 			opts.symbolize!
       count = opts[:count] || 0
-			return_json = opts[:return_json] && Mystic.adapter.name == "postgres"
 			
 			sql = "SELECT #{visible_cols*','} FROM #{table_name} WHERE #{params.sqlize*' AND '}"
 			sql << " LIMIT #{count.to_i}" if count > 0
@@ -57,7 +54,7 @@ module Mystic
 			wrapper_sql(
 				:sql => sql,
 				:return_rows => true,
-				:return_json => opts[:return_json] && Mystic.adapter.adapter == "postgres"
+				:return_json => opts[:return_json] && Mystic.adapter.json_supported?
 			)
     end
     
@@ -70,7 +67,7 @@ module Mystic
 			wrapper_sql(
 				:sql => "UPDATE #{table_name} SET #{set.sqlize*','} WHERE #{where.sqlize*' AND '}",
 				:return_rows => opts[:return_rows],
-				:return_json => opts[:return_json] && Mystic.adapter.adapter == "postgres"
+				:return_json => opts[:return_json] && Mystic.adapter.json_supported?
 			)
     end
     
@@ -82,7 +79,7 @@ module Mystic
 			wrapper_sql(
 				:sql => "INSERT INTO #{table_name} (#{params.keys*','}) VALUES (#{params.values.sqlize*','})",
 				:return_rows => opts[:return_rows],
-				:return_json => opts[:return_json] && Mystic.adapter.adapter == "postgres"
+				:return_json => opts[:return_json] && Mystic.adapter.json_supported?
 			)
     end
     
@@ -94,7 +91,7 @@ module Mystic
 			wrapper_sql(
 				:sql => "DELETE FROM #{table_name} WHERE #{params.sqlize*' AND '}",
 				:return_rows => opts[:return_rows],
-				:return_json => opts[:return_json] && Mystic.adapter.adapter == "postgres"
+				:return_json => opts[:return_json] && Mystic.adapter.json_supported?
 			)
     end
     
