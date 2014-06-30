@@ -90,7 +90,7 @@ class Hash
 	end
   
   def sqlize
-    reject { |k,v| v.nil? || v.empty? }.map{ |k,v| "#{k.sanitize}=#{v.is_a? Integer ? v : "'#{v.to_s.sanitize}'" }" }
+    reject { |k,v| v.nil? || v.empty? }.map{ |k,v| "#{k.sanitize}=#{Integer === v ? v : "'#{v.to_s.sanitize}'" }" }
   end
 end
 

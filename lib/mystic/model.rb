@@ -74,7 +74,7 @@ module Mystic
 			return "" if params.empty?
       
 			sym_opts = opts.symbolize
-
+			
 			wrapper_sql(
 				:sql => "INSERT INTO #{table_name} (#{params.keys*','}) VALUES (#{params.values.sqlize*','})",
 				:return_rows => sym_opts[:return_rows],
