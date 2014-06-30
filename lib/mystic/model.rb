@@ -10,13 +10,13 @@ module Mystic
 			["*"]
 		end
 		
-		def self.wrapper_sql(params={})
-			opts = params.symbolize!
+		def self.wrapper_sql(opts={})
+			sym_opts = opts.symbolize
 			
 			# .dup is so that input variables don't get modified.
-			sql = opts[:sql].dup || "SELECT 1"
-			return_rows = opts[:return_rows].dup || false
-			return_json = opts[:return_json].dup || false
+			sql = sym_opts[:sql].dup || "SELECT 1"
+			return_rows = sym_opts[:return_rows].dup || false
+			return_json = sym_opts[:return_json].dup || false
 			return_rows = true if return_json
 			
 			op = sql.split(/\s+/,2).first
@@ -45,7 +45,7 @@ module Mystic
     end
     
     def self.select_sql(params={}, opts={})
-			sym_ops = opts.symbolize
+			sym_opts = opts.symbolize
       count = sym_opts[:count] || 0
 			
 			sql = "SELECT #{visible_cols*','} FROM #{table_name} WHERE #{params.sqlize*' AND '}"
@@ -62,7 +62,7 @@ module Mystic
       return "" if where.empty?
       return "" if set.empty?
 			
-			sym_ops = opts.symbolize
+			sym_opts = opts.symbolize
 			
 			wrapper_sql(
 				:sql => "UPDATE #{table_name} SET #{set.sqlize*','} WHERE #{where.sqlize*' AND '}",
@@ -74,7 +74,7 @@ module Mystic
     def self.insert_sql(params={}, opts={})
 			return "" if params.empty?
       
-			sym_ops = opts.symbolize
+			sym_opts = opts.symbolize
 
 			wrapper_sql(
 				:sql => "INSERT INTO #{table_name} (#{params.keys*','}) VALUES (#{params.values.sqlize*','})",
@@ -86,7 +86,7 @@ module Mystic
     def self.delete_sql(params={}, opts={})
       return "" if params.empty?
 			
-			sym_ops = opts.symbolize
+			sym_opts = opts.symbolize
 
 			wrapper_sql(
 				:sql => "DELETE FROM #{table_name} WHERE #{params.sqlize*' AND '}",
