@@ -45,8 +45,8 @@ module Mystic
     end
     
     def self.select_sql(params={}, opts={})
-			opts.symbolize!
-      count = opts[:count] || 0
+			sym_ops = opts.symbolize
+      count = sym_opts[:count] || 0
 			
 			sql = "SELECT #{visible_cols*','} FROM #{table_name} WHERE #{params.sqlize*' AND '}"
 			sql << " LIMIT #{count.to_i}" if count > 0
@@ -54,7 +54,7 @@ module Mystic
 			wrapper_sql(
 				:sql => sql,
 				:return_rows => true,
-				:return_json => opts[:return_json] && Mystic.adapter.json_supported?
+				:return_json => sym_opts[:return_json] && Mystic.adapter.json_supported?
 			)
     end
     
@@ -62,36 +62,36 @@ module Mystic
       return "" if where.empty?
       return "" if set.empty?
 			
-			opts.symbolize!
+			sym_ops = opts.symbolize
 			
 			wrapper_sql(
 				:sql => "UPDATE #{table_name} SET #{set.sqlize*','} WHERE #{where.sqlize*' AND '}",
-				:return_rows => opts[:return_rows],
-				:return_json => opts[:return_json] && Mystic.adapter.json_supported?
+				:return_rows => sym_opts[:return_rows],
+				:return_json => sym_opts[:return_json] && Mystic.adapter.json_supported?
 			)
     end
     
     def self.insert_sql(params={}, opts={})
 			return "" if params.empty?
       
-			opts.symbolize!
+			sym_ops = opts.symbolize
 
 			wrapper_sql(
 				:sql => "INSERT INTO #{table_name} (#{params.keys*','}) VALUES (#{params.values.sqlize*','})",
-				:return_rows => opts[:return_rows],
-				:return_json => opts[:return_json] && Mystic.adapter.json_supported?
+				:return_rows => sym_opts[:return_rows],
+				:return_json => sym_opts[:return_json] && Mystic.adapter.json_supported?
 			)
     end
     
     def self.delete_sql(params={}, opts={})
       return "" if params.empty?
 			
-			opts.symbolize!
+			sym_ops = opts.symbolize
 
 			wrapper_sql(
 				:sql => "DELETE FROM #{table_name} WHERE #{params.sqlize*' AND '}",
-				:return_rows => opts[:return_rows],
-				:return_json => opts[:return_json] && Mystic.adapter.json_supported?
+				:return_rows => sym_opts[:return_rows],
+				:return_json => sym_opts[:return_json] && Mystic.adapter.json_supported?
 			)
     end
     
