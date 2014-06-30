@@ -23,19 +23,17 @@ module Mystic
 			sql << " RETURNING #{visible_cols*','}" if return_rows && op != "SELECT"
 			
 			s = []
-			s << "WITH res AS (#{sql})" if return_rows
-			
-			s << "SELECT"
 			
 			if return_json
+				s << "WITH res AS (#{sql}) SELECT"
 				s << "row_to_json(res)" if op == "INSERT"
 				s << "array_to_json(array_agg(res))" unless op == "INSERT"
 				s << "AS #{Mystic::JSON_COL}"
+				s << "FROM res"
 			else
-				s << "*"
+				s << sql
 			end
 			
-			s << "FROM res"
 			s*' '
 		end
 

@@ -22,7 +22,7 @@ module Mystic
 		# Arguments:
 		#   env - The env from database.yml you wish to use
 		def connect(env="")
-			@@env = env.to_s
+			@@env = (env || ENV["RACK_ENV"] || ENV["RAILS_ENV"] || "development").env
 			path = root.join("config","database.yml").to_s
 			db_yml = YAML.load_file path
 		
@@ -89,9 +89,11 @@ module Mystic
 			root path.parent
 		end
 	
+		# TODO: Make this a migration
+		# TODO: Silence this
 		# Mystic.create_table
 		#   Create migration tracking table
-		def create_table
+		def create_mig_table
 			execute "CREATE TABLE IF NOT EXISTS mystic_migrations (mig_number integer, filename text)"
 		end
 	
@@ -101,7 +103,7 @@ module Mystic
 		
 		# Runs every yet-to-be-ran migration
 		def migrate
-			create_table
+			create_mig_table
 			migrated_filenames = execute("SELECT filename FROM mystic_migrations").map{ |r| r["filename"] }
 			mp = root.join("mystic","migrations").to_s
 		
@@ -120,7 +122,7 @@ module Mystic
 	
 		# Rolls back a single migration
 		def rollback
-			create_table
+			create_mig_table
 			fname = execute("SELECT filename FROM mystic_migrations ORDER BY mig_number DESC LIMIT 1")[0]["filename"] rescue nil
 			return if fname.nil?
 
@@ -148,6 +150,14 @@ module Mystic
 		end
 	
 		private
+		
+		# Loads the .env file
+		def load_env
+			root.join(".env").read
+											 .split("\n")
+											 .map { |l| l.strip.split "=", 2 }
+											 .each { |k,v| ENV[k] = v }
+		end
 			
 		# Retuns a blank migration's code in a String
 		def template(name=nil)
@@ -168,5 +178,7 @@ class #{name} < Mystic::Migration
 end
 			mig_template
 		end
+		
+		load_env
 	end
 end
