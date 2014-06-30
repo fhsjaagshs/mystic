@@ -37,8 +37,8 @@ module Mystic
 			s*' '
 		end
 
-    def self.function_sql(funcname, *params)
-			"SELECT #{funcname} (#{fnc_parameterize(params)*','})"
+    def self.function_sql(retuns_rows, funcname, *params)
+			"SELECT #{returns_rows ? "* FROM" : ""} #{funcname} (#{fnc_parameterize(params)*','})"
     end
     
     def self.select_sql(params={}, opts={})
@@ -117,7 +117,11 @@ module Mystic
     end
 		
 		def self.exec_func(funcname, *params)
-			Mystic.execute function_sql(funcname, *params)
+			Mystic.execute function_sql(false, funcname, *params)
+		end
+		
+		def self.exec_func_rows(funcname, *params)
+			Mystic.execute function_sql(true, funcname, *params)
 		end
     
     private
