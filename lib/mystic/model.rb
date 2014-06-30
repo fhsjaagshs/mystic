@@ -12,11 +12,10 @@ module Mystic
 		
 		def self.wrapper_sql(opts={})
 			sym_opts = opts.symbolize
-			
-			# .dup is so that input variables don't get modified.
-			sql = sym_opts[:sql].dup || "SELECT 1"
-			return_rows = sym_opts[:return_rows].dup || false
-			return_json = sym_opts[:return_json].dup || false
+
+			sql = sym_opts[:sql] || "SELECT 1"
+			return_rows = sym_opts[:return_rows] || false
+			return_json = sym_opts[:return_json] || false
 			return_rows = true if return_json
 			
 			op = sql.split(/\s+/,2).first
