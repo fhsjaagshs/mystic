@@ -16,15 +16,14 @@ when :create
   end
 else
 	begin
-		env = ARGV[1] || ENV["RACK_ENV"] || ENV["RAILS_ENV"] || "development"
-		Mystic.connect env
+		Mystic.connect ARGV[1]
 	  case ARGV[0].to_sym
 	  when :migrate
 	  	Mystic.migrate
 	  when :rollback
 	  	Mystic.rollback
 		when :console
-			puts "Starting Mystic console: #{env}"
+			puts "Starting Mystic console: #{Mystic.env}"
 			IRB.setup nil
 			IRB.conf[:MAIN_CONTEXT] = IRB::Irb.new.context
 			require "irb/ext/multi-irb"

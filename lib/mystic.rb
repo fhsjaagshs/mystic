@@ -22,11 +22,12 @@ module Mystic
 		# Arguments:
 		#   env - The env from database.yml you wish to use
 		def connect(env="")
-			@@env = (env || ENV["RACK_ENV"] || ENV["RAILS_ENV"] || "development").env
+			load_env
+			@@env = (env || ENV["RACK_ENV"] || ENV["RAILS_ENV"] || "development").to_s
 			path = root.join("config","database.yml").to_s
 			db_yml = YAML.load_file path
 		
-			raise EnvironmentError, "Environment doesn't exist." unless db_yml.member? @@env
+			raise EnvironmentError, "Environment '#{@@env}' doesn't exist." unless db_yml.member? @@env
 		
 			conf = db_yml[@@env].symbolize
 			conf[:dbname] = conf[:database]
@@ -178,7 +179,5 @@ class #{name} < Mystic::Migration
 end
 			mig_template
 		end
-		
-		load_env
 	end
 end
