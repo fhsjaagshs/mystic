@@ -46,7 +46,7 @@ module Mystic
       count = sym_opts[:count] || 0
 			
 			sql = []
-			sql = "SELECT #{visible_cols*','} FROM #{table_name}"
+			sql << "SELECT #{visible_cols*','} FROM #{table_name}"
 			sql << "WHERE #{params.sqlize*' AND '}" if params.count > 0
 			sql << "LIMIT #{count.to_i}" if count > 0
 			
