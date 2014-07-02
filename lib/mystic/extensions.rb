@@ -11,10 +11,10 @@ module Kernel
 end
 
 class String
-  def sqlize
+  def desnake
     downcase.split("_").map(&:capitalize)*' '
   end
-
+	
   def sanitize
     Mystic.sanitize(self).untaint
   end
@@ -27,14 +27,6 @@ class String
 		return self + ";" unless dup.strip.end_with? ";"
 		self
 	end
-end
-
-class Symbol
-  def sqlize
-    to_s.sqlize
-  end
-  
-	alias_method :sanitize, :sqlize
 end
 
 class Array
@@ -90,7 +82,7 @@ class Hash
 	end
   
   def sqlize
-    reject { |k,v| v.nil? || v.empty? }.map{ |k,v| "#{k.sanitize}=#{Integer === v ? v : "'#{v.to_s.sanitize}'" }" }
+    reject { |k,v| v.nil? || v.empty? }.map{ |k,v| "#{k}=#{Integer === v ? v : "'#{v.to_s.sanitize}'" }" }
   end
 end
 
