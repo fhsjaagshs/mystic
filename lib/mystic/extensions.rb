@@ -53,14 +53,14 @@ class Array
 	end
 	
 	def sqlize
-		map do |o|
+		map { |o|
 			case o
 			when String
 				"'#{o.sanitize}'"
 			when Numeric
 				o.to_s
 			end
-		end
+		}.compact
 	end
 end
 

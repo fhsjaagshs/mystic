@@ -44,10 +44,11 @@ module Mystic
     def self.select_sql(params={}, opts={})
 			sym_opts = opts.symbolize
       count = sym_opts[:count] || 0
+			where = params.sqlize
 			
 			sql = []
 			sql << "SELECT #{visible_cols*','} FROM #{table_name}"
-			sql << "WHERE #{params.sqlize*' AND '}" if params.count > 0
+			sql << "WHERE #{where*' AND '}" if where.count > 0
 			sql << "LIMIT #{count.to_i}" if count > 0
 			
 			wrapper_sql(
@@ -99,15 +100,15 @@ module Mystic
     end
     
     def self.fetch(params={}, opts={})
-      res = select(params,opts.merge({:count => 1}))
-			return res if res.is_a?(String)
-			res.first
+      res = select params, opts.merge({:count => 1})
+			return res if res.is_a? String
+			res.first rescue nil
     end
     
     def self.create(params={}, opts={})
       res = Mystic.execute insert_sql(params, opts)
-			return res.first if res.is_a?(Array)
-			res
+			return res if res.is_a? String
+			res.first rescue nil
     end
     
     def self.update(where={}, set={}, opts={})
