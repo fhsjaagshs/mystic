@@ -45,11 +45,13 @@ module Mystic
 			sym_opts = opts.symbolize
       count = sym_opts[:count] || 0
 			
-			sql = "SELECT #{visible_cols*','} FROM #{table_name} WHERE #{params.sqlize*' AND '}"
-			sql << " LIMIT #{count.to_i}" if count > 0
+			sql = []
+			sql = "SELECT #{visible_cols*','} FROM #{table_name}"
+			sql << "WHERE #{params.sqlize*' AND '}" if params.count > 0
+			sql << "LIMIT #{count.to_i}" if count > 0
 			
 			wrapper_sql(
-				:sql => sql,
+				:sql => sql*' ',
 				:return_rows => true,
 				:return_json => sym_opts[:return_json] && Mystic.adapter.json_supported?
 			)
