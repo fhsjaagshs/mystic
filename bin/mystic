@@ -8,29 +8,36 @@ require "irb"
 # mystic migrate development
 # mystic rollback production
 
-case ARGV[0].to_sym
-when :create
-  case ARGV[1].to_sym
-  when :migration
-		Mystic.create_migration ARGV[2].dup
-  end
-else
-	begin
-		Mystic.connect ARGV[1]
-	  case ARGV[0].to_sym
-	  when :migrate
-	  	Mystic.migrate
-	  when :rollback
-	  	Mystic.rollback
-		when :console
-			puts "Starting Mystic console: #{Mystic.env}"
-			IRB.setup nil
-			IRB.conf[:MAIN_CONTEXT] = IRB::Irb.new.context
-			require "irb/ext/multi-irb"
-			IRB.irb nil, IRB::WorkSpace.new
+ErrorOutput = Class.new StandardError
+
+begin
+	case ARGV[0].to_sym
+	when :create
+	  case ARGV[1].to_sym
+	  when :migration
+			raise ErrorOutput, "No migration name provided" if ARGV[2].nil?
+			Mystic.create_migration ARGV[2].dup
+	  end
+	else
+		begin
+			Mystic.connect ARGV[1]
+		  case ARGV[0].to_sym
+		  when :migrate
+		  	Mystic.migrate
+		  when :rollback
+		  	Mystic.rollback
+			when :console
+				puts "Starting Mystic console: #{Mystic.env}"
+				IRB.setup nil
+				IRB.conf[:MAIN_CONTEXT] = IRB::Irb.new.context
+				require "irb/ext/multi-irb"
+				IRB.irb nil, IRB::WorkSpace.new
+			end
+		 	Mystic.disconnect
+		rescue Mystic::EnvironmentError => e
+			puts e.message
 		end
-	 	Mystic.disconnect
-	rescue Mystic::EnvironmentError => e
-		puts e.message
 	end
+rescue ErrorOutput => e
+	puts e.message
 end
