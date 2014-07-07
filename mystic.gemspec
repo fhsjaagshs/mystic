@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name         = "mystic"
-  s.version      = "0.0.1"
+  s.version      = "0.0.2"
   s.summary      = "Lightweight migrations + SQL execution"
   s.description  = "Database management/access gem. Supports adapters, migrations, and a singleton to make SQL queries."
   s.authors      = ["Nathaniel Symer"]
