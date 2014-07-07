@@ -2,6 +2,7 @@
 
 require "mystic"
 require "irb"
+require 'irb/completion'
 
 # Examples:
 # mystic create migration InitialMigration
@@ -28,10 +29,8 @@ begin
 		  	Mystic.rollback
 			when :console
 				puts "Starting Mystic console: #{Mystic.env}"
-				IRB.setup nil
-				IRB.conf[:MAIN_CONTEXT] = IRB::Irb.new.context
-				require "irb/ext/multi-irb"
-				IRB.irb nil, IRB::WorkSpace.new
+				ARGV.clear
+				IRB.start
 			end
 		 	Mystic.disconnect
 		rescue Mystic::EnvironmentError => e

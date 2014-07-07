@@ -3,3 +3,6 @@ v 0.0.1
 
 v 0.0.2
 - Make load_env() method public
+
+v 0.0.3
+- Fix Mystic console
