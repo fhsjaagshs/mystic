@@ -149,8 +149,6 @@ module Mystic
 
 			File.open(migs.join("#{num}_#{name}.rb").to_s, 'w') { |f| f.write(template name) }
 		end
-	
-		private
 		
 		# Loads the .env file
 		def load_env
@@ -159,6 +157,8 @@ module Mystic
 											 .map { |l| l.strip.split "=", 2 }
 											 .each { |k,v| ENV[k] = v }
 		end
+	
+		private
 			
 		# Retuns a blank migration's code in a String
 		def template(name=nil)
