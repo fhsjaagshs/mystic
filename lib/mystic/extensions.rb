@@ -82,12 +82,16 @@ class Hash
 	end
   
   def sqlize
-    reject { |k,v| v.nil? || v.empty? }.map{ |k,v| "#{k}=#{Integer === v ? v : "'#{v.to_s.sanitize}'" }" }
+    reject { |k,v| v.nil? || (v.empty? rescue false) }.map{ |k,v| "#{k}=#{Integer === v ? v : "'#{v.to_s.sanitize}'" }" }
   end
 end
 
 class Pathname
 	Kernel.silent do
+		def to_s
+			@path
+		end
+		
 	  def relative?
 	    @path[0] != File::SEPARATOR
 	  end
