@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name         = "mystic"
-  s.version      = "0.0.3"
+  s.version      = "0.0.4"
   s.summary      = "Expressive migrations and adapters coupled with a singleton for SQL execution. Heroku, rails, whatever compatible."
   s.description  = "Database management/access gem. Supports adapters, migrations, and a singleton to make SQL queries."
   s.authors      = ["Nathaniel Symer"]

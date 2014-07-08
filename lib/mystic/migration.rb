@@ -66,10 +66,11 @@ module Mystic
       execute table
     end
     
-    def drop_table(name)
+    def drop_table(name, opts={})
 			irreversible!
 			execute Mystic::SQL::Operation.drop_table(
-				:table_name => name.to_s
+				:table_name => name.to_s,
+				:cascade? => opts[:cascade]
 			)
     end
 		

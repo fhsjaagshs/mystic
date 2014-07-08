@@ -72,7 +72,7 @@ module Mystic
 		end
 		
 		drop_table do |obj|
-			"DROP TABLE #{obj.table_name}"
+			"DROP TABLE #{obj.table_name} #{obj.cascade? ? "CASCADE" : "RESTRICT" }"
 		end
 		
 		rename_table do |obj|
