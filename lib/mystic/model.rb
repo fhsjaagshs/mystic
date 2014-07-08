@@ -14,11 +14,11 @@ module Mystic
 			sym_opts = opts.symbolize
 
 			sql = sym_opts[:sql] || "SELECT 1"
+			op = sql.split(/\s+/,2).first.upcase
 			return_rows = sym_opts[:return_rows] || false
 			return_json = sym_opts[:return_json] || false
 			return_rows = true if return_json
-			
-			op = sql.split(/\s+/,2).first
+			plural = opts[:plural] && op != "INSERT"
 			
 			sql << " RETURNING #{visible_cols*','}" if return_rows && op != "SELECT"
 			
@@ -27,7 +27,8 @@ module Mystic
 			if return_json
 				s << "WITH res AS (#{sql}) SELECT"
 				s << "row_to_json(res)" if op == "INSERT"
-				s << "array_to_json(array_agg(res))" unless op == "INSERT"
+				s << "array_to_json(array_agg(res))" if plural
+				s << "row_to_json(res)" unless plural
 				s << "AS #{Mystic::JSON_COL}"
 				s << "FROM res"
 			else
@@ -45,7 +46,7 @@ module Mystic
 			sym_opts = opts.symbolize
       count = sym_opts[:count] || 0
 			where = params.sqlize
-			
+
 			sql = []
 			sql << "SELECT #{visible_cols*','} FROM #{table_name}"
 			sql << "WHERE #{where*' AND '}" if where.count > 0
@@ -54,7 +55,8 @@ module Mystic
 			wrapper_sql(
 				:sql => sql.join(' '),
 				:return_rows => true,
-				:return_json => sym_opts[:return_json] && Mystic.adapter.json_supported?
+				:return_json => sym_opts[:return_json] && Mystic.adapter.json_supported?,
+				:plural => count > 1
 			)
     end
     

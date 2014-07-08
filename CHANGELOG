@@ -9,3 +9,10 @@ v 0.0.3
 
 v 0.0.4
 - Add CASCADE/RESTRICT parameter for dropping tables
+
+v 0.0.5
+- Fixed issue with calling empty?() on a random param
+- Made Pathname's to_s() method faster by making it directly return @path
+
+v.0.0.6
+- Fixed issue with JSON generation and selecting one row
