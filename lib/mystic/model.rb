@@ -26,7 +26,6 @@ module Mystic
 			
 			if return_json
 				s << "WITH res AS (#{sql}) SELECT"
-				s << "row_to_json(res)" if op == "INSERT"
 				s << "array_to_json(array_agg(res))" if plural
 				s << "row_to_json(res)" unless plural
 				s << "AS #{Mystic::JSON_COL}"
