@@ -19,3 +19,6 @@ v.0.0.6
 
 v 0.0.7
 - Fixed double row_to_json() for insert queries
+
+v 0.0.8
+- Fixed env loading bug on Heroku
