@@ -11,6 +11,10 @@ module Kernel
 end
 
 class String
+  def capitalize_first!
+    self[0] = self[0].upcase
+  end
+  
   def desnake
     downcase.split("_").map(&:capitalize)*' '
   end

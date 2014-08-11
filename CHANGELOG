@@ -25,3 +25,8 @@ v 0.0.8
 
 v 0.0.9
 - Fixed a bug where Heroku-generated database.yml's would not work DUE TO ASSUMPTIONS ON HEROKU's PART.
+
+v 0.1.0
+- Complete rewrite
+    * Postgres-only
+    * Mystic::Model is now a mixin

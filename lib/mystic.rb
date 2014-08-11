@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 
 require "yaml"
+require "erb"
 require "pathname"
 require "mystic/extensions"
 require "mystic/constants"
@@ -12,6 +13,8 @@ require "mystic/model"
 module Mystic	
 	@@adapter = nil
 	
+  AdapterError = Class.new StandardError
+  
 	class << self
 		def adapter
 			@@adapter
@@ -20,17 +23,16 @@ module Mystic
 		# Mystic.connect
 		#   Connects to a database. It's recommended you use it like ActiveRecord::Base.establish_connection
 		# Arguments:
-		#   env - The env from database.yml you wish to use
-		def connect(env="")
+		#   p_env - The env from database.yml you wish to use
+		def connect p_env=""
 			load_env
-			@@env = (env || ENV["RACK_ENV"] || ENV["RAILS_ENV"] || "development").to_s
-      yaml = root.join("config","database.yml").read
-			db_yml = YAML.load(yaml) rescue YAML.load(ERB.new(yaml).result) # Heroku uses ERB here because rails makes assumptions
-		
+			@@env = (p_env || ENV["RACK_ENV"] || ENV["RAILS_ENV"] || "development").to_s
 			raise EnvironmentError, "Environment '#{@@env}' doesn't exist." unless db_yml.member? @@env
 		
 			conf = db_yml[@@env].symbolize
 			conf[:dbname] = conf[:database]
+      
+      raise AdapterError, "Mystic doesn't support any database except Postgres." unless /^postg.+$/i =~ conf[:adapter]
 			
 			@@adapter = Adapter.create(
 				conf[:adapter],
@@ -62,7 +64,7 @@ module Mystic
 		# Arguments:
 		#   sql - The SQL to execute
 		# Returns: Native Ruby objects representing the response from the DB (Usually an Array of Hashes)
-		def execute(sql="")
+		def execute sql=""
 			raise AdapterError, "Adapter is nil, so Mystic is not connected." if @@adapter.nil?
 			@@adapter.execute sql.sql_terminate.densify
 		end
@@ -72,7 +74,7 @@ module Mystic
 		# Arguments:
 		#   str - The string to sanitize
 		# Returns: the sanitized string
-		def sanitize(str="")
+		def sanitize str=""
 			raise AdapterError, "Adapter is nil, so Mystic is not connected." if @@adapter.nil?
 			@@adapter.sanitize str
 		end
@@ -83,7 +85,7 @@ module Mystic
 		#   To be ignored
 		# Returns:
 		#   A pathname to the application's root
-		def root(path=Pathname.new(Dir.pwd))
+		def root path=Pathname.new(Dir.pwd)
 			raise RootError, "Failed to find the application's root." if path == path.parent
 			mystic_path = path.join "config", "database.yml"
 			return path if mystic_path.file? # exist? is implicit with file?
@@ -137,11 +139,10 @@ module Mystic
 		end
 	
 	  # Creates a blank migration in mystic/migrations
-		def create_migration(name="")
+		def create_migration name=""
 			name.strip!
 			raise CLIError, "Migration name must not be empty." if name.empty?
-		
-			name[0] = name[0].capitalize
+      name.capitalize_first!
     
 			migs = root.join "mystic","migrations"
 
@@ -149,19 +150,28 @@ module Mystic
 
 			File.open(migs.join("#{num}_#{name}.rb").to_s, 'w') { |f| f.write(template name) }
 		end
-		
+	
+		private
+    
+    def db_yml
+      if @db_yml.nil?
+        yaml = root.join("config","database.yml").read
+  			@db_yml = YAML.load ERB.new(yaml).result # Heroku uses ERB here because rails makes assumptions
+      end
+      @db_yml
+    end
+    
 		# Loads the .env file
 		def load_env
 			root.join(".env").read
 											 .split("\n")
 											 .map { |l| l.strip.split "=", 2 }
-											 .each { |k,v| ENV[k] = v } rescue nil
+											 .each { |k,v| ENV[k] = v }
+                       rescue nil
 		end
-	
-		private
-			
+		
 		# Retuns a blank migration's code in a String
-		def template(name=nil)
+		def template name
 			raise ArgumentError, "Migrations must have a name." if name.nil?
 			<<-mig_template
 #!/usr/bin/env ruby
