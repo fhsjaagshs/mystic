@@ -24,8 +24,8 @@ module Mystic
 		def connect(env="")
 			load_env
 			@@env = (env || ENV["RACK_ENV"] || ENV["RAILS_ENV"] || "development").to_s
-			path = root.join("config","database.yml").to_s
-			db_yml = YAML.load_file path
+      yaml = root.join("config","database.yml").read
+			db_yml = YAML.load(yaml) rescue YAML.load(ERB.new(yaml).result) # Heroku uses ERB here because rails makes assumptions
 		
 			raise EnvironmentError, "Environment '#{@@env}' doesn't exist." unless db_yml.member? @@env
 		

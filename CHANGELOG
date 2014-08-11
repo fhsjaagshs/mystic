@@ -22,3 +22,6 @@ v 0.0.7
 
 v 0.0.8
 - Fixed env loading bug on Heroku
+
+v 0.0.9
+- Fixed a bug where Heroku-generated database.yml's would not work DUE TO ASSUMPTIONS ON HEROKU's PART.
