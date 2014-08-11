@@ -155,7 +155,7 @@ module Mystic
 			root.join(".env").read
 											 .split("\n")
 											 .map { |l| l.strip.split "=", 2 }
-											 .each { |k,v| ENV[k] = v }
+											 .each { |k,v| ENV[k] = v } rescue nil
 		end
 	
 		private
