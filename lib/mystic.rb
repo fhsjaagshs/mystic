@@ -12,8 +12,6 @@ require "mystic/model"
 
 module Mystic	
 	@@adapter = nil
-	
-  AdapterError = Class.new StandardError
   
 	class << self
 		def adapter
@@ -32,7 +30,7 @@ module Mystic
 			conf = db_yml[@@env].symbolize
 			conf[:dbname] = conf[:database]
       
-      raise AdapterError, "Mystic doesn't support any database except Postgres." unless /^postg.+$/i =~ conf[:adapter]
+      raise MysticError, "Mystic doesn't support any database except Postgres." unless /^postg.+$/i =~ conf[:adapter]
 			
 			@@adapter = Adapter.create(
 				conf[:adapter],
