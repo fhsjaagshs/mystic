@@ -3,11 +3,11 @@
 require "yaml"
 require "erb"
 require "pathname"
-require "./mystic/extensions"
-require "./mystic/sql"
-require "./mystic/postgres"
-require "./mystic/migration"
-require "./mystic/model"
+require_relative "./mystic/extensions.rb"
+require_relative "./mystic/sql.rb"
+require_relative "./mystic/postgres.rb"
+require_relative "./mystic/migration.rb"
+require_relative "./mystic/model.rb"
 
 module Mystic
 	MysticError = Class.new StandardError
