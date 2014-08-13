@@ -61,11 +61,11 @@ class Array
 end
 
 class Hash
-	def subhash(*keys)
+	def subhash *keys
 		Hash[values_at(*keys).merge_keys(*keys).reject{ |k,v| v.nil? }]
 	end
 	
-  def parify(delim=" ")
+  def parify delim=" "
     map { |pair| pair * delim }
   end
 	
@@ -100,7 +100,7 @@ class Pathname
 	    @path[0] != File::SEPARATOR
 	  end
 	
-		def join(*args)
+		def join *args
 			Pathname.new(File.join @path, *args.map(&:to_s))
 		end
 	end

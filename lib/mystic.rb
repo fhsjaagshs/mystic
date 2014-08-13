@@ -3,93 +3,91 @@
 require "yaml"
 require "erb"
 require "pathname"
-require "mystic/extensions"
-require "mystic/constants"
-require "mystic/sql"
-require "mystic/adapter"
-require "mystic/migration"
-require "mystic/model"
+require "./mystic/extensions"
+require "./mystic/sql"
+require "./mystic/postgres"
+require "./mystic/migration"
+require "./mystic/model"
 
-module Mystic	
-	@@adapter = nil
+module Mystic
+	MysticError = Class.new StandardError
+	RootError = Class.new StandardError
+	EnvironmentError = Class.new StandardError
+	AdapterError = Class.new StandardError
+  ConnectionError = Class.new StandardError
+	CLIError = Class.new StandardError
+	MIG_REGEX = /^(?<num>\d+)_(?<name>[a-zA-Z]+)\.rb$/ # example: 1_MigrationClassName.rb
+	JSON_COL = "mystic_return_json89788"
   
 	class << self
-		def adapter
-			@@adapter
-		end
-		
-		# Mystic.connect
-		#   Connects to a database. It's recommended you use it like ActiveRecord::Base.establish_connection
-		# Arguments:
-		#   p_env - The env from database.yml you wish to use
-		def connect p_env=""
-			load_env
-			@@env = (p_env || ENV["RACK_ENV"] || ENV["RAILS_ENV"] || "development").to_s
-			raise EnvironmentError, "Environment '#{@@env}' doesn't exist." unless db_yml.member? @@env
-		
-			conf = db_yml[@@env].symbolize
-			conf[:dbname] = conf[:database]
-      
-      raise MysticError, "Mystic doesn't support any database except Postgres." unless /^postg.+$/i =~ conf[:adapter]
-			
-			@@adapter = Adapter.create(
-				conf[:adapter],
-				:pool_size => conf[:pool_size].to_i,
-				:pool_timeout => conf[:timeout].to_i,
-				:pool_expires => conf[:expires].to_i
-			)
-		
-			@@adapter.connect conf
-			true
-		end
-	
-		alias_method :env=, :connect
-	
+    
+    #
+    ## Accessors
+    #
+    
+    def db_yml
+      if @db_yml.nil?
+        # Heroku uses ERB cuz rails uses tit errwhere
+        yaml = ERB.new(root.join("config","database.yml").read).result
+  			@db_yml = YAML.load yaml
+      end
+      @db_yml
+    end
+    
 		def env
 			@@env
 		end
-		
-		# Mystic.disconnect
-		#   Disconnects from the connected database. Use it like ActiveRecord::Base.connection.disconnect!
-		def disconnect
-			@@adapter.disconnect
-			@@adapter = nil
-			true
-		end
-
-		# Mystic.execute
-		#   Execute some sql. It will be densified (the densify gem) and sent to the DB
-		# Arguments:
-		#   sql - The SQL to execute
-		# Returns: Native Ruby objects representing the response from the DB (Usually an Array of Hashes)
-		def execute sql=""
-			raise AdapterError, "Adapter is nil, so Mystic is not connected." if @@adapter.nil?
-			@@adapter.execute sql.sql_terminate.densify
-		end
-  
-		# Mystic.sanitize
-		#   Escape a string so that it can be used safely as input. Mystic does not support statement preparation, so this is a must.
-		# Arguments:
-		#   str - The string to sanitize
-		# Returns: the sanitized string
-		def sanitize str=""
-			raise AdapterError, "Adapter is nil, so Mystic is not connected." if @@adapter.nil?
-			@@adapter.sanitize str
-		end
-	
-		# Mystic.root
-		#   Get the app root
-		# Aguments:
-		#   To be ignored
-		# Returns:
-		#   A pathname to the application's root
+    
+    def env= new_env
+      postgres.disconnect
+      @@postgres = nil
+      postgres
+      @@env
+    end
+    
+		def postgres
+      if @@postgres.nil?
+  			conf = db_yml[@@env].symbolize
+  			conf[:dbname] = conf.delete :database
+        raise MysticError, "Mystic only supports Postgres." unless /^postg.+$/i =~ conf[:adapter]
+        @@postgres = Postgres.new conf
+      end
+      @@postgres
+    end
+    
 		def root path=Pathname.new(Dir.pwd)
 			raise RootError, "Failed to find the application's root." if path == path.parent
 			mystic_path = path.join "config", "database.yml"
-			return path if mystic_path.file? # exist? is implicit with file?
-			root path.parent
+      return root(path.parent) unless mystic_path.file? # exist? is implicit with file?
+			path
 		end
-	
+		
+    #
+    ## DB functionality
+    #
+    
+		def connect p_env=nil
+      load_env
+			@@env = (p_env || ENV["RACK_ENV"] || ENV["RAILS_ENV"] || "development").to_s
+			raise EnvironmentError, "Environment '#{@@env}' doesn't exist." unless db_yml.member? env
+		end
+    
+		alias_method :env=, :connect
+
+		def disconnect
+      postgres.disconnect
+		end
+
+		def execute sql=""
+      raise ConnectionError, "Not connected to Postgres" unless postgres.connected?
+			postgres.execute sql.sql_terminate.densify
+		end
+
+		def sanitize str=""
+			raise ConnectionError, "Not connected to Postgres" unless postgres.connected?
+			postgres.sanitize str
+    end
+
 		# TODO: Make this a migration
 		# TODO: Silence this
 		# Mystic.create_table
@@ -109,10 +107,10 @@ module Mystic
 			mp = root.join("mystic","migrations").to_s
 		
 			Dir.entries(mp)
-				.reject{ |e| MIG_REGEX.match(e).nil? }
-				.reject{ |e| migrated_filenames.include? e }
-				.sort{ |a,b| MIG_REGEX.match(a)[:num].to_i <=> MIG_REGEX.match(b)[:num].to_i }
-				.each{ |fname|
+				.reject { |e| MIG_REGEX.match(e).nil? }
+				.reject { |e| migrated_filenames.include? e }
+				.sort { |a,b| MIG_REGEX.match(a)[:num].to_i <=> MIG_REGEX.match(b)[:num].to_i }
+				.each { |fname|
 					load File.join mp,fname
 				
 					mig_num,mig_name = MIG_REGEX.match(fname).captures
@@ -151,14 +149,6 @@ module Mystic
 	
 		private
     
-    def db_yml
-      if @db_yml.nil?
-        yaml = root.join("config","database.yml").read
-  			@db_yml = YAML.load ERB.new(yaml).result # Heroku uses ERB here because rails makes assumptions
-      end
-      @db_yml
-    end
-    
 		# Loads the .env file
 		def load_env
 			root.join(".env").read
@@ -167,11 +157,11 @@ module Mystic
 											 .each { |k,v| ENV[k] = v }
                        rescue nil
 		end
-		
+
 		# Retuns a blank migration's code in a String
 		def template name
 			raise ArgumentError, "Migrations must have a name." if name.nil?
-			<<-mig_template
+			<<-RUBY
 #!/usr/bin/env ruby
 
 require "mystic"
@@ -185,7 +175,7 @@ class #{name} < Mystic::Migration
 		
   end
 end
-			mig_template
+			RUBY
 		end
 	end
 end
