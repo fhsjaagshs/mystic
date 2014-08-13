@@ -137,51 +137,12 @@ Notes:
 -
 
 - Returning rows for a `DELETE` query is super expensive (in `psql`, `DELETE` queries take **10x** longer to execute with the `RETURNING` clause)
-- Returning JSON from the DB is only supported by Postgres.
 
-Adapters:
--
-
-Unlike ActiveRecord, Mystic adapters are really simple. They're defined using a simple DSL that resembles Sinatra or NYNY:
-
-    require "mystic"
-    
-    module Mystic
-      class MysqlAdapter < Mystic::Adapter
-        execute do |inst, sql|
-	      # Execute SQL and turn it into Ruby objects  
-	      # inst - An instance of the database gem
-	      # sql - The SQL to execute
-	    end
-  
-       sanitize do |inst, str|
-		 # Sanitize a string
-		 # inst - An instance of the database gem
-	     # str - The string to sanitize
-	   end
-  
-	    connect do |opts|
-	      # Create an instance of your database gem
-	      # opts - the options from database.yml that you shall feed to the DB gem
- 	    end
-  
-	    disconnect do |inst|
-	      # close the database gem's connection
-	    end
-	  
-        sql do |obj|
-          # Turn a Mystic::SQL object into SQL
-          # obj - The Mystic::SQL object
-        end
-      end
-    end
-    
-    
 
 TODO
 -
 
-1. `quote_ident()` for postgres (pg gem)
+1. `quote_ident()` implementation
 
 
 

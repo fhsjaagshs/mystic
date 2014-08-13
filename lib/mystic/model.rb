@@ -3,7 +3,6 @@
 module Mystic
   module Model
     def self.included base
-      base.send :include, InstanceMethods
       base.extend ClassMethods
     end
     
@@ -60,7 +59,7 @@ module Mystic
   			wrapper_sql(
   				:sql => sql.join(' '),
   				:return_rows => true,
-  				:return_json => sym_opts[:return_json] && Mystic.adapter.json_supported?,
+  				:return_json => sym_opts[:return_json],
   				:plural => count > 1
   			)
       end
@@ -74,7 +73,7 @@ module Mystic
   			wrapper_sql(
   				:sql => "UPDATE #{table_name} SET #{set.sqlize*','} WHERE #{where.sqlize*' AND '}",
   				:return_rows => sym_opts[:return_rows],
-  				:return_json => sym_opts[:return_json] && Mystic.adapter.json_supported?
+  				:return_json => sym_opts[:return_json]
   			)
       end
     
@@ -86,7 +85,7 @@ module Mystic
   			wrapper_sql(
   				:sql => "INSERT INTO #{table_name} (#{params.keys*','}) VALUES (#{params.values.sqlize*','})",
   				:return_rows => sym_opts[:return_rows],
-  				:return_json => sym_opts[:return_json] && Mystic.adapter.json_supported?
+  				:return_json => sym_opts[:return_json]
   			)
       end
     
@@ -98,7 +97,7 @@ module Mystic
   			wrapper_sql(
   				:sql => "DELETE FROM #{table_name} WHERE #{params.sqlize*' AND '}",
   				:return_rows => sym_opts[:return_rows],
-  				:return_json => sym_opts[:return_json] && Mystic.adapter.json_supported?
+  				:return_json => sym_opts[:return_json]
   			)
       end
     
@@ -133,10 +132,6 @@ module Mystic
   		def exec_func_rows funcname, *params
   			Mystic.execute function_sql(true, funcname, *params)
   		end
-    end
-    
-    module InstanceMethods
-      
     end
   end
 end
