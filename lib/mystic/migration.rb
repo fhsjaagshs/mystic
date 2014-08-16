@@ -25,9 +25,9 @@ module Mystic
 			raise ArgumentError, "Direction must be either :up or :down." unless [:up, :down].include? _direction
 			raise IrreversibleError, "Impossible to roll back an irreversible migration." if _direction == :down && irreversible?
 			
-			execute Mystic::SQL::Operation.start_transaction
+      execute "BEGIN"
 			method(_direction).call
-			execute Mystic::SQL::Operation.commit_transaction
+      execute "COMMIT"
       
       res = @sql.dup
       @sql = ""

@@ -3,6 +3,7 @@
 require "yaml"
 require "erb"
 require "pathname"
+require "densify"
 require_relative "./mystic/extensions.rb"
 require_relative "./mystic/sql.rb"
 require_relative "./mystic/postgres.rb"
@@ -20,6 +21,7 @@ module Mystic
 	JSON_COL = "mystic_return_json89788"
   
 	class << self
+    attr_reader :postgres
     
     #
     ## Accessors
@@ -27,32 +29,33 @@ module Mystic
     
     def db_yml
       if @db_yml.nil?
-        # Heroku uses ERB cuz rails uses tit errwhere
+        # Heroku uses ERB cuz rails uses it errwhere
         yaml = ERB.new(root.join("config","database.yml").read).result
   			@db_yml = YAML.load yaml
       end
       @db_yml
     end
     
-		def env
-			@@env
-		end
-    
-    def env= new_env
-      postgres.disconnect
-      @@postgres = nil
-      postgres
-      @@env
+    def env
+      @env
     end
     
-		def postgres
-      if @@postgres.nil?
-  			conf = db_yml[@@env].symbolize
-  			conf[:dbname] = conf.delete :database
-        raise MysticError, "Mystic only supports Postgres." unless /^postg.+$/i =~ conf[:adapter]
-        @@postgres = Postgres.new conf
-      end
-      @@postgres
+    def env= new_env
+      @postgres.disconnect unless @postgres.nil?
+      @postgres = nil
+      
+      load_env
+      
+			@env = (new_env || ENV["RACK_ENV"] || ENV["RAILS_ENV"] || "development").to_s
+			raise EnvironmentError, "Environment '#{@env}' doesn't exist." unless db_yml.member? @env
+      
+      conf = db_yml[@env].symbolize
+      conf[:dbname] = conf.delete :database
+      raise MysticError, "Mystic only supports Postgres." unless /^postg.+$/i =~ conf[:adapter]
+      
+      @postgres = Postgres.new(conf)
+      
+      @env
     end
     
 		def root path=Pathname.new(Dir.pwd)
@@ -66,32 +69,24 @@ module Mystic
     ## DB functionality
     #
     
-		def connect p_env=nil
-      load_env
-			@@env = (p_env || ENV["RACK_ENV"] || ENV["RAILS_ENV"] || "development").to_s
-			raise EnvironmentError, "Environment '#{@@env}' doesn't exist." unless db_yml.member? env
-		end
-    
-		alias_method :env=, :connect
+		alias_method  :connect, :env=
 
 		def disconnect
       postgres.disconnect
 		end
 
 		def execute sql=""
-      raise ConnectionError, "Not connected to Postgres" unless postgres.connected?
+      #raise ConnectionError, "Not connected to Postgres" unless postgres.connected?
 			postgres.execute sql.sql_terminate.densify
 		end
 
-		def sanitize str=""
-			raise ConnectionError, "Not connected to Postgres" unless postgres.connected?
-			postgres.sanitize str
+		def escape str=""
+		#	raise ConnectionError, "Not connected to Postgres" unless postgres.connected?
+			postgres.escape str
     end
+    
+    alias_method :sanitize, :escape
 
-		# TODO: Make this a migration
-		# TODO: Silence this
-		# Mystic.create_table
-		#   Create migration tracking table
 		def create_mig_table
 			execute "CREATE TABLE IF NOT EXISTS mystic_migrations (mig_number integer, filename text)"
 		end

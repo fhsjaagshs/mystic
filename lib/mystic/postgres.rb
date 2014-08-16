@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 
 require "pg"
+require "access_stack"
 
 module Mystic
   class Postgres
@@ -27,26 +28,30 @@ module Mystic
 			:gin
 		].freeze
 
-    def inititalize opts={}
-			disconnect unless @pool.nil?
+    def initialize opts={}
+      return if opts.empty?
 			@pool = AccessStack.new(
-				:size => opts[:pool_size],
-				:timeout => opts[:timeout],
+				:size => opts[:pool] || 5,
+				:timeout => opts[:timeout] || 30,
 				:expires => opts[:expires],
-				:create => lambda { PG.connect opts.subhash(*CONNECT_FIELDS)},
+				:create => lambda { create_pg opts },
         :destroy => lambda { |pg| pg.close },
         :validate => lambda { |pg| pg != nil && pg.status == CONNECTION_OK }
 			)
     end
     
     alias_method :connect, :initialize
+    
+    def pool_size= v
+      @pool.size = v
+    end
 
     def disconnect
 			@pool.empty!
     end
     
-    def reap
-    	@pool.reap
+    def reap!
+    	@pool.reap!
     end
     
     def connected?
@@ -63,6 +68,12 @@ module Mystic
 			v ||= res.ntuples.times.map { |i| res[i] } unless res.nil?
 			v ||= []
 			v
+    end
+    
+    def create_pg opts
+      pg = PG.connect opts.subhash(*CONNECT_FIELDS)
+      pg.set_notice_receiver { |r| }
+      pg
     end
   end
 end

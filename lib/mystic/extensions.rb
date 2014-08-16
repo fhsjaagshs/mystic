@@ -19,10 +19,12 @@ class String
     downcase.split("_").map(&:capitalize)*' '
   end
 	
-  def sanitize
-    Mystic.sanitize(self).untaint
+  def escape
+    Mystic.escape(self).untaint
   end
 	
+  alias_method :sanitize, :escape
+  
 	def truncate(len)
 		self[0..len-1]
 	end
