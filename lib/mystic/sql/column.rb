@@ -2,7 +2,7 @@
 
 module Mystic
   module SQL
-    class Column < SQLObject
+    class Column
       attr_accessor :name, :kind, :size, :constraints, :geom_kind, :geom_srid
       
       def initialize(opts={})
@@ -18,7 +18,7 @@ module Mystic
 				@geom_kind && @geom_srid
       end
       
-      def to_sql
+      def to_s
   			sql = []
   			sql << name
   			sql << kind.downcase

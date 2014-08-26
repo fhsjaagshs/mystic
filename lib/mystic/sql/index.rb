@@ -2,13 +2,21 @@
 
 module Mystic
   module SQL
-    class Index < SQLObject
+    class Index
       attr_accessor :name, # Symbol or string
 										:table_name, # Symbol or string
 										:type, # Symbol
 										:unique, # TrueClass/FalseClass
 										:columns, # Array of Strings
 										:opts # Hash, see below
+      
+      INDEX_TYPES = [
+        :btree,
+        :hash,
+        :gist,
+        :spgist,
+        :gin
+      ].freeze
       
 			# opts
 			# It's a Hash that represents options
@@ -48,7 +56,7 @@ module Mystic
 				nil
 			end
       
-      def to_sql
+      def to_s
   			storage_params = opts.subhash :fillfactor, :buffering, :fastupdate
 			
   			sql = []

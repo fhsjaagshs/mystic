@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-module Mystic  
+module Mystic
   class Migration
 		Error = Class.new StandardError
 		IrreversibleError = Class.new StandardError
@@ -73,42 +73,27 @@ module Mystic
     
     def drop_table name, opts={}
 			irreversible!
-			execute Mystic::SQL::Operation.drop_table(
-				:table_name => name.to_s,
-				:cascade? => opts[:cascade]
-			)
+      execute "DROP TABLE #{name} #{opts[:cascade] ? "CASCADE" : "RESTRICT" }"
     end
 		
-		def drop_index *args
-			execute Mystic::SQL::Operation.drop_index(
-				:index_name => args[0],
-				:table_name => args[1]
-			)
+		def drop_index idx_name
+      execute "DROP INDEX #{idx_name}"
 		end
     
     def create_ext extname
-			execute Mystic::SQL::Operation.create_ext(
-				:name => extname.to_s
-			)
+      execute "CREATE EXTENSION \"#{extname.to_s}\""
     end
     
     def drop_ext extname
-			execute Mystic::SQL::Operation.drop_ext(
-				:name => extname.to_s
-			)
+      execute "DROP EXTENSION \"#{extname.to_s}\""
     end
     
     def create_view name, sql
-			execute Mystic::SQL::Operation.create_view(
-				:name => name.to_s,
-				:sql => sql.to_s
-			)
+      execute "CREATE VIEW #{name} AS #{sql}"
     end
     
     def drop_view name
-			execute Mystic::SQL::Operation.drop_view(
-				:name => name.to_s
-			)
+      execute "DROP VIEW #{name}"
     end
   end
 end
