@@ -30,3 +30,4 @@ v 0.1.0
 - Complete rewrite
     * Postgres-only
     * Mystic::Model is now a mixin
+    * Removed unnecessary syntactic sugar
