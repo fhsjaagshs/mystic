@@ -1,8 +1,8 @@
 Gem::Specification.new do |s|
   s.name         = "mystic"
-  s.version      = "0.1.1"
-  s.summary      = "Pooled PG singleton instance. Focus more on writing SQL than dealing with a finnicky ORM."
-  s.description  = s.summary + " It powers the Pawky backend."
+  s.version      = "0.1.2"
+  s.summary      = "Pooled PG singleton instance."
+  s.description  = s.summary + " Focus more on writing SQL than dealing with a finnicky ORM. It powers the Pawky backend."
   s.authors      = ["Nathaniel Symer"]
   s.email        = "nate@natesymer.com"
   s.homepage     = "https://github.com/ivytap/mystic"

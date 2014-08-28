@@ -45,3 +45,7 @@ v 0.1.0
 v 0.1.1
 
 - Fixed a bug with rescue in `Mystic::load_env`
+
+v 0.1.2
+
+- Improved database.yml configuration
