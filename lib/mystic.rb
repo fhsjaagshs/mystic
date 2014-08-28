@@ -146,11 +146,11 @@ module Mystic
     
 		# Loads the .env file
 		def load_env
-			root.join(".env").read
-											 .split("\n")
-											 .map { |l| l.strip.split "=", 2 }
-											 .each { |k,v| ENV[k] = v }
-                       rescue nil
+      begin
+			  root.join(".env").read.split("\n").map { |l| l.strip.split "=", 2 }.each { |k,v| ENV[k] = v }
+      rescue
+        nil
+      end
 		end
 
 		# Retuns a blank migration's code in a String
