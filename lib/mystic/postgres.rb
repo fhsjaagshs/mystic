@@ -34,7 +34,7 @@ module Mystic
 				:size => opts[:pool] || 5,
 				:timeout => opts[:timeout] || 30,
 				:expires => opts[:expires],
-				:create => lambda { create_pg opts },
+				:create => lambda { create_pg opts.dup },
         :destroy => lambda { |pg| pg.close },
         :validate => lambda { |pg| pg != nil && pg.status == CONNECTION_OK }
 			)

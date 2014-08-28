@@ -51,6 +51,7 @@ module Mystic
       
       conf = db_yml[@env].symbolize
       conf[:dbname] = conf.delete :database
+      conf[:user] = conf.delete :username
       raise MysticError, "Mystic only supports Postgres." unless /^postg.+$/i =~ conf[:adapter]
       
       @postgres = Postgres.new(conf)
