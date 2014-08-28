@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name         = "mystic"
-  s.version      = "0.1.0"
+  s.version      = "0.1.1"
   s.summary      = "Pooled PG singleton instance. Focus more on writing SQL than dealing with a finnicky ORM."
   s.description  = s.summary + " It powers the Pawky backend."
   s.authors      = ["Nathaniel Symer"]
@@ -13,4 +13,5 @@ Gem::Specification.new do |s|
 	
   s.add_dependency 'densify', "~> 0"
   s.add_dependency 'access_stack', "~> 0"
+  s.add_dependency 'pg', '~> 0'
 end
