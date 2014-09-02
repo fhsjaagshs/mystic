@@ -54,9 +54,15 @@ module Mystic
       conf[:user] = conf.delete :username
       raise MysticError, "Mystic only supports Postgres." unless /^postg.+$/i =~ conf[:adapter]
       
-      @postgres = Postgres.new(conf)
+      @postgres = Postgres.new conf
       
       @env
+    end
+    
+    def manual_conn conf={}
+      load_env
+      @env = (ENV["RACK_ENV"] || ENV["RAILS_ENV"] || "development").to_s
+      @postgres = Postgres.new(conf)
     end
     
 		def root path=Pathname.new(Dir.pwd)

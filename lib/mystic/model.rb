@@ -26,19 +26,16 @@ module Mystic
   			plural = opts[:plural] && op != "INSERT"
 			
   			sql << " RETURNING #{visible_cols*','}" if return_rows && op != "SELECT"
-			
+        
+        return sql unless return_json
+        
   			s = []
-			
-  			if return_json
-  				s << "WITH res AS (#{sql}) SELECT"
-  				s << "array_to_json(array_agg(res))" if plural
-  				s << "row_to_json(res)" unless plural
-  				s << "AS #{Mystic::JSON_COL}"
-  				s << "FROM res"
-  			else
-  				s << sql
-  			end
-			
+				s << "WITH res AS (#{sql}) SELECT"
+				s << "array_to_json(array_agg(res))" if plural
+				s << "row_to_json(res)" unless plural
+				s << "AS #{Mystic::JSON_COL}"
+				s << "FROM res"
+        s << "LIMIT 1" unless plural
   			s*' '
   		end
 
@@ -60,7 +57,7 @@ module Mystic
   				:sql => sql.join(' '),
   				:return_rows => true,
   				:return_json => sym_opts[:return_json],
-  				:plural => count > 1
+  				:plural => sym_opts[:fetch] == false
   			)
       end
     
@@ -73,7 +70,8 @@ module Mystic
   			wrapper_sql(
   				:sql => "UPDATE #{table_name} SET #{set.sqlize*','} WHERE #{where.sqlize*' AND '}",
   				:return_rows => sym_opts[:return_rows],
-  				:return_json => sym_opts[:return_json]
+  				:return_json => sym_opts[:return_json],
+          :plural => sym_opts.member?(:plural) ? sym_opts[:plural] : true
   			)
       end
     
@@ -85,7 +83,8 @@ module Mystic
   			wrapper_sql(
   				:sql => "INSERT INTO #{table_name} (#{params.keys*','}) VALUES (#{params.values.sqlize*','})",
   				:return_rows => sym_opts[:return_rows],
-  				:return_json => sym_opts[:return_json]
+  				:return_json => sym_opts[:return_json],
+          :plural => sym_opts.member?(:plural) ? sym_opts[:plural] : true
   			)
       end
     
@@ -97,7 +96,8 @@ module Mystic
   			wrapper_sql(
   				:sql => "DELETE FROM #{table_name} WHERE #{params.sqlize*' AND '}",
   				:return_rows => sym_opts[:return_rows],
-  				:return_json => sym_opts[:return_json]
+  				:return_json => sym_opts[:return_json],
+          :plural => sym_opts.member?(:plural) ? sym_opts[:plural] : true
   			)
       end
     
@@ -106,23 +106,27 @@ module Mystic
       end
     
       def fetch params={}, opts={}
-        res = select params, opts.merge({:count => 1})
+        res = select params, opts.merge({:count => 1, :fetch => true})
   			return res if res.is_a? String
   			res.first rescue nil
       end
     
       def create params={}, opts={}
-        res = Mystic.execute insert_sql(params, opts)
+        res = Mystic.execute insert_sql(params, opts.merge({ :return_rows => true }))
   			return res if res.is_a? String
   			res.first rescue nil
       end
     
       def update where={}, set={}, opts={}
-        Mystic.execute update_sql(where, set, opts.merge({ :return_rows => true }))
+        res = Mystic.execute update_sql(where, set, opts.merge({ :return_rows => true }))
+        return res.first unless opts[:plural]
+        res
       end
     
       def delete params={}, opts={}
-  			Mystic.execute delete_sql(params, opts)
+  			res = Mystic.execute delete_sql(params, opts)
+        return res.first if !opts[:plural] && !res.nil?
+        res
       end
 		
   		def exec_func funcname, *params
