@@ -73,7 +73,7 @@ You can run your migrations
 
     $ mystic migrate
     
-You can roll them back (one at a time). TODO: rollback multiple migrations
+You can roll them back (one at a time).
 
     $ mystic rollback
     
@@ -101,7 +101,6 @@ They look kinda like this (but obviously blank when first created)
 
     class MyMigrationName < Mystic::Migration
       def up
-		# The DB being used is Postgres
         create_table :table do |t|
           t.guid :guid, :default => "uuid_generate_v4()", :primary_key => true, :unique => true
           t.smallint :age
@@ -243,7 +242,9 @@ TODO
 -
 
 1. A method wrapping `quote_ident()`
-
+2. Rollback multiple migrations
+3. Rollback to a migration by name or number (or both)
+4. Project generator
 
 
 

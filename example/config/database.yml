@@ -1,7 +1,7 @@
-production:
+development:
   adapter: postgres
   pool: 5
   timeout: 5
   host: localhost
   port: 5432
-  database: mystic-prod
+  database: mystic-dev
