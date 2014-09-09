@@ -49,3 +49,7 @@ v 0.1.1
 v 0.1.2
 
 - Improved database.yml configuration
+
+v 0.1.3
+
+- Models in modules now work again with their proper table.

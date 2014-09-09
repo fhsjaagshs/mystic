@@ -8,7 +8,7 @@ module Mystic
     
     module ClassMethods
       def table_name
-        to_s.downcase
+        to_s.split("::").last.downcase
       end
 		
   		def visible_cols
