@@ -3,12 +3,17 @@
 module Mystic
   module SQL
     class Index
-      attr_accessor :name, # Symbol or string
-										:table_name, # Symbol or string
+      attr_accessor :name, # Symbol or String
+										:table_name, # Symbol or String
 										:type, # Symbol
-										:unique, # TrueClass/FalseClass
+										:unique, # true/false
 										:columns, # Array of Strings
-										:opts # Hash, see below
+                    :fillfactor, # Integer in (10..100)
+                    :fastupdate, # true/false
+                    :concurrently, # true/false
+                    :tablespace, # String
+                    :buffering, # :on, :off, :auto
+                    :where # String
       
       INDEX_TYPES = [
         :btree,
@@ -18,59 +23,53 @@ module Mystic
         :gin
       ].freeze
       
-			# opts
-			# It's a Hash that represents options
-      #
-			# Key => Value (type)
-			# :fillfactor => A value in the range 10..100 (Integer)
-			# :fastupdate => true/false (TrueClass/FalseClass)
-			# :concurrently => true/false (TrueClass/FalseClass)
-			# :tablespace => The name of the desired tablespace (String)
-			# :buffering => :on/:off/:auto (Symbol)
-			# :concurrently => true/false (TrueClass/FalseClass)
-			# :where => The conditions for including entries in your index, same as SELECT * FROM table WHERE ____ (String)
-			
-      def initialize opts={}
-				opts.symbolize!
-				raise ArgumentError, "Missing table_name." unless opts.member? :table_name
-				raise ArgumentError, "Indeces need columns or else what's the point?" unless opts.member? :columns
-        @name = opts.delete(:name).to_sym if opts.member? :name
-        @table_name = opts.delete(:table_name).to_sym
-        @type = (opts.delete(:type) || :btree).to_s.downcase.to_sym
-				@unique = opts.delete :unique || false
-        @columns = opts.delete(:columns).symbolize rescue []
-				@opts = opts
+      def initialize params={}
+        opts = params.symbolize
+				raise ArgumentError, "Missing table_name." unless opts.key? :table_name
+        @name = opts[:name].to_sym if opts.key? :name
+        @table_name = opts[:table_name].to_sym
+        @type = (opts[:type] || :btree).to_s.downcase.to_sym
+				@unique = opts[:unique] == true
+        @columns = opts[:columns].symbolize rescue []
+        @fillfactor = opts[:fillfactor].to_i
+        @fastupdate = (opts[:fastupdate] || true) == true
+        @concurrently = (opts[:concurrently] || false) == true
+        @tablespace = opts[:tablespace].to_s
+        @buffering = opts[:buffering] || :auto
+        @where = opts[:where].to_s
+        
+        raise ArgumentError, "Indeces must contain more than one column." if @columns.empty?
+        raise ArgumentError, "Index buffering option must either be :on, :off, or :auto" unless [:on, :off, :auto].include? @buffering
+        raise ArgumentError, "Index fill factor must be in the range 10..100" unless (10..100).include? @fillfactor
+        raise ArgumentError, "Index type must either be :btree, :hash, :gist, :spgist, :gin." unless INDEX_TYPES.include?(@type)
       end
       
-      # can accept shit other than columns like
-      # box(location,location)
+      # Accepts a String, Symbol, or a Mystic::SQL::Index
       def << col
         case col
         when Column then @columns << col.name.to_s
-        when String then @columns << col
-        else raise ArgumentError, "Column must be a String or a Mystic::SQL::Column" end
+        else col.to_s end
       end
-
-			def method_missing(meth, *args, &block)
-				return @opts[meth] if @opts.member? meth
-				nil
-			end
       
       def to_s
-  			storage_params = opts.subhash :fillfactor, :buffering, :fastupdate
-			
+        storage_params = {
+          :fillfactor => @fillfactor,
+          :buffering => @buffering,
+          :fastupdate => @fastupdate
+        }.reject { |k,v| v.nil? }
+
   			sql = []
   			sql << "CREATE"
-  			sql << "UNIQUE" if unique
+  			sql << "UNIQUE" if @unique
   			sql << "INDEX"
-  			sql << "CONCURENTLY" if concurrently
-  		  sql << name unless name.nil?
-  		  sql << "ON #{table_name}"
-  			sql << "USING #{type}" if INDEX_TYPES.include? type
-  			sql << "(#{columns.map(&:to_s).join ',' })"
+  			sql << "CONCURENTLY" if @concurrently
+  		  sql << @name unless @name.nil?
+  		  sql << "ON #{@table_name}"
+  			sql << "USING #{type}" if INDEX_TYPES.include? @type
+  			sql << "(#{@columns.map(&:to_s).join ',' })"
   			sql << "WITH (#{storage_params.sqlize})" unless storage_params.empty?
-  			sql << "TABLESPACE #{tablespace}" unless tablespace.nil?
-  			sql << "WHERE #{where}" unless where.nil?
+  			sql << "TABLESPACE #{@tablespace}" if @tablespace
+  			sql << "WHERE #{@where}" if @where
   			sql*' '
       end
     end

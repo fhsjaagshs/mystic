@@ -7,7 +7,8 @@ module Mystic
       attr_accessor :columns,
 										:indeces,
 										:operations,
-										:opts
+										:inherits,
+                    :tablespace
 										
 			def self.create opts={}
 				new true, opts
@@ -19,12 +20,12 @@ module Mystic
       
       def initialize is_create=true, opts={}
 				@is_create = is_create
-				@opts = opts.symbolize
+        @name = opts[:name] || opts["name"]
+        @inherits = opts[:inherits] || opts["inherits"]
+        @tablespace = opts[:tablespace] || opts["tablespace"]
         @columns = []
         @indeces = []
         @operations = []
-				
-        @name = @opts.delete(:name).to_s
         raise ArgumentError, "Argument 'name' is invalid." if @name.empty?
       end
 			
@@ -36,8 +37,7 @@ module Mystic
         case obj
         when Column then @columns << obj
         when Index then @indeces << obj
-        when Operation then @operations << obj
-        when String then @operations << obj
+        when String then @sqls << obj
         else raise ArgumentError, "Argument is not a Mystic::SQL::Column, Mystic::SQL::Operation, or Mystic::SQL::Index." end
       end
     
@@ -47,16 +47,16 @@ module Mystic
 			
   			if create?
   				tbl = []
-  				tbl << "CREATE TABLE #{name} (#{columns.map(&:to_s)*","})"
-  				tbl << "INHERITS #{opts[:inherits]}" if opts[:inherits]
-  				tbl << "TABLESPACE #{opts[:tablespace]}" if opts[:tablespace]
+  				tbl << "CREATE TABLE #{@name} (#{@columns.map(&:to_s)*","})"
+  				tbl << "INHERITS #{@inherits}" if @inherits
+  				tbl << "TABLESPACE #{@tablespace}" if @tablespace
   				sql << tbl*' '
   			else
-  				sql << "ALTER TABLE #{name} #{columns.map{ |c| "ADD COLUMN #{c.to_s}" }*', ' }"
+  				sql << "ALTER TABLE #{@name} #{@columns.map { |c| "ADD COLUMN #{c.to_s}" }*', ' }"
   			end
       
-  			sql.push(*indeces.map(&:to_s)) unless indeces.empty?
-  	    sql.push(*operations.map(&:to_s)) unless operations.empty?
+  			sql.push(*@indeces.map(&:to_s)) unless @indeces.empty?
+  	    sql.push(*@sqls.map(&:to_s)) unless @operations.empty?
   			sql*'; '
       end
 
@@ -77,7 +77,7 @@ module Mystic
       def rename newname
 				raise Mystic::SQL::Error, "Cannot rename a table that doesn't exist." if create?
         self << "ALTER TABLE #{table_name} RENAME TO #{newname}"
-        self.name = newname
+        @name = newname
       end
     
       def drop_columns *col_names

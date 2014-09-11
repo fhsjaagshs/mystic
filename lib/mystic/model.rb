@@ -1,5 +1,8 @@
 #!/usr/bin/env ruby
 
+# opts:
+# :return - `:json`, `:rows`, `:nothing` defaults to :rows
+
 module Mystic
   module Model
     def self.included base
@@ -14,28 +17,26 @@ module Mystic
   		def visible_cols
   			["*"]
   		end
-		
-  		def wrapper_sql opts={}
-  			sym_opts = opts.symbolize
 
-  			sql = sym_opts[:sql] || "SELECT 1"
+  		def decorate sql, opts={}
+        raise ArgumentError, "No SQL to decorate." if sql.nil? || sql.empty?
+
   			op = sql.split(/\s+/,2).first.upcase
-  			return_rows = sym_opts[:return_rows] || false
-  			return_json = sym_opts[:return_json] || false
-  			return_rows = true if return_json
-  			plural = opts[:plural] && op != "INSERT"
-			
-  			sql << " RETURNING #{visible_cols*','}" if return_rows && op != "SELECT"
+        retrn = opts[:return] || opts["return"] || :rows
+        singular = (opts[:singular] || opts["singular"] || false) == true
+        singular = true if op == "INSERT"
+
+  			sql << " RETURNING #{(visible_cols || "*")*','}" if retrn != :nothing && op != "SELECT"
         
-        return sql unless return_json
+        return sql unless retrn == :json
         
   			s = []
 				s << "WITH res AS (#{sql}) SELECT"
-				s << "array_to_json(array_agg(res))" if plural
-				s << "row_to_json(res)" unless plural
+				s << "array_to_json(array_agg(res))" unless singular
+				s << "row_to_json(res)" if singular
 				s << "AS #{Mystic::JSON_COL}"
 				s << "FROM res"
-        s << "LIMIT 1" unless plural
+        s << "LIMIT 1" if singular
   			s*' '
   		end
 
@@ -44,61 +45,32 @@ module Mystic
       end
     
       def select_sql params={}, opts={}
-  			sym_opts = opts.symbolize
-        count = sym_opts[:count] || 0
+        count = opts[:count] || opts["count"] || 0
+        count = 1 if (opts[:singlular] || opts["singular"]) == true
   			where = params.sqlize
 
   			sql = []
   			sql << "SELECT #{visible_cols*','} FROM #{table_name}"
-  			sql << "WHERE #{where*' AND '}" if where.count > 0
+  			sql << "WHERE #{where*' AND '}" unless where.empty?
   			sql << "LIMIT #{count.to_i}" if count > 0
 			
-  			wrapper_sql(
-  				:sql => sql.join(' '),
-  				:return_rows => true,
-  				:return_json => sym_opts[:return_json],
-  				:plural => sym_opts[:fetch] == false
-  			)
+        decorate sql*' ', opts
       end
     
       def update_sql where={}, set={}, opts={}
         return "" if where.empty?
         return "" if set.empty?
-			
-  			sym_opts = opts.symbolize
-			
-  			wrapper_sql(
-  				:sql => "UPDATE #{table_name} SET #{set.sqlize*','} WHERE #{where.sqlize*' AND '}",
-  				:return_rows => sym_opts[:return_rows],
-  				:return_json => sym_opts[:return_json],
-          :plural => sym_opts.member?(:plural) ? sym_opts[:plural] : true
-  			)
+        decorate "UPDATE #{table_name} SET #{set.sqlize*','} WHERE #{where.sqlize*' AND '}", opts
       end
     
       def insert_sql params={}, opts={}
   			return "" if params.empty?
-      
-  			sym_opts = opts.symbolize
-			
-  			wrapper_sql(
-  				:sql => "INSERT INTO #{table_name} (#{params.keys*','}) VALUES (#{params.values.sqlize*','})",
-  				:return_rows => sym_opts[:return_rows],
-  				:return_json => sym_opts[:return_json],
-          :plural => sym_opts.member?(:plural) ? sym_opts[:plural] : true
-  			)
+        decorate "INSERT INTO #{table_name} (#{params.keys*','}) VALUES (#{params.values.sqlize*','})", opts
       end
     
       def delete_sql params={}, opts={}
         return "" if params.empty?
-			
-  			sym_opts = opts.symbolize
-
-  			wrapper_sql(
-  				:sql => "DELETE FROM #{table_name} WHERE #{params.sqlize*' AND '}",
-  				:return_rows => sym_opts[:return_rows],
-  				:return_json => sym_opts[:return_json],
-          :plural => sym_opts.member?(:plural) ? sym_opts[:plural] : true
-  			)
+        decorate "DELETE FROM #{table_name} WHERE #{params.sqlize*' AND '}", opts
       end
     
       def select params={}, opts={}
@@ -106,27 +78,23 @@ module Mystic
       end
     
       def fetch params={}, opts={}
-        res = select params, opts.merge({:count => 1, :fetch => true})
-  			return res if res.is_a? String
-  			res.first rescue nil
+        res = select params, opts.merge({:singular => true})
+        res.is_a? String ? res : (res.first rescue res)
       end
     
       def create params={}, opts={}
-        res = Mystic.execute insert_sql(params, opts.merge({ :return_rows => true }))
-  			return res if res.is_a? String
-  			res.first rescue nil
+        res = Mystic.execute insert_sql(params, opts)
+        res.is_a? String ? res : (res.first rescue res)
       end
     
       def update where={}, set={}, opts={}
-        res = Mystic.execute update_sql(where, set, opts.merge({ :return_rows => true }))
-        return res.first unless opts[:plural]
-        res
+        res = Mystic.execute update_sql(where, set, opts)
+        opts[:singular] ? (res.first rescue res) : res
       end
     
       def delete params={}, opts={}
   			res = Mystic.execute delete_sql(params, opts)
-        return res.first if !opts[:plural] && !res.nil?
-        res
+        opts[:singular] ? (res.first rescue res) : res
       end
 		
   		def exec_func funcname, *params

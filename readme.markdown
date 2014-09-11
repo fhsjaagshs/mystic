@@ -134,23 +134,23 @@ They look kinda like this (but obviously blank when first created)
 #### Column Options
 
 ###### Constraints
-`:null` (`true`/`false`) - Corresponds to SQL's `NULL` and `NOT NULL`.<br />
+`:null` (`true`/`false`) - Corresponds to SQL's `NULL` and `NOT NULL`.  
 > `:null => false`
 
-`:unique` (`true`/`false`) - Corresponds to SQL's `UNIQUE`.<br />
+`:unique` (`true`/`false`) - Corresponds to SQL's `UNIQUE`.  
 > `:unique => true`
 
-`:primary_key` (`true`/`false`) - Corresponds to SQL's `PRIMARY KEY`.<br />
+`:primary_key` (`true`/`false`) - Corresponds to SQL's `PRIMARY KEY`.  
 > `:primary_key => true`
 
-`:references` (String) - Corresponds to SQL's `REFERENCES`.<br />
+`:references` (String) - Corresponds to SQL's `REFERENCES`.  
 > `:references => "orders (id) ON DELETE CASCADE"`
 
-`:default` (String) - Corresponds to SQL's `DEFAULT`.<br />
+`:default` (String) - Corresponds to SQL's `DEFAULT`.  
 > `:default => "uuid_generate_v4()::char(36)"`
 
 ###### Options
-`:size` (Integer) - The size of a column<br />
+`:size` (Integer) - The size of a column  
 > `:size => 255`
 
 Models
@@ -189,18 +189,14 @@ You can use the `Sales` class like this:
 
 The preceding example omits an optional hash at the end: The `opts` hash. This hash can be used to further define what gets returned.
 
-> `:return_rows` - true/false<br />
-> Determines if a non-`SELECT` query returns rows. Default `true` for `SELECT` and `UPDATE`. The default for `DELETE` queries is `false` ***
+`:return` - `:rows`, `:json`, `:nothing`  
+Determines what a non-`SELECT` query returns. Defaults to `:rows` ***
 
-> `:return_json` - true/false<br />
-> Determines if a query returns rows as JSON.
+`:count` - Integer  
+The number of rows to return. Only available on SELECT queries.
 
-> `:count` - Integer<br />
-> The number of rows to return. Only available on SELECT queries.
-
-> `:plural` - true/false<br />
-> Whether or not to return a result wrapped in an array. It will return the first returned row.
-
+`:plural` - true/false  
+Whether or not to return a result wrapped in an array. It will return the first returned row as a `Hash` if `false`.
 
 *** Returning rows from `DELETE` queries takes a really long time.
 
@@ -213,30 +209,30 @@ This is something you probably will be doing. It's life. Sometimes data doesn't 
 
 You should override these.
 
-`Mystic::Model.table_name` - none<br />
-Returns the name of the table. By default it's the name of the model downcased.<br />
+`Mystic::Model.table_name` - no arguments  
+Returns the name of the table. By default it's the name of the model downcased.
 
-`Mystic::Model.visible_cols` - none<br />
-Returns an array of strings representing columns to be returned from SQL queries.<br />
+`Mystic::Model.visible_cols` - no arguments  
+Returns an array of strings representing columns to be returned from SQL queries.
 
 ####SQL generation methods
 
-`self.op_sql` - Generates SQL for operation `op`.<br />
-It takes the same parameters as `self.op` (`self.create`).<br />
+`self.op_sql` - Generates SQL for operation `op`.  
+It takes the same parameters as `self.op` (`self.create`).  
 
-`self.fetch where={}, opts={}` - SELECTs one entry matching `where`<br />
+`self.fetch where={}, opts={}` - SELECTs one entry matching `where`  
 
-`self.select where={}, opts={}` - SELECTs rows from the database matching `where`<br />
+`self.select where={}, opts={}` - SELECTs rows from the database matching `where`  
 
-`self.create entry={}, opts={}` - INSERTs `entry` as a row<br />
+`self.create entry={}, opts={}` - INSERTs `entry` as a row  
 
-`self.update where={}, set={}, opts={}` - UPDATEs rows matching `where` with `set`<br />
+`self.update where={}, set={}, opts={}` - UPDATEs rows matching `where` with `set`  
 
-`self.delete where={}, opts={}` - DELETE rows matching `where`<br />
+`self.delete where={}, opts={}` - DELETE rows matching `where`  
 
-`self.function_sql` - Symbol and Array of arguments<br />
+`self.function_sql` - Symbol and Array of arguments  
 Generates SQL to execute a function/procedure
-`Model.function_sql :do_something, "param_one", "param_two", "param_three"`<br />
+`Model.function_sql :do_something, "param_one", "param_two", "param_three"`  
 
 TODO
 -
@@ -245,6 +241,6 @@ TODO
 2. Rollback multiple migrations
 3. Rollback to a migration by name or number (or both)
 4. Project generator
-
+5. Result coersion
 
 

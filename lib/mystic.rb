@@ -12,6 +12,7 @@ require_relative "./mystic/model.rb"
 
 module Mystic
 	MysticError = Class.new StandardError
+  SQLError = Class.new StandardError
 	RootError = Class.new StandardError
 	EnvironmentError = Class.new StandardError
 	AdapterError = Class.new StandardError
@@ -47,7 +48,7 @@ module Mystic
       load_env
       
 			@env = (new_env || ENV["RACK_ENV"] || ENV["RAILS_ENV"] || "development").to_s
-			raise EnvironmentError, "Environment '#{@env}' doesn't exist." unless db_yml.member? @env
+			raise EnvironmentError, "Environment '#{@env}' doesn't exist." unless db_yml.key? @env
       
       conf = db_yml[@env].symbolize
       conf[:dbname] = conf.delete :database
@@ -84,7 +85,7 @@ module Mystic
 
 		def execute sql=""
       #raise ConnectionError, "Not connected to Postgres" unless postgres.connected?
-			postgres.execute sql.sql_terminate.densify
+			postgres.execute sql.terminate.densify
 		end
 
 		def escape str=""
@@ -140,7 +141,7 @@ module Mystic
 		def create_migration name=""
 			name.strip!
 			raise CLIError, "Migration name must not be empty." if name.empty?
-      name.capitalize_first!
+      name[0] = name[0].upcase
     
 			migs = root.join "mystic","migrations"
 

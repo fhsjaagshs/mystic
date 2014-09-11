@@ -46,7 +46,7 @@ module Mystic
 		
 		# All migration SQL goes through here
     def execute obj
-			@sql << obj.to_s.sql_terminate # to_sql isn't defined for strings, to_sql is aliased to to_s
+			@sql << obj.to_s.terminate
     end
 		
 		def irreversible!

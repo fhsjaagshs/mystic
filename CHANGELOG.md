@@ -33,7 +33,7 @@ v 0.0.8
 
 v 0.0.9
 
-- Fixed a bug where Heroku-generated database.yml's would not work DUE TO ASSUMPTIONS ON HEROKU'S PART.
+- Fixed a bug where Heroku-generated database.yml's would not work **due to assumptions on heroku's part**.
 
 v 0.1.0
 
@@ -53,3 +53,11 @@ v 0.1.2
 v 0.1.3
 
 - Models in modules now work again with their proper table.
+
+v 0.1.4
+
+- Stability improvements
+    - Removed unnecessary code in `extensions.rb`
+    - Significantly improved `Mystic::Model`
+		- Replaced `:return_*` options with `:return`
+		- Replaced `:plural` option with `:singular` because it's easier to code and wrap your brain around
