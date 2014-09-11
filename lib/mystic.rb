@@ -96,7 +96,7 @@ module Mystic
     alias_method :sanitize, :escape
 
 		def create_mig_table
-			execute "CREATE TABLE IF NOT EXISTS mystic_migrations (mig_number integer, filename text)"
+			execute "CREATE TABLE IF NOT EXISTS mmigs (num integer, name text)"
 		end
 	
 		#
@@ -104,48 +104,47 @@ module Mystic
 		#
 		
 		# Runs every yet-to-be-ran migration
-		def migrate
-			create_mig_table
-			migrated_filenames = execute("SELECT filename FROM mystic_migrations").map{ |r| r["filename"] }
-			mp = root.join("mystic","migrations").to_s
-		
-			Dir.entries(mp)
-				.reject { |e| MIG_REGEX.match(e).nil? }
-				.reject { |e| migrated_filenames.include? e }
-				.sort { |a,b| MIG_REGEX.match(a)[:num].to_i <=> MIG_REGEX.match(b)[:num].to_i }
-				.each { |fname|
-					load File.join mp,fname
-				
-					mig_num,mig_name = MIG_REGEX.match(fname).captures
-					Object.const_get(mig_name).new.migrate
-					execute "INSERT INTO mystic_migrations (mig_number, filename) VALUES (#{mig_num},'#{fname}')"
-				}
-		end
-	
-		# Rolls back a single migration
-		def rollback
-			create_mig_table
-			fname = execute("SELECT filename FROM mystic_migrations ORDER BY mig_number DESC LIMIT 1")[0]["filename"] rescue nil
-			return if fname.nil?
-
-			load root.join("mystic","migrations",fname).to_s
-		
-			mig_num,mig_name = MIG_REGEX.match(fname).captures
-
-			Object.const_get(mig_name).new.rollback
-		
-			execute "DELETE FROM mystic_migrations WHERE filename='#{fname}' and mig_number=#{mig_num}"
-		end
+    def migrate
+      create_mig_table
+      last_mig_num = execute("SELECT max(num) FROM mmigs")[0]["max"] rescue 0
+      
+      migs = {}
+      mp = root.join("mystic","migrations")
+      Dir.entries(mp.to_s).each { |fname|
+        m = MIG_REGEX.match(fname)
+        next if m.nil?
+        next if m[:num].to_i <= last_mig_num
+        load mp.join(fname).to_s
+        migs[m[:num].to_i] = m[:name]
+      }
+      
+      migs.keys.sort { |a,b| a <=> b }.each do |num|
+        name = migs[num]
+				Object.const_get(name).new.migrate
+				execute "INSERT INTO mmigs (num, name) VALUES (#{num},'#{name}')"
+      end
+    end
+    
+    # Rolls back a single migration
+    def rollback
+      create_mig_table
+      res = execute("WITH max AS (SELECT max(num) FROM mmigs) SELECT max.max as num,mmigs.name FROM max,mmigs WHERE mmigs.num = max.max;").first
+      return if res.nil?
+      
+      load root.join("mystic","migrations","#{res["num"]}_#{res["name"]}.rb")
+      Object.const_get(res["name"]).new.rollback
+      execute "DELETE FROM mmigs WHERE num=#{res["num"]}"
+    end
 	
 	  # Creates a blank migration in mystic/migrations
 		def create_migration name=""
 			name.strip!
-			raise CLIError, "Migration name must not be empty." if name.empty?
       name[0] = name[0].upcase
+      
+			raise ArgumentError, "Migration name must not be empty." if name.empty?
     
 			migs = root.join "mystic","migrations"
-
-			num = migs.entries.map{ |e| MIG_REGEX.match(e.to_s)[:num].to_i rescue 0 }.max.to_i+1
+			num = migs.entries.map { |e| MIG_REGEX.match(e.to_s)[:num].to_i rescue 0 }.max.to_i+1
 
 			File.open(migs.join("#{num}_#{name}.rb").to_s, 'w') { |f| f.write(template name) }
 		end
