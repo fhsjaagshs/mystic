@@ -61,3 +61,4 @@ v 0.1.4
     - Significantly improved `Mystic::Model`
 		- Replaced `:return_*` options with `:return`
 		- Replaced `:plural` option with `:singular` because it's easier to code and wrap your brain around
+	- Improved migration stability and performance
