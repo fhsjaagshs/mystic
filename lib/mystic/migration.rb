@@ -71,13 +71,20 @@ module Mystic
       execute table
     end
     
-    def drop_table name, opts={}
+    # MIXED_ARGS
+    def drop_table name, *opts
+      _opts.unify_args
 			irreversible!
-      execute "DROP TABLE #{name} #{opts[:cascade] ? "CASCADE" : "RESTRICT" }"
+      sql = []
+      sql << "DROP TABLE"
+      sql << name.to_s
+      sql << "CASCADE" if (opts[:cascade] || opts["cascade"]) == true
+      sql << "RESTRICT" if (opts[:restrict] || opts["restrict"]) == true
+      execute sql*' '
     end
 		
 		def drop_index idx_name
-      execute "DROP INDEX #{idx_name}"
+      execute "DROP INDEX #{idx_name.to_s}"
 		end
     
     def create_ext extname
@@ -89,11 +96,11 @@ module Mystic
     end
     
     def create_view name, sql
-      execute "CREATE VIEW #{name} AS #{sql}"
+      execute "CREATE VIEW #{name.to_s} AS #{sql}"
     end
     
     def drop_view name
-      execute "DROP VIEW #{name}"
+      execute "DROP VIEW #{name.to_s}"
     end
   end
 end

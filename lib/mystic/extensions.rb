@@ -23,6 +23,16 @@ class String
 end
 
 class Array
+  def unify_args
+    r = {}
+    each do |arg|
+      case arg
+      when Hash then r.merge!(arg)
+      else r[arg] = true end
+    end
+    r
+  end
+  
   def merge_keys *keys
 		raise ArgumentError, "No keys to merge." if keys.nil? || keys.empty?
     raise ArgumentError, "Argument array must have the same number of elements as self." if keys.count != count

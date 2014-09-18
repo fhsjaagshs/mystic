@@ -122,7 +122,7 @@ They look kinda like this (but obviously blank when first created)
       end
     end
 
-#### Migration Operations
+### Migration Operations
 
 `execute(sql)` (String) - Executes `sql`.
 
@@ -131,11 +131,14 @@ They look kinda like this (but obviously blank when first created)
 ###### TODO:: Finish this
 
 
-#### Column Options
+### Column Options
 
-###### Constraints
-`:null` (`true`/`false`) - Corresponds to SQL's `NULL` and `NOT NULL`.  
+##### Constraints
+`:null` (`true`/`false`) - Corresponds to SQL's `NULL`.
 > `:null => false`
+
+`:not_null` (`true`/`false`) - Corresponds to SQL's `NULL`.
+> `:not_null => false`
 
 `:unique` (`true`/`false`) - Corresponds to SQL's `UNIQUE`.  
 > `:unique => true`
@@ -149,9 +152,17 @@ They look kinda like this (but obviously blank when first created)
 `:default` (String) - Corresponds to SQL's `DEFAULT`.  
 > `:default => "uuid_generate_v4()::char(36)"`
 
-###### Options
+##### Options
 `:size` (Integer) - The size of a column  
 > `:size => 255`
+
+#### `true`/`false` options
+
+You can simplify the following like so:
+
+    t.serial :id, :unique => true, :primary_key => true, :other => "opts"
+    t.serial :id, :unique, :primary_key, :other => "opts"
+
 
 Models
 -
@@ -233,6 +244,14 @@ It takes the same parameters as `self.op` (`self.create`).
 `self.function_sql` - Symbol and Array of arguments  
 Generates SQL to execute a function/procedure
 `Model.function_sql :do_something, "param_one", "param_two", "param_three"`  
+
+
+### The code
+
+When you're perusing the code, you'll see it's truly idiomatic and has few comments. Keep it that way.
+
+Some of the comments you'll see are:
+`MIXED_ARGS` - Takes args like so: `t.serial :id, :unique, :other => "opts", :primary_key`. Quite mixed, eh?
 
 TODO
 -

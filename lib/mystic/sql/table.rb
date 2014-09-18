@@ -20,7 +20,7 @@ module Mystic
       
       def initialize is_create=true, opts={}
 				@is_create = is_create
-        @name = opts[:name] || opts["name"]
+        @name = (opts[:name] || opts["name"]).to_sym
         @inherits = opts[:inherits] || opts["inherits"]
         @tablespace = opts[:tablespace] || opts["tablespace"]
         @columns = []
@@ -65,7 +65,6 @@ module Mystic
 			#
 			
       def drop_index idx_name
-				raise Mystic::SQL::Error, "Cannot drop an index on a table that doesn't exist." if create?
         self << "DROP INDEX #{idx_name}"
       end
     
@@ -89,33 +88,29 @@ module Mystic
       ## Column DSL
       #
       
-      def column col_name, kind, opts={}
+      # MIXED_ARGS
+      def column col_name, type, *opts
         self << Mystic::SQL::Column.new({
           :name => col_name,
-          :kind => kind.to_sym
-        }.merge(opts || {}))
+          :type => type
+        }.merge(opts.unify_args))
       end
-
-      def geometry col_name, kind, srid, opts={}
-				self << Mystic::SQL::Column.new({
-          :name => col_name,
-					:kind => :geometry,
-          :geom_kind => kind,
-          :geom_srid => srid
-        }.merge(opts || {}))
+      
+      # MIXED_ARGS
+      def geometry col_name, geom_type, srid, *opts
+        column col_name, :geometry, :geom_type => type, :geom_srid => srid
       end
       
       def index *cols
-        opts = cols.delete_at -1 if cols.last.is_a? Hash
-        opts ||= {}
-        opts[:columns] = cols
+        opts = cols.last.is_a? Hash ? cols.last : {}
+        opts[:columns] = cols[0..-2]
 				opts[:table_name] = @name
         self << Mystic::SQL::Index.new(opts)
       end
       
       def method_missing meth, *args, &block
-				return column args[0], meth.to_s, args[1] if args.count > 0
-				super
+        return super if args.empty?
+        column args[0], meth, *args[1..-1]
       end
     end
   end

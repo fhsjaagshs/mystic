@@ -63,15 +63,22 @@ module Mystic
     def manual_conn conf={}
       load_env
       @env = (ENV["RACK_ENV"] || ENV["RAILS_ENV"] || "development").to_s
-      @postgres = Postgres.new(conf)
+      @postgres = Postgres.new conf
     end
     
-		def root path=Pathname.new(Dir.pwd)
-			raise RootError, "Failed to find the application's root." if path == path.parent
-			mystic_path = path.join "config", "database.yml"
-      return root(path.parent) unless mystic_path.file? # exist? is implicit with file?
-			path
-		end
+    def root
+      if @root.nil?
+        r = Pathname.new Dir.pwd
+        
+        until r.join("config", "database.yml").file? do # exist? is implicit with file?
+          raise RootError, "Failed to find the application's root." if r.parent == r
+          r = r.parent
+        end
+
+        @root = r unless r.parent == r
+      end
+      @root
+    end
 		
     #
     ## DB functionality
@@ -93,8 +100,6 @@ module Mystic
 			postgres.escape str
     end
     
-    alias_method :sanitize, :escape
-
 		def create_mig_table
 			execute "CREATE TABLE IF NOT EXISTS mmigs (num integer, name text)"
 		end
@@ -108,15 +113,13 @@ module Mystic
       create_mig_table
       last_mig_num = execute("SELECT max(num) FROM mmigs")[0]["max"] rescue 0
       
-      migs = {}
       mp = root.join("mystic","migrations")
-      Dir.entries(mp.to_s).each { |fname|
+      migs = Dir.entries(mp.to_s).each_with_object {} do |fname,migs|
         m = MIG_REGEX.match(fname)
-        next if m.nil?
-        next if m[:num].to_i <= last_mig_num
+        next if m.nil? || m[:num].to_i <= last_mig_num
         load mp.join(fname).to_s
         migs[m[:num].to_i] = m[:name]
-      }
+      end
       
       migs.keys.sort { |a,b| a <=> b }.each do |num|
         name = migs[num]
