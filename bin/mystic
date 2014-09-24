@@ -1,8 +1,9 @@
 #!/usr/bin/env ruby
 
-require "mystic"
+require_relative "../lib/mystic.rb"
+require_relative "../lib/mystic/command_line"
 require "irb"
-require 'irb/completion'
+#require 'irb/completion'
 
 # Examples:
 # mystic create migration InitialMigration
@@ -10,23 +11,33 @@ require 'irb/completion'
 # mystic rollback production
 
 ErrorOutput = Class.new StandardError
+EmptyClass = Class.new
+EMPTY = EmptyClass.new
+
+ARGV.map! do |arg|
+  case
+  when arg.empty? then EMPTY
+  when arg.nil? then EMPTY
+  when arg.numeric? then arg.to_f
+  else arg end
+end
 
 begin
 	case ARGV[0].to_sym
 	when :create
 	  case ARGV[1].to_sym
 	  when :migration
-			raise ErrorOutput, "No migration name provided" if ARGV[2].nil?
-			Mystic.create_migration ARGV[2].dup
+			raise ErrorOutput, "No migration name provided" if ARGV[2] == EMPTY
+			Mystic::CommandLine.create_migration ARGV[2].dup
 	  end
 	else
 		begin
 			Mystic.connect ARGV[1]
 		  case ARGV[0].to_sym
 		  when :migrate
-		  	Mystic.migrate
+		  	Mystic::CommandLine.migrate
 		  when :rollback
-		  	Mystic.rollback
+		  	Mystic::CommandLine.rollback
 			when :console
 				puts "Starting Mystic console: #{Mystic.env}"
 				ARGV.clear

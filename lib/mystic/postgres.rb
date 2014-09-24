@@ -38,6 +38,7 @@ module Mystic
         :destroy => lambda { |pg| pg.close },
         :validate => lambda { |pg| pg != nil && pg.status == CONNECTION_OK }
 			)
+      @connected = true
     end
     
     alias_method :connect, :initialize
@@ -47,6 +48,7 @@ module Mystic
     end
 
     def disconnect
+      @connected = false
 			@pool.empty!
     end
     
@@ -55,7 +57,8 @@ module Mystic
     end
     
     def connected?
-      !@pool.empty?
+      @pool.reap!
+      [!@pool.empty?, @connected].any?
     end
     
     def escape str

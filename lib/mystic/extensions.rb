@@ -20,6 +20,10 @@ class String
 	def terminate term=";"
     strip.end_with?(term) ? self + term : self
 	end
+  
+  def numeric?
+    true if Float(self) rescue false
+  end
 end
 
 class Array

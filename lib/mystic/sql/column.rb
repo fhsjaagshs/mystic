@@ -6,7 +6,7 @@ module Mystic
       attr_accessor :name, :type, :size, :primary_key, :references, :default, :check, :geom_kind, :geom_srid
       
       def initialize opts={}
-        @name = (opts[:name] || opts["name"].to_sym
+        @name = (opts[:name] || opts["name"]).to_sym
         @type = (opts[:type] || opts["type"]).to_sym
         @size = (opts[:size] || opts["size"]).to_i
         @unique = (opts[:unique] || opts["unique"]) == true
