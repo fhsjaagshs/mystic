@@ -47,12 +47,12 @@ module Mystic
 			
   			if create?
   				tbl = []
-  				tbl << "CREATE TABLE #{@name} (#{@columns.map(&:to_s)*","})"
-  				tbl << "INHERITS #{@inherits}" if @inherits
-  				tbl << "TABLESPACE #{@tablespace}" if @tablespace
+  				tbl << "CREATE TABLE #{@name.to_sym.sqlize} (#{@columns.map { |c| c.to_s.sqlize }*","})"
+  				tbl << "INHERITS #{@inherits.to_sym.sqlize}" if @inherits.nil?
+  				tbl << "TABLESPACE #{@tablespace.to_sym.sqlize}" unless @tablespace.nil?
   				sql << tbl*' '
   			else
-  				sql << "ALTER TABLE #{@name} #{@columns.map { |c| "ADD COLUMN #{c.to_s}" }*', ' }"
+  				sql << "ALTER TABLE #{@name.to_sym.sqlize} #{@columns.map { |c| "ADD COLUMN #{c.to_s}" }*', ' }"
   			end
       
   			sql.push(*@indeces.map(&:to_s)) unless @indeces.empty?
@@ -64,24 +64,29 @@ module Mystic
 			## Operation DSL
 			#
 			
-      def drop_index idx_name
-        self << "DROP INDEX #{idx_name}"
+      def drop_index idx
+        raise ArgumentError, "No index name provided." if idx.nil? || idx.empty?
+        self << "DROP INDEX #{idx.to_sym.sqlize}"
       end
     
       def rename_column oldname, newname
-				raise Mystic::SQL::Error, "Cannot rename a column on a table that doesn't exist." if create?
-        self << "ALTER TABLE #{table_name} RENAME COLUMN #{old_name} TO #{new_name}"
+        raise Mystic::SQL::Error, "Cannot rename a column on a table that doesn't exist." if create?
+        raise ArgumentError, "No original name of the column provided." if oldname.nil? || oldname.empty?
+        raise ArgumentError, "No new name for the column provided." if newname.nil? || newname.empty?
+        self << "ALTER TABLE #{table_name.to_sym.sqlize} RENAME COLUMN #{old_name.to_sym.sqlize} TO #{new_name.to_sym.sqlize}"
       end
     
       def rename newname
 				raise Mystic::SQL::Error, "Cannot rename a table that doesn't exist." if create?
-        self << "ALTER TABLE #{table_name} RENAME TO #{newname}"
+        raise ArgumentError, "No new name for the table provided." if oldname.nil? || oldname.empty?
+        self << "ALTER TABLE #{table_name.to_sym.sqlize} RENAME TO #{newname.to_sym.sqlize}"
         @name = newname
       end
     
       def drop_columns *col_names
 				raise Mystic::SQL::Error, "Cannot drop a column(s) on a table that doesn't exist." if create?
-        self << "ALTER TABLE #{table_name} #{col_names.map { |c| "DROP COLUMN #{c.to_s}" }*', ' }"
+        raise ArgumentError, "No columns to drop." if oldname.nil? || oldname.empty?
+        self << "ALTER TABLE #{table_name.to_sym.sqlize} #{col_names.map { |c| "DROP COLUMN #{c.to_sym.sqlize}" }*', ' }"
       end
       
       #

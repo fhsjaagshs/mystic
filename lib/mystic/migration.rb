@@ -35,8 +35,7 @@ module Mystic
     end
 		
 		def exec_migration direction
-      sql = to_sql direction
-			Mystic.postgres.execute sql
+			execute to_sql(direction)
 		end
 		
 		
@@ -73,34 +72,34 @@ module Mystic
     
     # MIXED_ARGS
     def drop_table name, *opts
-      _opts.unify_args
+      _opts = opts.unify_args
 			irreversible!
       sql = []
       sql << "DROP TABLE"
-      sql << name.to_s
-      sql << "CASCADE" if (opts[:cascade] || opts["cascade"]) == true
-      sql << "RESTRICT" if (opts[:restrict] || opts["restrict"]) == true
+      sql << name.to_sym.sqlize
+      sql << "CASCADE" if _opts[:cascade] == true
+      sql << "RESTRICT" if _opts[:restrict] == true
       execute sql*' '
     end
 		
 		def drop_index idx_name
-      execute "DROP INDEX #{idx_name.to_s}"
+      execute "DROP INDEX #{idx_name.to_sym.sqlize}"
 		end
     
     def create_ext extname
-      execute "CREATE EXTENSION \"#{extname.to_s}\""
+      execute "CREATE EXTENSION \"#{extname.to_sym.sqlize}\""
     end
     
     def drop_ext extname
-      execute "DROP EXTENSION \"#{extname.to_s}\""
+      execute "DROP EXTENSION \"#{extname.to_sym.sqlize}\""
     end
     
     def create_view name, sql
-      execute "CREATE VIEW #{name.to_s} AS #{sql}"
+      execute "CREATE VIEW #{name.to_sym.sqlize} AS #{sql}"
     end
     
     def drop_view name
-      execute "DROP VIEW #{name.to_s}"
+      execute "DROP VIEW #{name.to_sym.sqlize}"
     end
   end
 end

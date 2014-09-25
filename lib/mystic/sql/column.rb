@@ -23,6 +23,11 @@ module Mystic
         raise ArgumentError, "You must provide a type for this column." if @type.nil? || @type.empty?
       end
       
+      def type= v
+        raise ArgumentError, "Type must either be a number or numeric" unless v.to_s.numeric?
+        @v = v.to_s.to_i
+      end
+      
       def geospatial?
         @type == :geometry
       end
@@ -33,17 +38,17 @@ module Mystic
       
       def to_s
   			sql = []
-  			sql << @name.to_s
+  			sql << @name.to_s.escape
   			sql << @type.downcase
-  			sql << "(#{@size})" if @size > 0 && !geospatial?
-  			sql << "(#{@geom_type}, #{@geom_srid})" if geospatial?
+  			sql << "(#{@size.sqlize})" if @size > 0 && !geospatial?
+  			sql << "(#{@geom_type.escape}, #{@geom_srid.to_s.escape})" if geospatial?
         sql << "NULL" if @null
         sql << "NOT NULL" if @not_null
   			sql << "UNIQUE" if @unique
   			sql << "PRIMARY KEY" if @primary_key
   			sql << "REFERENCES " + @references if @references
   			sql << "DEFAULT " + @default if @default
-  			sql << "CHECK(#{@check})" if @check
+  			sql << "CHECK(#{@check.escape})" unless @check.nil? || @check.empty?
   			sql*" "
       end
     end

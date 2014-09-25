@@ -11,12 +11,16 @@ module Mystic
     
     module ClassMethods
       def table_name
-        to_s.split("::").last.downcase
+        to_s.split("::").last.downcase.to_sym
       end
 		
   		def visible_cols
   			["*"]
   		end
+      
+      def col_str
+        visible_cols.map { |c| c.to_s == "*" ? "*" : c.to_s.dblquote }*','
+      end
 
   		def decorate sql, opts={}
         raise ArgumentError, "No SQL to decorate." if sql.nil? || sql.empty?
@@ -26,7 +30,7 @@ module Mystic
         singular = (opts[:singular] || opts["singular"] || false) == true
         singular = true if op == "INSERT"
 
-  			sql << " RETURNING #{(visible_cols || "*")*','}" if retrn != :nothing && op != "SELECT"
+  			sql << " RETURNING #{colstr}" if retrn != :nothing && op != "SELECT"
         
         return sql unless retrn == :json
         
@@ -34,7 +38,7 @@ module Mystic
 				s << "WITH res AS (#{sql}) SELECT"
 				s << "array_to_json(array_agg(res))" unless singular
 				s << "row_to_json(res)" if singular
-				s << "AS #{Mystic::JSON_COL}"
+				s << "AS #{Mystic::JSON_COL.dblquote}"
 				s << "FROM res"
         s << "LIMIT 1" if singular
   			s*' '
@@ -50,7 +54,7 @@ module Mystic
   			where = params.sqlize
 
   			sql = []
-  			sql << "SELECT #{visible_cols*','} FROM #{table_name}"
+  			sql << "SELECT #{col_str} FROM #{table_name}"
   			sql << "WHERE #{where*' AND '}" unless where.empty?
   			sql << "LIMIT #{count.to_i}" if count > 0
 			
@@ -60,17 +64,17 @@ module Mystic
       def update_sql where={}, set={}, opts={}
         return "" if where.empty?
         return "" if set.empty?
-        decorate "UPDATE #{table_name} SET #{set.sqlize*','} WHERE #{where.sqlize*' AND '}", opts
+        decorate "UPDATE #{table_name.dblquote} SET #{set.sqlize*','} WHERE #{where.sqlize*' AND '}", opts
       end
     
       def insert_sql params={}, opts={}
   			return "" if params.empty?
-        decorate "INSERT INTO #{table_name} (#{params.keys*','}) VALUES (#{params.values.sqlize*','})", opts
+        decorate "INSERT INTO #{table_name.dblquote} (#{params.keys*','}) VALUES (#{params.values.sqlize*','})", opts
       end
     
       def delete_sql params={}, opts={}
         return "" if params.empty?
-        decorate "DELETE FROM #{table_name} WHERE #{params.sqlize*' AND '}", opts
+        decorate "DELETE FROM #{table_name.dblquote} WHERE #{params.sqlize*' AND '}", opts
       end
     
       def select params={}, opts={}
