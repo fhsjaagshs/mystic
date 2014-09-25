@@ -2,6 +2,13 @@
 
 module Mystic
   module SQL
+  	INDEX_TYPES = [
+      :btree,
+  		:hash,
+  		:gist,
+  		:spgist,
+  		:gin
+  	].freeze
     class Index
       attr_accessor :name, # Symbol or String
 										:table_name, # Symbol or String

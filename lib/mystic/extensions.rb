@@ -11,8 +11,42 @@ module ::Kernel
 		nil
 	end
   
-  def require_recursive path=File.dirname(__FILE__)
+  def require_recursive path
+    raise ArgumentError, "A path is required. Ha. Required." if path.nil? || path.empty?
     Dir.glob(File.join(path,"/**/*.rb"), &method(:require))
+  end
+end
+
+class Tester < StandardError
+  (methods-Object.methods).each(&method(:undef_method))
+  
+  def method_missing meth, *args, &block
+    puts meth + "  :  " + args.inspect
+  end
+end
+
+class Exception
+  alias_method :initialize_original, :initialize
+  
+  class << self
+    attr_accessor :default_message
+    
+    def with_message msg
+      @global_message ||= nil
+      e = Class.new self
+      e.default_message = msg
+      e
+    end
+  end
+  
+  def initialize msg=nil
+    initialize_original msg || self.class.default_message
+  end
+end
+
+class File
+  def self.write f, d
+    open(f.to_s, 'w') { |f| f.write d }
   end
 end
 
@@ -76,8 +110,9 @@ class ::Object
     when Symbol then dblquote # symbols are assumed to be SQL identifiers
 		when Numeric then to_s.escape
     when DateTime then to_s.quote
+    when Date then to_s.quote
     when Time then to_s.quote
-    else raise SQLError, "Unknown type." end
+    else raise TypeError, "Unable to turn type into an SQL type." end
   end
 end
 
@@ -93,11 +128,11 @@ class Hash
 	end
 	
 	def symbolize
-		Hash[map { |k,v| [k.to_sym, v.respond_to?(:map) ? v.map &:symbolize : v]}]
+		Hash[map { |k,v| [k.to_sym, v.respond_to?(:map) ? v.map(&:symbolize) : v]}]
 	end
 	
 	def symbolize!
-		each_key { |k| self[k.to_sym] = self[k].respond_to?(:map) ? delete(k).map &:symbolize : delete k }
+		each_key { |k| self[k.to_sym] = self[k].respond_to?(:map) ? delete(k).map(&:symbolize) : delete(k) }
 	end
 end
 

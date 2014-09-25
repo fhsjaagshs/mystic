@@ -2,6 +2,7 @@
 
 module Mystic
   module SQL
+    Error = Class.new StandardError
     class Table
       attr_reader :name
       attr_accessor :columns,

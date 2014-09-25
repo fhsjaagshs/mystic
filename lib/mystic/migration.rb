@@ -2,8 +2,7 @@
 
 module Mystic
   class Migration
-		Error = Class.new StandardError
-		IrreversibleError = Class.new StandardError
+		IrreversibleError = StandardError.with_message "Impossible to roll back an irreversible migration."
 
 		def initialize
 			@irreversible = false
@@ -23,7 +22,7 @@ module Mystic
 			_direction = direction.to_sym
 			
 			raise ArgumentError, "Direction must be either :up or :down." unless [:up, :down].include? _direction
-			raise IrreversibleError, "Impossible to roll back an irreversible migration." if _direction == :down && irreversible?
+			raise IrreversibleError if _direction == :down && irreversible?
 			
       execute "BEGIN"
 			method(_direction).call

@@ -8,3 +8,7 @@ require "./mystic/sql"
 require "./mystic/migration"
 require "./mystic/model"
 require "./mystic/database"
+
+module Mystic
+  JSON_COL = "mystic_return_json89788".freeze
+end

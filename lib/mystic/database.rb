@@ -4,9 +4,43 @@ require "yaml"
 require "erb"
 
 module Mystic
+  ConnectionError = Class.new StandardError
+  EnvironmentError = Class.new StandardError
+  UnsuppordedError = StandardError.with_message "Mystic only supports Postgres and Postgis."
+  
+	PG_CONNECT_FIELDS = [
+		:host,
+		:hostaddr,
+		:port,
+		:dbname,
+		:user,
+		:password,
+		:connect_timeout,
+		:options,
+		:tty,
+		:sslmode,
+		:krbsrvname,
+		:gsslib
+	].freeze
+  
+  VALID_ADAPTERS = [
+    "postgres",
+    "postgis"
+  ].freeze
+  
   class << self
     def db_yml
-      @db_yml ||= YAML.load(ERB.new(root.join("config","database.yml").read).result).symbolize # Heroku uses ERB cuz rails uses it errwhere
+      if @db_yml.nil?
+        # Heroku uses ERB cuz rails uses it errwhere
+        dy = YAML.load(ERB.new(root.join("config","database.yml").read).result).symbolize
+        # Clean up the config
+        @db_yml = Hash[dy.select { |k,v| VALID_ADAPTERS.include? conf[:adapter] }.map {|env,hash| 
+          hash[:dbname] = hash.delete :database # PG accepts differently named params
+          hash[:user] = hash.delete :username # PG accepts differently named params
+          [env, hash.subhash(*PG_CONNECT_FIELDS)]
+        }]
+      end
+      @db_yml
     end
     
     def manual_conn conf={}
@@ -15,7 +49,7 @@ module Mystic
 				:timeout => conf[:timeout] || 30,
 				:expires => conf[:expires],
 				:create => lambda {
-          pg = PG.connect conf.subhash(*PG_CONNECT_FIELDS)
+          pg = PG.connect conf
           pg.set_notice_receiver { |r| }
           pg
         },
@@ -33,14 +67,7 @@ module Mystic
       disconnect
       ENV["RACK_ENV"] = new_env.to_s
 			raise EnvironmentError, "Environment '#{@env}' doesn't exist." unless db_yml.key? env
-      
-      conf = db_yml[env]
-      conf[:dbname] = conf.delete :database
-      conf[:user] = conf.delete :username
-      raise MysticError, "Mystic only supports Postgres." unless VALID_ADAPTERS.include? conf[:adapter]
-
-			manual_conn conf
-      
+			manual_conn db_yml[env]
       @env
     end
     
