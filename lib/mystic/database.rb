@@ -2,6 +2,7 @@
 
 require "yaml"
 require "erb"
+require "pg"
 
 module Mystic
   ConnectionError = Class.new StandardError

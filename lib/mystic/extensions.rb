@@ -46,7 +46,7 @@ end
 
 class File
   def self.write f, d
-    open(f.to_s, 'w') { |f| f.write d }
+    open(f.to_s, 'w') { |file| file.write d }
   end
 end
 
@@ -63,7 +63,7 @@ end
 
 # Public
 class ::String
-	def escape
+  def escape
 		Mystic.escape self
   end
   
@@ -94,11 +94,11 @@ class Array
   end
 	
 	def symbolize
-		map &:to_sym
+		map(&:to_sym)
 	end
 	
 	def symbolize!
-		map! &:to_sym
+		map!(&:to_sym)
 	end
 end
 
@@ -118,7 +118,7 @@ end
 
 class ::Array
 	def sqlize
-    map &:sqlize
+    map(&:sqlize)
 	end
 end
 

@@ -1,5 +1,7 @@
 #!/usr/bin/env ruby
 
+require "./database"
+
 module Mystic
   module CommandLine
     MPATH = root.join "mystic","migrations"
