@@ -78,27 +78,28 @@ module Mystic
       end
     
       def select params={}, opts={}
+        puts select_sql(params, opts)
         Mystic.execute select_sql(params, opts)
       end
     
       def fetch params={}, opts={}
         res = select params, opts.merge({:singular => true})
-        res.is_a? String ? res : (res.first rescue res)
+        res.is_a? String ? res : (res.count > 0 ? res.first : {})
       end
     
       def create params={}, opts={}
-        res = Mystic.execute insert_sql(params, opts)
-        res.is_a? String ? res : (res.first rescue res)
+        res = Mystic.execute insert_sql(params, opts.merge({:singular => true}))
+        res.is_a? String ? res : (res.count > 0 ? res.first : {})
       end
     
       def update where={}, set={}, opts={}
         res = Mystic.execute update_sql(where, set, opts)
-        opts[:singular] ? (res.first rescue res) : res
+        opts[:singular] ? (res.count > 0 ? res.first : {}) : res
       end
     
       def delete params={}, opts={}
   			res = Mystic.execute delete_sql(params, opts)
-        opts[:singular] ? (res.first rescue res) : res
+        opts[:singular] ? (res.count > 0 ? res.first : {}) : res
       end
 		
   		def exec_func funcname, *params

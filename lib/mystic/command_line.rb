@@ -1,10 +1,10 @@
 #!/usr/bin/env ruby
 
-require "./database"
+require_relative "./database"
 
 module Mystic
   module CommandLine
-    MPATH = root.join "mystic","migrations"
+    MPATH = Mystic.root.join "mystic","migrations"
     MREGEX = /^(?<num>\d+)_(?<name>[a-zA-Z]+)\.rb$/ # example: 1_MigrationClassName.rb
     #CLIError = Class.new StandardError
     class << self

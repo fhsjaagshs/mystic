@@ -28,7 +28,7 @@ module Mystic
         name = opts[:name].to_sym if opts.key? :name
         table_name = (opts[:table_name] || "").to_sym
 				@unique = opts[:unique] == true
-        @columns = opts[:columns].map { |c| c.to_s.to_sym rescue nil }.compact
+        @columns = opts[:columns].reject { |c| c.nil? || c.empty? }.map { |c| c.to_s.to_sym }
         @fastupdate = (opts[:fastupdate] || true) == true
         @concurrently = (opts[:concurrently] || false) == true
         @tablespace = opts[:tablespace].to_sym

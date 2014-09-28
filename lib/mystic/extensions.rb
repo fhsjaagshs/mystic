@@ -153,7 +153,7 @@ Kernel.silent do
     end
 
   	def join *args
-  		Pathname.new File.join(@path), *args.map(&:to_s)
+  		Pathname.new File.join(@path, *args.map(&:to_s))
   	end
   end
 end

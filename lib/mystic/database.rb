@@ -7,6 +7,7 @@ require "pg"
 module Mystic
   ConnectionError = Class.new StandardError
   EnvironmentError = Class.new StandardError
+  RootError = Class.new StandardError
   UnsuppordedError = StandardError.with_message "Mystic only supports Postgres and Postgis."
   
 	PG_CONNECT_FIELDS = [
@@ -107,11 +108,20 @@ module Mystic
     
     def execute sql=""
       raise ConnectionError, "Not connected to Postgres." unless connected?
-			res = @pool.with { |pg| pg.exec sql.terminate }
-			v = res[0][Mystic::JSON_COL] if res.ntuples == 1 && res.nfields == 1
-			v ||= res.ntuples.times.map { |i| res[i] } unless res.nil? || res.ntuples == 0
-			v ||= []
-			v
+      begin
+  			res = @pool.with { |pg| pg.exec sql.terminate } 
+  			v = res[0][Mystic::JSON_COL] if res.ntuples == 1 && res.nfields == 1
+  			v ||= res.ntuples.times.map { |i| res[i] } unless res.nil? || res.ntuples == 0
+  			v ||= []
+  			v
+      rescue StandardError=>e
+        if e.class.to_s.split("::").first != "PG"
+          raise e
+          return []
+        end
+        raise(Mystic::SQL::Error, e.message)
+        return []
+      end
     end
   end
 end

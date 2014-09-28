@@ -3,7 +3,6 @@
 require_relative "../lib/mystic.rb"
 require_relative "../lib/mystic/command_line"
 require "irb"
-#require 'irb/completion'
 
 # Examples:
 # mystic create migration InitialMigration
@@ -50,4 +49,6 @@ begin
 	end
 rescue ErrorOutput => e
 	puts e.message
+rescue RootError
+  puts "Not in an application anymore."
 end
