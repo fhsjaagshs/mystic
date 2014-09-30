@@ -17,14 +17,6 @@ module ::Kernel
   end
 end
 
-class Tester < StandardError
-  (methods-Object.methods).each(&method(:undef_method))
-  
-  def method_missing meth, *args, &block
-    puts meth + "  :  " + args.inspect
-  end
-end
-
 class Exception
   alias_method :initialize_original, :initialize
   
@@ -94,11 +86,11 @@ class Array
   end
 	
 	def symbolize
-		map(&:to_sym)
+		map { |e| e.to_s.to_sym }
 	end
 	
 	def symbolize!
-		map!(&:to_sym)
+		map! { |e| e.to_s.to_sym }
 	end
 end
 
@@ -128,11 +120,17 @@ class Hash
 	end
 	
 	def symbolize
-		Hash[map { |k,v| [k.to_sym, v.respond_to?(:map) ? v.map(&:symbolize) : v]}]
+    r = dup
+		r.symbolize!
+    r
 	end
 	
 	def symbolize!
-		each_key { |k| self[k.to_sym] = self[k].respond_to?(:map) ? delete(k).map(&:symbolize) : delete(k) }
+    dup.each_key do |k|
+      _v = delete k
+      _v.symbolize! if _v.is_a? Hash
+      self[k.to_sym] = _v
+    end
 	end
 end
 

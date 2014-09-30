@@ -2,6 +2,7 @@
 
 require_relative "../lib/mystic.rb"
 require_relative "../lib/mystic/command_line"
+require_relative "../lib/mystic/root"
 require "irb"
 
 # Examples:
@@ -49,6 +50,6 @@ begin
 	end
 rescue ErrorOutput => e
 	puts e.message
-rescue RootError
+rescue Mystic::RootError
   puts "Not in an application anymore."
 end

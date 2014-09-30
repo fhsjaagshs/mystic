@@ -9,5 +9,6 @@ require_relative "./mystic/migration"
 require_relative "./mystic/model"
 
 module Mystic
-  JSON_COL = "mystic_return_json89788".freeze
+  JSON_COL = "mjson8299".freeze
+  XML_COL = "mxml8299".freeze
 end

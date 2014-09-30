@@ -9,8 +9,8 @@ Gem::Specification.new do |s|
   s.license      = "MIT"
   s.files        = Dir.glob("{bin,lib}/**/*") + ["LICENSE"]
   s.require_path = "lib"
+  s.extensions   = ["ext/mystic/extconf.rb"]
   s.executables  = Dir.glob("bin/**/*").map{ |path| path.split("/",2).last }
 	
   s.add_dependency 'access_stack', "~> 0"
-  s.add_dependency 'pg', '~> 0'
 end

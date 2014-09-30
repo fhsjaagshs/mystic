@@ -3,11 +3,11 @@
 require "yaml"
 require "erb"
 require "pg"
+require "mystic/pgparser"
 
 module Mystic
   ConnectionError = Class.new StandardError
   EnvironmentError = Class.new StandardError
-  RootError = Class.new StandardError
   UnsuppordedError = StandardError.with_message "Mystic only supports Postgres and Postgis."
   
 	PG_CONNECT_FIELDS = [
@@ -30,16 +30,21 @@ module Mystic
     "postgis"
   ].freeze
   
+  VALID_ENVIRONMENTS = [
+    
+  ]
+  
   class << self
     def db_yml
       if @db_yml.nil?
         # Heroku uses ERB cuz rails uses it errwhere
-        dy = YAML.load(ERB.new(root.join("config","database.yml").read).result).symbolize
+        dy = YAML.load(ERB.new(root.join("config","database.yml").read).result)
+        puts dy.inspect
         # Clean up the config
-        @db_yml = Hash[dy.select { |k,v| VALID_ADAPTERS.include? conf[:adapter] }.map {|env,hash| 
+        @db_yml = Hash[dy.select { |k,v| VALID_ADAPTERS.include? v["adapter"] }.map {|env,hash| 
           hash[:dbname] = hash.delete :database # PG accepts differently named params
           hash[:user] = hash.delete :username # PG accepts differently named params
-          [env, hash.subhash(*PG_CONNECT_FIELDS)]
+          [env, hash.subhash(*PG_CONNECT_FIELDS).symbolize]
         }]
       end
       @db_yml
@@ -67,6 +72,7 @@ module Mystic
     
     def env= new_env
       disconnect
+      puts db_yml
       ENV["RACK_ENV"] = new_env.to_s
 			raise EnvironmentError, "Environment '#{@env}' doesn't exist." unless db_yml.key? env
 			manual_conn db_yml[env]
@@ -77,7 +83,7 @@ module Mystic
 
 		def disconnect
       @connected = false
-			@pool.empty!
+			@pool.empty! unless @pool.nil?
 		end
     
     def connected?

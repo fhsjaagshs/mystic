@@ -56,14 +56,15 @@ v 0.1.3
 
 v 0.2.0
 
-- `DOTENV` - just like `ENV` but it only cantains config from `Mystic.root.join(".env")`
+- **`DOTENV`** - just like `ENV` but it only cantains config from `Mystic.root.join(".env")`
+- **Dropped dependency on the crappy `pg` gem **
 - Stability improvements
     - Removed unnecessary code in `extensions.rb`
     - Rewrote broken methods
-    - Removed extra layers of abstraction
+    - **Removed extra layers of abstraction**
     - Grouped code better
-    - Improved compatibility with environments suited to Rails like Heroku
-    - Significantly improved `Mystic::Model`
+    - **Improved compatibility with environments suited to Rails like Heroku**
+    - Significantly improved `Mystic::Model` (**IMPORTANT**)
 		- Replaced `:return_*` options with `:return`
 		- Replaced `:plural` option with `:singular` because it's easier to code and wrap your brain around
 	- Improved migration stability and performance
