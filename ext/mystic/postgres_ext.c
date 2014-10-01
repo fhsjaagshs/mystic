@@ -9,17 +9,17 @@
 
 */
 
-#include "postgres.h"
+#include "postgres_ext.h"
 
 VALUE rb_mMystic = Qnil;
 VALUE m_cPostgres = Qnil;
 VALUE mp_cError = Qnil;
 
-void Init_postgres() {
+void Init_postgres_ext() {
     rb_mMystic = rb_define_module("Mystic");
     m_cPostgres = rb_define_class_under(rb_mMystic, "Postgres", rb_cObject);
     mp_cError = rb_define_class_under(m_cPostgres, "Error", rb_eStandardError);
-    rb_define_method(m_cPostgres, "initialize", RUBY_METHOD_FUNC(postgres_exec), -2);
+    rb_define_method(m_cPostgres, "initialize", RUBY_METHOD_FUNC(postgres_initialize), -2);
     rb_define_method(m_cPostgres, "execute", RUBY_METHOD_FUNC(postgres_exec), 1);
     rb_define_method(m_cPostgres, "valid?", RUBY_METHOD_FUNC(postgres_valid), 0);
     rb_define_method(m_cPostgres, "quote_ident", RUBY_METHOD_FUNC(postgres_quote_ident), 1);
@@ -55,7 +55,7 @@ static VALUE postgres_disconnect(VALUE self) {
   return Qnil;
 }
 
-char * make_conn_string(VALUE hash) {
+/*char * make_conn_string(VALUE hash) {
   VALUE ret = rb_str_new2("");
   
   size_t num_pgconn_fields = sizeof(postgres_fields)/sizeof(postgres_fields[0]);
@@ -71,12 +71,14 @@ char * make_conn_string(VALUE hash) {
   
   for (size_t i = 0; i < hash_size; i++) {
     int valid = 0;
-    VALUE rb_key = rb_ary_entry(keys, i);
-    VALUE rb_value = rb_ary_entry(values, i);
+    VALUE rb_key = rb_ary_entry(keys, i); rb_key = StringValue(rb_key);
+    VALUE rb_value = rb_ary_entry(values, i); rb_value = StringValue(rb_value);
+    printf("WOOHOOO\n");
     // escaping
     rb_funcall(rb_value, rb_intern("gsub!"), 2, rb_str_new2("\\"), rb_str_new2("\\\\\\"));
     rb_funcall(rb_value, rb_intern("gsub!"), 2, rb_str_new2("'"), rb_str_new2("\\\\'"));
     char *key = StringValueCStr(rb_key);
+    printf("NIGER\n");
     for (size_t j; j < num_pgconn_fields; j++) {
       if (key == postgres_fields[j]) {
         valid = 1;
@@ -86,11 +88,15 @@ char * make_conn_string(VALUE hash) {
       }
     }
     
+    printf("flippin shit\n");
+    
     if (valid == 1) {
-      ret = rb_funcall(ret, rb_intern("+"), 1, rb_key);
+      VALUE key_str = StringValue(rb_key);
+      VALUE value_str = StringValue(rb_value);
+      ret = rb_funcall(ret, rb_intern("+"), 1, key_str);
       ret = rb_funcall(ret, rb_intern("+"), 1, equals);
       ret = rb_funcall(ret, rb_intern("+"), 1, singleq);
-      ret = rb_funcall(ret, rb_intern("+"), 1, rb_value);
+      ret = rb_funcall(ret, rb_intern("+"), 1, value_str);
       ret = rb_funcall(ret, rb_intern("+"), 1, singleq);
       
       if (i < hash_size-1) {
@@ -100,26 +106,38 @@ char * make_conn_string(VALUE hash) {
   }
 
   return StringValueCStr(ret);
-}
+}*/
 
 static VALUE postgres_initialize(VALUE self, VALUE args) {
-  if (RARRAY_LEN(args) != 1) rb_raise(rb_eArgError, "No arguments."); return Qnil;
+  
+  if (RARRAY_LEN(args) != 1) {
+    rb_raise(rb_eArgError, "Invalid arguments.");
+    return Qnil;
+  }
   
   VALUE hash = rb_ary_entry(args, 0); // the connection options
-  //Check_Type(hash, T_HASH);
+  Check_Type(hash, T_HASH);
+
+
+  printf("BEFORE THE STORM\n");
   
+  // Generate conn string
+  VALUE connstr = rb_funcall(self, rb_intern("connstr"), 1, hash);
+   
   // connect
   PGconn *conn = NULL;
-  conn = PQconnectdb(make_conn_string(hash));
+  conn = PQconnectdb(StringValueCStr(connstr));
+  
+  printf("AFTER THE STORM\n");
   
   if (conn == NULL) {
     rb_raise(mp_cError, "Failed to create a connection.");
     return Qnil;
   }
   
-  Check_Type(self, T_DATA);
+ // Check_Type(self, T_DATA);
   DATA_PTR(self) = conn;
-  rb_iv_set(hash, "@options", self);
+  rb_iv_set(self, "@options", hash);
   return self;
 }
 

@@ -1,13 +1,12 @@
 #include <stdio.h>
 
 /* Postgres Headers */
-//#include <postgres.h>
 #include "libpq-fe.h"
 #include "libpq/libpq-fs.h"
 #include "pg_config_manual.h"
 
 /* Postgres type oids */
-/* Buit-in OIDs don't change*/
+/* Built-in OIDs don't change*/
 #define BOOLOID 16
 #define INT8OID 20
 #define INT2OID 21

@@ -3,27 +3,14 @@
 require "yaml"
 require "erb"
 require "pg"
-require "mystic/pgparser"
+require_relative "./postgres"
 
 module Mystic
   ConnectionError = Class.new StandardError
   EnvironmentError = Class.new StandardError
   UnsuppordedError = StandardError.with_message "Mystic only supports Postgres and Postgis."
   
-	PG_CONNECT_FIELDS = [
-		:host,
-		:hostaddr,
-		:port,
-		:dbname,
-		:user,
-		:password,
-		:connect_timeout,
-		:options,
-		:tty,
-		:sslmode,
-		:krbsrvname,
-		:gsslib
-	].freeze
+  "host", "hostaddr", "port", "dbname", "user", "password", "connect_timeout", "client_encoding", "options", "sslmode"
   
   VALID_ADAPTERS = [
     "postgres",
@@ -32,6 +19,14 @@ module Mystic
   
   VALID_ENVIRONMENTS = [
     
+  ]
+  
+  VALID_ENV_FIELDS = [
+    # Things like 
+    # username
+    # database
+    # encoding
+    # other shit
   ]
   
   class << self
@@ -44,7 +39,7 @@ module Mystic
         @db_yml = Hash[dy.select { |k,v| VALID_ADAPTERS.include? v["adapter"] }.map {|env,hash| 
           hash[:dbname] = hash.delete :database # PG accepts differently named params
           hash[:user] = hash.delete :username # PG accepts differently named params
-          [env, hash.subhash(*PG_CONNECT_FIELDS).symbolize]
+          [env, hash.subhash(*Mystic::Postgres::CONNECT_FIELDS).symbolize]
         }]
       end
       @db_yml

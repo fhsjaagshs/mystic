@@ -58,6 +58,7 @@ v 0.2.0
 
 - **`DOTENV`** - just like `ENV` but it only cantains config from `Mystic.root.join(".env")`
 - **Dropped dependency on the crappy `pg` gem **
+	* Wrote custom ruby libpq wrapper with type coersion
 - Stability improvements
     - Removed unnecessary code in `extensions.rb`
     - Rewrote broken methods

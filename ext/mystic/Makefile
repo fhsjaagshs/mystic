@@ -78,12 +78,12 @@ optflags = -O3 -fno-fast-math
 debugflags = -ggdb3
 warnflags = -Wall -Wextra -Wno-unused-parameter -Wno-parentheses -Wno-long-long -Wno-missing-field-initializers -Wunused-variable -Wpointer-arith -Wwrite-strings -Wdeclaration-after-statement -Wshorten-64-to-32 -Wimplicit-function-declaration -Wdivision-by-zero -Wextra-tokens
 CCDLFLAGS = -fno-common
-CFLAGS   = $(CCDLFLAGS) -I/usr/local/pgsql/include $(ARCH_FLAG)
+CFLAGS   = $(CCDLFLAGS) -I/usr/local/include $(ARCH_FLAG)
 INCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir)/ruby/backward -I$(hdrdir) -I$(srcdir)
 DEFS     = 
 CPPFLAGS =  -I/Users/nathaniel/.rbenv/versions/2.1.2/include  -D_XOPEN_SOURCE -D_DARWIN_C_SOURCE -D_DARWIN_UNLIMITED_SELECT -D_REENTRANT $(DEFS) $(cppflags)
 CXXFLAGS = $(CCDLFLAGS) $(cxxflags) $(ARCH_FLAG)
-ldflags  = -L. -L/Users/nathaniel/.rbenv/versions/2.1.2/lib  -fstack-protector
+ldflags  = -L/usr/local/lib -lpq
 dldflags = -Wl,-undefined,dynamic_lookup -Wl,-multiply_defined,suppress 
 ARCH_FLAG = 
 DLDFLAGS = $(ldflags) $(dldflags) $(ARCH_FLAG)
@@ -133,12 +133,12 @@ extout_prefix =
 target_prefix = /mystic
 LOCAL_LIBS = 
 LIBS =   -lpthread -lgmp -ldl -lobjc 
-ORIG_SRCS = postgres.c
+ORIG_SRCS = postgres_ext.c
 SRCS = $(ORIG_SRCS) 
-OBJS = postgres.o
-HDRS = 
-TARGET = postgres
-TARGET_NAME = postgres
+OBJS = postgres_ext.o
+HDRS = $(srcdir)/postgres_ext.h
+TARGET = postgres_ext
+TARGET_NAME = postgres_ext
 TARGET_ENTRY = Init_$(TARGET_NAME)
 DLLIB = $(TARGET).bundle
 EXTSTATIC = 
@@ -189,7 +189,7 @@ install-rb-default: pre-install-rb-default
 pre-install-rb: Makefile
 pre-install-rb-default: Makefile
 pre-install-rb-default:
-	$(ECHO) installing default postgres libraries
+	$(ECHO) installing default postgres_ext libraries
 $(TIMESTAMP_DIR)/.RUBYARCHDIR.-.mystic.time:
 	$(Q) $(MAKEDIRS) $(@D) $(RUBYARCHDIR)
 	$(Q) $(TOUCH) $@
