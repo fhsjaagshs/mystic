@@ -98,13 +98,11 @@ static ID s_id_index;
 
 #endif
 
-static const char * const postgres_fields[10] = {
-  "host", "hostaddr", "port", "dbname", "user", "password", "connect_timeout", "client_encoding", "options", "sslmode"
-};
+static void postgres_gc_free(PGconn *conn);
+static VALUE postgres_allocate(VALUE klass);
 
 static VALUE postgres_disconnect(VALUE self);
 static VALUE postgres_initialize(VALUE self, VALUE hash);
-static VALUE class_postgres_connect(VALUE klass, VALUE hash);
 static VALUE postgres_valid(VALUE self);
 
 static VALUE postgres_quote_ident(VALUE self, VALUE in_str);

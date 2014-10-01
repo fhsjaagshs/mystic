@@ -17,9 +17,16 @@ module Mystic
   		:sslmode
   	].freeze
     
+    attr_reader :options, :error
+    attr_accessor :special_field
+    
+    def self.connect hash={}
+      new hash
+    end
+    
     def connstr hash={}
       hash
-        .reject { |k,v| CONNECT_FIELDS.include?(k.to_s.downcase.to_sym) }
+        .select { |k,v| CONNECT_FIELDS.include?(k.to_s.downcase.to_sym) }
         .map { |k,v| "#{k.to_s.downcase}='#{v.to_s.gsub(/[\\']/, &'\\'.method(:+))}'" } * ' '
     end
   end

@@ -19,21 +19,40 @@ void Init_postgres_ext() {
     rb_mMystic = rb_define_module("Mystic");
     m_cPostgres = rb_define_class_under(rb_mMystic, "Postgres", rb_cObject);
     mp_cError = rb_define_class_under(m_cPostgres, "Error", rb_eStandardError);
+    rb_define_alloc_func(m_cPostgres, postgres_allocate);
     rb_define_method(m_cPostgres, "initialize", RUBY_METHOD_FUNC(postgres_initialize), -2);
     rb_define_method(m_cPostgres, "execute", RUBY_METHOD_FUNC(postgres_exec), 1);
     rb_define_method(m_cPostgres, "valid?", RUBY_METHOD_FUNC(postgres_valid), 0);
     rb_define_method(m_cPostgres, "quote_ident", RUBY_METHOD_FUNC(postgres_quote_ident), 1);
     rb_define_method(m_cPostgres, "disconnect!", RUBY_METHOD_FUNC(postgres_disconnect), 0);
     rb_define_singleton_method(m_cPostgres, "quote_ident", RUBY_METHOD_FUNC(postgres_quote_ident), 1);
-    rb_define_singleton_method(m_cPostgres, "connect", RUBY_METHOD_FUNC(class_postgres_connect), -2);
+}
+
+//
+// Helpers
+//
+
+void inspect(VALUE obj) {
+  printf("Before inspect...\n");
+  printf("%s\n",RSTRING_PTR(rb_funcall(obj, rb_intern("inspect"), 0)));
+  printf("After inspect...\n");
 }
 
 // TODO:
 // - 2 more escape methods
+// Encodings
 
 // GC Free
 static void postgres_gc_free(PGconn *conn) {
   if (conn != NULL) PQfinish(conn);
+}
+
+static VALUE postgres_allocate(VALUE klass) {
+	VALUE self = Data_Wrap_Struct(klass, NULL, postgres_gc_free, NULL);
+	rb_iv_set(self, "@special_field", Qnil);
+  rb_iv_set(self, "@options", Qnil);
+  rb_iv_set(self, "@error", Qnil);
+	return self;
 }
 
 // Returns the PGconn pointer in use
@@ -55,61 +74,7 @@ static VALUE postgres_disconnect(VALUE self) {
   return Qnil;
 }
 
-/*char * make_conn_string(VALUE hash) {
-  VALUE ret = rb_str_new2("");
-  
-  size_t num_pgconn_fields = sizeof(postgres_fields)/sizeof(postgres_fields[0]);
-  VALUE keys = rb_funcall(hash, rb_intern("keys"), 0);
-  VALUE values = rb_funcall(hash, rb_intern("values"), 0);
-  VALUE space = rb_str_new2(" ");
-  VALUE equals = rb_str_new2("=");
-  VALUE singleq = rb_str_new2("'");
-  
-  VALUE gsub_match = rb_str_new2("");
-  
-  size_t hash_size = (size_t)NUM2INT(RARRAY_LEN(keys));
-  
-  for (size_t i = 0; i < hash_size; i++) {
-    int valid = 0;
-    VALUE rb_key = rb_ary_entry(keys, i); rb_key = StringValue(rb_key);
-    VALUE rb_value = rb_ary_entry(values, i); rb_value = StringValue(rb_value);
-    printf("WOOHOOO\n");
-    // escaping
-    rb_funcall(rb_value, rb_intern("gsub!"), 2, rb_str_new2("\\"), rb_str_new2("\\\\\\"));
-    rb_funcall(rb_value, rb_intern("gsub!"), 2, rb_str_new2("'"), rb_str_new2("\\\\'"));
-    char *key = StringValueCStr(rb_key);
-    printf("NIGER\n");
-    for (size_t j; j < num_pgconn_fields; j++) {
-      if (key == postgres_fields[j]) {
-        valid = 1;
-        break;
-      } else {
-        valid = 0;
-      }
-    }
-    
-    printf("flippin shit\n");
-    
-    if (valid == 1) {
-      VALUE key_str = StringValue(rb_key);
-      VALUE value_str = StringValue(rb_value);
-      ret = rb_funcall(ret, rb_intern("+"), 1, key_str);
-      ret = rb_funcall(ret, rb_intern("+"), 1, equals);
-      ret = rb_funcall(ret, rb_intern("+"), 1, singleq);
-      ret = rb_funcall(ret, rb_intern("+"), 1, value_str);
-      ret = rb_funcall(ret, rb_intern("+"), 1, singleq);
-      
-      if (i < hash_size-1) {
-        ret = rb_funcall(ret, rb_intern("+"), 1, space);
-      }
-    }
-  }
-
-  return StringValueCStr(ret);
-}*/
-
 static VALUE postgres_initialize(VALUE self, VALUE args) {
-  
   if (RARRAY_LEN(args) != 1) {
     rb_raise(rb_eArgError, "Invalid arguments.");
     return Qnil;
@@ -117,36 +82,31 @@ static VALUE postgres_initialize(VALUE self, VALUE args) {
   
   VALUE hash = rb_ary_entry(args, 0); // the connection options
   Check_Type(hash, T_HASH);
-
-
-  printf("BEFORE THE STORM\n");
   
-  // Generate conn string
   VALUE connstr = rb_funcall(self, rb_intern("connstr"), 1, hash);
-   
-  // connect
+  
   PGconn *conn = NULL;
   conn = PQconnectdb(StringValueCStr(connstr));
-  
-  printf("AFTER THE STORM\n");
   
   if (conn == NULL) {
     rb_raise(mp_cError, "Failed to create a connection.");
     return Qnil;
   }
   
- // Check_Type(self, T_DATA);
+  if (PQstatus(conn) == CONNECTION_BAD) {
+    VALUE error = rb_exc_new2(mp_cError, PQerrorMessage(conn));
+    rb_iv_set(self, "@error", error);
+    rb_exc_raise(error);
+  }
+  
+  Check_Type(self, T_DATA);
   DATA_PTR(self) = conn;
   rb_iv_set(self, "@options", hash);
   return self;
 }
 
-static VALUE class_postgres_connect(VALUE klass, VALUE args) {
-  return rb_funcall(klass, rb_intern("new"), 1, args);
-}
-
 static VALUE postgres_valid(VALUE self) {
-  return get_conn(self) != NULL && PQstatus(get_conn(self)) == CONNECTION_OK;
+  return (get_conn(self) != NULL && PQstatus(get_conn(self)) == CONNECTION_OK) ? Qtrue : Qfalse;
 }
 
 /*
@@ -229,7 +189,7 @@ static VALUE postgres_quote_ident(VALUE self, VALUE in_str) {
 	ret = rb_str_new(buffer,j);
 	OBJ_INFECT(ret, in_str);
   
-  encode_if_possible(self,ret);
+//  encode_if_possible(self,ret);
 
 	return ret;
 }
@@ -242,6 +202,8 @@ static VALUE postgres_exec(VALUE self, VALUE query) {
   PGresult *result = PQexec(get_conn(self), StringValueCStr(query));
   size_t num_rows = PQntuples(result);
   size_t num_cols = PQnfields(result);
+  
+  if (num_rows == 0) return rb_ary_new();
   
   // Catch JSON and XML returned from Mystic
   if (num_rows == 1 && num_cols == 1) {
@@ -258,13 +220,11 @@ static VALUE postgres_exec(VALUE self, VALUE query) {
     }
   }
   
+  //
   // Normal rows
+  //
   
   VALUE rows = rb_ary_new2(num_rows);
-  
-  if (num_rows == 0) return rows; // No rows
-  
-  // Load the names once
   VALUE names = rb_ary_new2(num_cols);
   
   for (size_t c = 0; c < num_cols; c++) {
@@ -274,6 +234,7 @@ static VALUE postgres_exec(VALUE self, VALUE query) {
   // Coerce the parameter
   for (size_t r = 0; r < num_cols; r++) {
     VALUE row = rb_hash_new();
+    
     for (size_t c = 0; c < num_cols; c++) {
       VALUE key = rb_ary_entry(names, c);
       if (PQgetisnull(result, r, c)) {
@@ -325,10 +286,11 @@ static VALUE postgres_exec(VALUE self, VALUE query) {
             break;
         }
         
-        encode_if_possible(self, res);
+      //  encode_if_possible(self, res);
         
         rb_hash_aset(row, key, res);
-    
+        
+        
         // TODO: Implement
         // DateTime - TIMESTAMPOID, TIMESTAMPTZOID
         // Time - TIMETZOID, TIMEOID

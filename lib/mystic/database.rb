@@ -50,13 +50,9 @@ module Mystic
 				:size => conf[:pool] || 5,
 				:timeout => conf[:timeout] || 30,
 				:expires => conf[:expires],
-				:create => lambda {
-          pg = PG.connect conf
-          pg.set_notice_receiver { |r| }
-          pg
-        },
-        :destroy => lambda { |pg| pg.close },
-        :validate => lambda { |pg| pg != nil && pg.status == CONNECTION_OK }
+				:create => lambda { Mystic::Postgres.new conf },
+        :destroy => lambda { |pg| pg.disconnect! },
+        :validate => lambda { |pg| pg != nil && pg.valid? }
 			)
       @connected = true
     end
