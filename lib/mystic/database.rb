@@ -78,8 +78,7 @@ module Mystic
 		end
     
     def connected?
-      @pool.reap!
-      [!@pool.empty?, @connected].any?
+      @connected
     end
     
     def reap_connections!
@@ -100,25 +99,11 @@ module Mystic
     
     # double quotes
     def dblquote s=""
-      @pool.with { |pg| pg.escape_identifier s.to_s }
+      @pool.with { |pg| pg.quote_ident s.to_s }
     end
     
     def execute sql=""
-      raise ConnectionError, "Not connected to Postgres." unless connected?
-      begin
-  			res = @pool.with { |pg| pg.exec sql.terminate } 
-  			v = res[0][Mystic::JSON_COL] if res.ntuples == 1 && res.nfields == 1
-  			v ||= res.ntuples.times.map { |i| res[i] } unless res.nil? || res.ntuples == 0
-  			v ||= []
-  			v
-      rescue StandardError=>e
-        if e.class.to_s.split("::").first != "PG"
-          raise e
-          return []
-        end
-        raise(Mystic::SQL::Error, e.message)
-        return []
-      end
+      @pool.with { |pg| pg.execute sql.terminate }
     end
   end
 end

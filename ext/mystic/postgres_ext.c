@@ -113,60 +113,6 @@ static VALUE postgres_valid(VALUE self) {
   Escaping
 */
 
-void encode_if_possible(VALUE self, VALUE str) {
-#ifdef ENCODING_SUPPORTED
-  rb_encoding *enc = NULL;
-  
-	if (rb_obj_class(self) == m_cPostgres) {
-    int enc_id = PQclientEncoding(DATA_PTR(self));
-    rb_encoding *temp;
-
-    /* Use the cached value if it exists */
-    if (st_lookup(enc_pg2ruby, (st_data_t)enc_id, (st_data_t *)&temp) ) {
-      enc = temp;
-    } else {
-      const char *pg_encname = pg_encoding_to_char(enc_id);
-
-      /* Trying looking it up in the conversion table */
-      for (size_t i = 0; i < sizeof(pg_enc_pg2ruby_mapping)/sizeof(pg_enc_pg2ruby_mapping[0]); ++i ) {
-        if (strcmp(pg_encname, pg_enc_pg2ruby_mapping[i][0]) == 0) {
-          enc = rb_enc_find(pg_enc_pg2ruby_mapping[i][1]);
-        }
-      }
-      
-      if (enc == NULL) {
-        /* JOHAB isn't a builtin encoding, so make up a dummy encoding if it's seen */
-        if (strncmp(pg_encname, "JOHAB", 5) == 0) {
-          static const char * const aliases[] = { "JOHAB", "Windows-1361", "CP1361" };
-          int enc_index;
-          size_t i;
-
-          for (i = 0; i < sizeof(aliases)/sizeof(aliases[0]); ++i) {
-          	enc_index = rb_enc_find_index(aliases[i]);
-            if (enc_index > 0) enc = rb_enc_from_index(enc_index); break;
-          }
-          
-          if (enc == NULL) {
-            enc_index = rb_define_dummy_encoding(aliases[0]);
-            for (i = 1; i < sizeof(aliases)/sizeof(aliases[0]); ++i) ENC_ALIAS(aliases[i], aliases[0]);
-        
-            enc = rb_enc_from_index(enc_index);
-          }
-        } else {
-          enc = rb_ascii8bit_encoding();
-        }
-
-        st_insert(enc_pg2ruby, (st_data_t)enc_id, (st_data_t)enc);
-      }
-    }
-	} else {
-		enc = rb_enc_get(str);
-	}
-  
-	rb_enc_associate(str, enc);
-#endif
-}
-
 static VALUE postgres_quote_ident(VALUE self, VALUE in_str) {
 	VALUE ret;
 	char *str = RSTRING_PTR(in_str);
@@ -189,7 +135,7 @@ static VALUE postgres_quote_ident(VALUE self, VALUE in_str) {
 	ret = rb_str_new(buffer,j);
 	OBJ_INFECT(ret, in_str);
   
-//  encode_if_possible(self,ret);
+  //encode_if_possible(self,ret);
 
 	return ret;
 }
@@ -220,16 +166,17 @@ static VALUE postgres_exec(VALUE self, VALUE query) {
     }
   }
   
-  //
-  // Normal rows
-  //
-  
   VALUE rows = rb_ary_new2(num_rows);
   VALUE names = rb_ary_new2(num_cols);
   
   for (size_t c = 0; c < num_cols; c++) {
     rb_ary_push(names, rb_str_new2(PQfname(result, c)));
   }
+  
+  VALUE Date = rb_const_get(rb_cObject, rb_intern("Date"));
+  rb_funcall(rb_mKernel, rb_intern("require"), 1, rb_str_new2("date"));
+  VALUE DateTime = rb_const_get(rb_cObject, rb_intern("DateTime"));
+  ID parse = rb_intern("parse");
   
   // Coerce the parameter
   for (size_t r = 0; r < num_cols; r++) {
@@ -263,20 +210,31 @@ static VALUE postgres_exec(VALUE self, VALUE query) {
           case INT2OID:
           case INT4OID:
           case INT8OID:
-            res = rb_funcall(rb_mKernel, rb_intern("Integer"), 1, rb_str_new(value, length));
+            res = INT2NUM(atoi(value));
             break;
           case FLOAT4OID:
           case FLOAT8OID:
-            res = rb_funcall(rb_mKernel, rb_intern("Float"), 1, rb_str_new(value, length));
+            res = DBL2NUM(atof(value));
+            break;
+          case DATEOID:
+            res = rb_funcall(Date, parse, 1, rb_str_new(value, length));
+            break;
+          case TIMESTAMPOID:
+          case TIMESTAMPTZOID:
+            res = rb_funcall(DateTime, parse, 1, rb_str_new(value, length));
+            break;
+          case TIMEOID:
+          case TIMETZOID:
+            res = rb_funcall(rb_cTime, parse, 1, rb_str_new(value, length));
             break;
           case NUMERICOID: {
             size_t i = 0;
             while (i < length && value[i] != 0) i++; // get the index of a 
         
             if (i != length) { // there's a dot, so it's a float
-              res = rb_funcall(rb_mKernel, rb_intern("Float"), 1, rb_str_new(value, length));
+              res = DBL2NUM(atof(value));
             } else {
-              res = rb_funcall(rb_mKernel, rb_intern("Integer"), 1, rb_str_new(value, length));
+              res = INT2NUM(atoi(value));
             }
         
             break;
@@ -289,12 +247,18 @@ static VALUE postgres_exec(VALUE self, VALUE query) {
       //  encode_if_possible(self, res);
         
         rb_hash_aset(row, key, res);
+        printf("Name: %s, OID: %u\n",StringValueCStr(key),PQftype(result, c));
         
+       /* INT2ARRAYOID   1005
+        #define 	INT4ARRAYOID   1007
+        #define 	TEXTARRAYOID   1009
+        #define 	OIDARRAYOID   1028
+        #define 	FLOAT4ARRAYOID   1021*/
         
         // TODO: Implement
         // DateTime - TIMESTAMPOID, TIMESTAMPTZOID
         // Time - TIMETZOID, TIMEOID
-        // Date - DATEOID, ABSTIMEOID, RELTIMEOID
+        // Date - DATEOID
         // ??? special class or numeric/float/integer - INTERVALOID, TINTERVALOID
       }
     }
