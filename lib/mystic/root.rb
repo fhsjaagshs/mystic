@@ -7,12 +7,8 @@ module Mystic
   def self.root
     if @root.nil?
       r = Pathname.new Dir.pwd
-      
-      until r.join("config", "database.yml").file? do # exist? is implicit with file?
-        raise RootError if r.root?
-        r = r.parent
-      end
-
+      until (r.root? || r.join("config/database.yml").file?) do; r = r.parent; end
+      raise RootError if r.root?
       @root = r
     end
     @root.dup

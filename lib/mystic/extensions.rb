@@ -42,6 +42,16 @@ class File
   end
 end
 
+class Object
+  def symbolize!
+    self
+  end
+  
+  def symbolize
+    self
+  end
+end
+
 # Internal
 class String
 	def terminate t=";"
@@ -120,17 +130,11 @@ class Hash
 	end
 	
 	def symbolize
-    r = dup
-		r.symbolize!
-    r
+    keys.each_with_object({}) { |k,h| h[k.to_sym] = self[k].symbolize  }
 	end
 	
 	def symbolize!
-    dup.each_key do |k|
-      _v = delete k
-      _v.symbolize! if _v.is_a? Hash
-      self[k.to_sym] = _v
-    end
+    keys.each { |k| self[k.to_sym] = delete(k).symbolize!  }
 	end
 end
 

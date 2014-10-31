@@ -9,6 +9,7 @@
 #include "ruby.h"
 #include "time.h"
 
+/* Internal headers */
 #include "encoding.h"
 
 /* Postgres type oids */
@@ -34,11 +35,10 @@ extern VALUE mp_cError;
 
 static void postgres_gc_free(PGconn *conn);
 static VALUE postgres_allocate(VALUE klass);
-
 static VALUE postgres_disconnect(VALUE self);
-static VALUE postgres_initialize(VALUE self, VALUE hash);
+static VALUE postgres_initialize(int argc, VALUE *argv, VALUE self);
 static VALUE postgres_valid(VALUE self);
-
-static VALUE postgres_quote_ident(VALUE self, VALUE in_str);
-
+static VALUE postgres_escape_string(VALUE self, VALUE in_str);
+static VALUE postgres_escape_literal(VALUE self, VALUE in_str);
+static VALUE postgres_escape_identifier(VALUE self, VALUE in_str);
 static VALUE postgres_exec(VALUE self, VALUE query);

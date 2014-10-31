@@ -1,56 +1,19 @@
 #!/usr/bin/env ruby
 
-require "yaml"
-require "erb"
-require "pg"
+require "uri"
 require_relative "./postgres"
+require_relative "./config"
 
 module Mystic
-  ConnectionError = Class.new StandardError
   EnvironmentError = Class.new StandardError
-  UnsuppordedError = StandardError.with_message "Mystic only supports Postgres and Postgis."
-  
-  "host", "hostaddr", "port", "dbname", "user", "password", "connect_timeout", "client_encoding", "options", "sslmode"
-  
-  VALID_ADAPTERS = [
-    "postgres",
-    "postgis"
-  ].freeze
-  
-  VALID_ENVIRONMENTS = [
-    
-  ]
-  
-  VALID_ENV_FIELDS = [
-    # Things like 
-    # username
-    # database
-    # encoding
-    # other shit
-  ]
-  
+
   class << self
-    def db_yml
-      if @db_yml.nil?
-        # Heroku uses ERB cuz rails uses it errwhere
-        dy = YAML.load(ERB.new(root.join("config","database.yml").read).result)
-        puts dy.inspect
-        # Clean up the config
-        @db_yml = Hash[dy.select { |k,v| VALID_ADAPTERS.include? v["adapter"] }.map {|env,hash| 
-          hash[:dbname] = hash.delete :database # PG accepts differently named params
-          hash[:user] = hash.delete :username # PG accepts differently named params
-          [env, hash.subhash(*Mystic::Postgres::CONNECT_FIELDS).symbolize]
-        }]
-      end
-      @db_yml
-    end
-    
-    def manual_conn conf={}
+    def manual_conn dbconf={}, poolconf={}
 			@pool = AccessStack.new(
-				:size => conf[:pool] || 5,
-				:timeout => conf[:timeout] || 30,
-				:expires => conf[:expires],
-				:create => lambda { Mystic::Postgres.new conf },
+				:size => poolconf[:pool] || 5,
+				:timeout => poolconf[:timeout] || 30,
+				:expires => poolconf[:expires],
+				:create => lambda { Mystic::Postgres.new dbconf },
         :destroy => lambda { |pg| pg.disconnect! },
         :validate => lambda { |pg| pg != nil && pg.valid? }
 			)
@@ -62,12 +25,12 @@ module Mystic
     end
     
     def env= new_env
+      raise EnvironmentError, "Environment '#{new_env}' doesn't exist." unless db_yml.key? new_env
       disconnect
-      puts db_yml
       ENV["RACK_ENV"] = new_env.to_s
-			raise EnvironmentError, "Environment '#{@env}' doesn't exist." unless db_yml.key? env
-			manual_conn db_yml[env]
-      @env
+      ENV["DATABASE_URL"] = database_url
+			manual_conn config, pool_config
+      new_env
     end
     
     alias_method :connect, :env=
@@ -99,7 +62,7 @@ module Mystic
     
     # double quotes
     def dblquote s=""
-      @pool.with { |pg| pg.quote_ident s.to_s }
+      @pool.with { |pg| pg.escape_identifier s.to_s }
     end
     
     def execute sql=""

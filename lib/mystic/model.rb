@@ -10,17 +10,9 @@ module Mystic
     end
     
     module ClassMethods
-      def table_name
-        to_s.split("::").last.downcase.to_sym
-      end
-		
-  		def visible_cols
-  			["*"]
-  		end
-      
-      def col_str
-        visible_cols.map { |c| c.to_s == "*" ? "*" : c.to_s.dblquote }*','
-      end
+      def table_name; to_s.split("::").last.downcase.to_sym; end
+      def visible_cols; []; end
+      def col_str; visible_cols.empty? ? "*" : visible_cols.map { |c| c.to_s.dblquote }*','; end
 
   		def decorate sql, opts={}
         raise ArgumentError, "No SQL to decorate." if sql.nil? || sql.empty?
@@ -32,18 +24,18 @@ module Mystic
 
   			sql << " RETURNING #{colstr}" if retrn != :nothing && op != "SELECT"
         
-        return sql unless retrn == :json
+        case retrn
+        when :rows, :nothing then sql
+        when :json
+    			s = ["SELECT"]
+          s << singular ? "row_to_json(\"res\")" : "array_to_json(array_agg(\"res\"))"
+  				s << "AS #{Mystic::Postgres::REPR_COL.dblquote}"
+  				s << "FROM (#{sql}) \"res\""
+          s << "LIMIT 1" if singular
+    			s*' '
+    		end
+      end
         
-  			s = []
-				s << "WITH res AS (#{sql}) SELECT"
-				s << "array_to_json(array_agg(res))" unless singular
-				s << "row_to_json(res)" if singular
-				s << "AS #{Mystic::JSON_COL.dblquote}"
-				s << "FROM res"
-        s << "LIMIT 1" if singular
-  			s*' '
-  		end
-
       def function_sql returns_rows, funcname, *params
   			"SELECT #{returns_rows ? "* FROM" : ""} #{funcname}(#{params.sqlize*','})"
       end
@@ -53,8 +45,7 @@ module Mystic
         count = 1 if (opts[:singlular] || opts["singular"]) == true
   			where = params.sqlize
 
-  			sql = []
-  			sql << "SELECT #{col_str} FROM #{table_name}"
+  			sql = ["SELECT #{col_str} FROM #{table_name}"]
   			sql << "WHERE #{where*' AND '}" unless where.empty?
   			sql << "LIMIT #{count.to_i}" if count > 0
 			
@@ -78,7 +69,6 @@ module Mystic
       end
     
       def select params={}, opts={}
-        puts select_sql(params, opts)
         Mystic.execute select_sql(params, opts)
       end
     
