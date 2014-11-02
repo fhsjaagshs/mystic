@@ -1,6 +1,9 @@
 #include "encoding.h"
 #include "ruby/st.h"
-    
+#include "postgres_ext.h"
+
+extern int enc_alias(const char *, int); // Function is in encoding.c, so we have to define it here to use it.
+
 // The map from canonical encoding names in PostgreSQL to ones in Ruby.
 const char * const (pg2ruby_enc_map[][2]) = {
     {"BIG5",          "Big5"        },
@@ -132,6 +135,6 @@ void reencode(VALUE reencodee, VALUE reencoder) {
 }
 
 void encode(int enc_id, VALUE str, bool textual) {
-    if (textual) rb_enc_associate_index(str, rb_enc_get_index(pg_enc2rb_enc(enc_id)));
+    if (textual) rb_enc_associate(str, pg_enc2rb_enc(enc_id));
     else rb_enc_associate(str, rb_ascii8bit_encoding());
 }
