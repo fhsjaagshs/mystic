@@ -7,7 +7,7 @@ Gem::Specification.new do |s|
   s.email        = "nate@natesymer.com"
   s.homepage     = "https://github.com/ivytap/mystic"
   s.license      = "MIT"
-  s.files        = Dir.glob("{bin,lib}/**/*") + ["LICENSE"]
+  s.files        = Dir.glob("{bin,lib,ext}/**/*") + ["LICENSE"]
   s.require_path = "lib"
   s.extensions   = ["ext/mystic/extconf.rb"]
   s.executables  = Dir.glob("bin/**/*").map{ |path| path.split("/",2).last }

@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
-require "datetime" # used by c extension required below
-require "mystic/mystic/postgres_ext"
+require "date" # used by c extension required below
+require "mystic/postgres_ext"
 
 # Actual-factual replacement for the PG gem.
 # Supports connecting, disconnecting, encodings, querying, and escaping

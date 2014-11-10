@@ -25,7 +25,7 @@ module Mystic
   POOL_FIELDS = [
     :pool, # (number) Size of connection pool (default 5)
     :checkout_timeout, # (number) How many seconds to block and wait for a connection before giving up and raising a timeout error (default 5 seconds).
-    :reaping_frequency # frequency in seconds to periodically run the Reaper, which attempts to find and close dead connections, which can occur if a programmer forgets to close a connection at the end of a thread or a thread dies unexpectedly. (Default nil, which means don't run the Reaper).
+    :reaping_frequency, # frequency in seconds to periodically run the Reaper, which attempts to find and close dead connections, which can occur if a programmer forgets to close a connection at the end of a thread or a thread dies unexpectedly. (Default nil, which means don't run the Reaper).
     :dead_connection_timeout # number of seconds from last checkout after which the Reaper will consider a connection reapable. (default 5 seconds). 
   ]
   
