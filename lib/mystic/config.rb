@@ -61,6 +61,7 @@ module Mystic
           hash[:user] = hash.delete :username
           hash[:connect_timeout] = hash.delete :timeout
           hash[:client_encoding] = hash.delete :encoding
+          hash[:fallback_application_name] = $0
           
           [env, hash.subhash(*Mystic::Postgres::CONNECT_FIELDS)]
         }]

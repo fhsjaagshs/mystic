@@ -9,14 +9,10 @@ module Mystic
 
   class << self
     def manual_conn dbconf={}, poolconf={}
-			@pool = AccessStack.new(
-				:size => poolconf[:pool] || 5,
-				:timeout => poolconf[:timeout] || 30,
-				:expires => poolconf[:expires],
-				:create => lambda { Mystic::Postgres.new dbconf },
-        :destroy => lambda { |pg| pg.disconnect! },
-        :validate => lambda { |pg| pg != nil && pg.valid? }
-			)
+      @pool = AccessStack.new poolconf
+      @pool.create { Mystic::Postgres.new dbconf }
+      @pool.destroy { |pg| pg.disconnect! }
+      @pool.validate { |pg| pg != nil && pg.valid? }
       @connected = true
     end
     
@@ -37,7 +33,7 @@ module Mystic
 
 		def disconnect
       @connected = false
-			@pool.empty! unless @pool.nil?
+			@pool.clear! unless @pool.nil?
 		end
     
     def connected?
