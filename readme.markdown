@@ -256,10 +256,10 @@ Some of the comments you'll see are:
 TODO
 -
 
-1. A method wrapping `quote_ident()`
-2. Rollback multiple migrations
-3. Rollback to a migration by name or number (or both)
-4. Project generator
-5. Result coersion
-
-
+1. Rollback multiple migrations
+2. Rollback to a migration by name or number (or both)
+3. Project generator
+4. Improvements:
+    1. Ensure migration-generated SQL is as readable & small as possible
+    2. Write tests (for migrations)
+    3. Single row checking in C extension (PGRES_SINGLE_TUPLE) (return hash?)

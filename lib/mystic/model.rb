@@ -5,6 +5,7 @@
 
 module Mystic
   module Model
+    RETURN_TYPES = [:rows, :json, :nothing]
     def self.included base
       base.extend ClassMethods
     end
@@ -14,26 +15,27 @@ module Mystic
       def visible_cols; []; end
       def col_str; visible_cols.empty? ? "*" : visible_cols.map { |c| c.to_s.dblquote }*','; end
 
-  		def decorate sql, opts={}
+      def decorate sql, opts={}
         raise ArgumentError, "No SQL to decorate." if sql.nil? || sql.empty?
-
-  			op = sql.split(/\s+/,2).first.upcase
+        
         retrn = opts[:return] || opts["return"] || :rows
         singular = (opts[:singular] || opts["singular"] || false) == true
-        singular = true if op == "INSERT"
+        singular = true if sql[0..5] == "INSERT"
+        
+        raise ArgumentError, "Return type (:return) must be either #{RETURN_TYPES.map(&:to_s).join(", ")}" unless RETURN_TYPES.include? retrn
 
-  			sql << " RETURNING #{colstr}" if retrn != :nothing && op != "SELECT"
+        sql << " RETURNING #{colstr}" if retrn != :nothing && sql[0..5] != "SELECT"
         
         case retrn
         when :rows, :nothing then sql
         when :json
-    			s = ["SELECT"]
+          s = ["SELECT"]
           s << singular ? "row_to_json(\"res\")" : "array_to_json(array_agg(\"res\"))"
-  				s << "AS #{Mystic::Postgres::REPR_COL.dblquote}"
-  				s << "FROM (#{sql}) \"res\""
+          s << "AS #{Mystic::Postgres::REPR_COL.dblquote}"
+          s << "FROM (#{sql}) \"res\""
           s << "LIMIT 1" if singular
-    			s*' '
-    		end
+          s*' '
+        end
       end
         
       def function_sql returns_rows, funcname, *params
@@ -53,18 +55,15 @@ module Mystic
       end
     
       def update_sql where={}, set={}, opts={}
-        return "" if where.empty?
-        return "" if set.empty?
+        raise ArgumentError, "Update queries must set something." if set.empty?
         decorate "UPDATE #{table_name.dblquote} SET #{set.sqlize*','} WHERE #{where.sqlize*' AND '}", opts
       end
     
-      def insert_sql params={}, opts={}
-  			return "" if params.empty?
-        decorate "INSERT INTO #{table_name.dblquote} (#{params.keys*','}) VALUES (#{params.values.sqlize*','})", opts
+      def insert_sql entry={}, opts={}
+        decorate "INSERT INTO #{table_name.dblquote} (#{entry.keys*','}) VALUES (#{entry.values.sqlize*','})", opts
       end
     
       def delete_sql params={}, opts={}
-        return "" if params.empty?
         decorate "DELETE FROM #{table_name.dblquote} WHERE #{params.sqlize*' AND '}", opts
       end
     

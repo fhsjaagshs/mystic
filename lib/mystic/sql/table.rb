@@ -116,7 +116,12 @@ module Mystic
       
       def method_missing meth, *args, &block
         return super if args.empty?
-        column args[0], meth, *args[1..-1]
+        unless respond_to? meth
+          define_method meth do |*args|
+            column args[0], meth, *args[1..-1]
+          end
+          send meth, *args, &block
+        end
       end
     end
   end
