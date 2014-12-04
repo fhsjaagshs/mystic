@@ -2,6 +2,10 @@
 
 require "pathname"
 
+#
+# Public
+#
+
 module ::Kernel
 	def silent
 		v = $VERBOSE
@@ -15,6 +19,16 @@ module ::Kernel
     raise ArgumentError, "A path is required. Ha. Required." if path.nil? || path.empty?
     Dir.glob(File.join(path,"/**/*.rb"), &method(:require))
   end
+end
+
+class ::String
+  def escape; Mystic.escape self; end
+  def quote; Mystic.quote self; end
+  def dblquote; Mystic.dblquote self; end
+end
+
+class ::Hash
+  def sqlize; map { |p| p.sqlize*'=' }; end
 end
 
 class Exception
@@ -36,20 +50,20 @@ class Exception
   end
 end
 
+#
+# Private
+#
+
 class File
-  def self.write f, d
-    open(f.to_s, 'w') { |file| file.write d }
+  def self.write path=nil, data=""
+    raise ArgumentError, "Invalid path." if path.nil? || path.empty? || !path.writeable?
+    new(path.to_s, 'w').write data
   end
 end
 
 class Object
-  def symbolize!
-    self
-  end
-  
-  def symbolize
-    self
-  end
+  def symbolize!; self; end
+  def symbolize; self; end
 end
 
 # Internal
@@ -63,30 +77,13 @@ class String
   end
 end
 
-# Public
-class ::String
-  def escape
-		Mystic.escape self
-  end
-  
-  def quote
-    Mystic.quote self
-  end
-  
-  def dblquote
-    Mystic.dblquote self
-  end
-end
-
 class Array
   def unify_args
-    r = {}
-    each do |arg|
+    Hash[map { |arg|
       case arg
-      when Hash then r.merge!(arg)
-      else r[arg] = true end
-    end
-    r.symbolize
+      when Hash then arg.symbolize.to_a
+      else [(arg.to_sym rescue arg.inspect), true] end
+    }.flatten.each_slice(2).to_a]
   end
   
   def merge_keys *keys
@@ -95,21 +92,17 @@ class Array
     Hash[keys.zip(self)]
   end
 	
-	def symbolize
-		map { |e| e.to_s.to_sym }
-	end
-	
-	def symbolize!
-		map! { |e| e.to_s.to_sym }
-	end
+	def symbolize; map { |e| e.to_s.to_sym }; end
+	def symbolize!; map! { |e| e.to_s.to_sym }; end
 end
 
 class ::Object
   def sqlize
 		case self
     when nil then "NULL"
+    when respond_to?(:to_str) then to_str
 		when String then quote
-    when Symbol then dblquote # symbols are assumed to be SQL identifiers
+    when Symbol then to_s.dblquote # symbols are assumed to be SQL identifiers
 		when Numeric then to_s.escape
     when DateTime then to_s.quote
     when Date then to_s.quote
@@ -119,9 +112,7 @@ class ::Object
 end
 
 class ::Array
-	def sqlize
-    map(&:sqlize)
-	end
+	def sqlize; map(&:sqlize); end
 end
 
 class Hash
@@ -136,26 +127,4 @@ class Hash
 	def symbolize!
     keys.each { |k| self[k.to_sym] = delete(k).symbolize!  }
 	end
-end
-
-class ::Hash
-  def sqlize
-    map { |p| p.sqlize*'=' }
-  end
-end
-
-Kernel.silent do
-  class Pathname
-  	def to_s
-  		@path
-  	end
-	
-    def relative?
-      @path[0] != File::SEPARATOR
-    end
-
-  	def join *args
-  		Pathname.new File.join(@path, *args.map(&:to_s))
-  	end
-  end
 end

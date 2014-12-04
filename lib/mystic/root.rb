@@ -5,7 +5,7 @@ require "pathname"
 module Mystic
   RootError = StandardError.with_message "Could not find the project's root."
   def self.root
-    if @root.nil?
+    unless defined? @root
       r = Pathname.new Dir.pwd
       until (r.root? || r.join("config/database.yml").file?) do; r = r.parent; end
       raise RootError if r.root?

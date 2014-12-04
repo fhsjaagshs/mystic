@@ -32,6 +32,11 @@
 extern VALUE rb_mMystic;
 extern VALUE m_cPostgres;
 extern VALUE mp_cError;
+extern VALUE m_Date;
+extern VALUE m_DateTime;
+extern VALUE m_REPR_COL;
+
+VALUE process_row(PGresult *result, char *name, size_t r);
 
 static void postgres_gc_free(PGconn *conn);
 static VALUE postgres_allocate(VALUE klass);

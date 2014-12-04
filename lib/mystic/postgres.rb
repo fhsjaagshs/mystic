@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 require "date" # used by c extension required below
-require "mystic/postgres_ext"
+require_relative "../ext/mystic/postgres_ext.bundle"
 
 # Actual-factual replacement for the PG gem.
 # Supports connecting, disconnecting, encodings, querying, and escaping
@@ -27,18 +27,21 @@ module Mystic
   		:sslmode
   	].freeze
 
-    attr_reader :options, :error
+    attr_reader :options
+    attr_accessor :single_row_mode
 
     class << self
       alias_method :connect, :new
     end
     
+    # Called by C extension
     def connstr hash={}
       @cs_cache ||= {}
       unless @cs_cache.member? hash
         @cs_cache[hash] = hash
-                            .select { |k,v| CONNECT_FIELDS.include?(k.to_s.downcase.to_sym) }
-                            .map { |k,v| "#{k.to_s.downcase}='#{v.to_s.gsub(/[\\']/, &'\\'.method(:+))}'" }
+                            .map { |k,v| [k.to_s.downcase, v.to_s] }
+                            .select { |k,v| CONNECT_FIELDS.include? k.to_sym }
+                            .map { |k,v| "#{k}='#{v.gsub(/[\\']/, &'\\'.method(:+))}'" }
                             .join(' ')
       end
       @cs_cache[hash]

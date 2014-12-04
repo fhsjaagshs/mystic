@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 
 require "uri"
+require "access_stack"
 require_relative "./postgres"
 require_relative "./config"
 
@@ -62,7 +63,7 @@ module Mystic
     end
     
     def execute sql=""
-      @pool.with { |pg| pg.execute sql.terminate }
+      @pool.with { |pg| pg.execute sql }
     end
   end
 end
