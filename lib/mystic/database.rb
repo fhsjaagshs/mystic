@@ -11,14 +11,14 @@ module Mystic
   class << self
     def manual_conn dbconf={}, poolconf={}
       @pool = AccessStack.new poolconf
-      @pool.create { Mystic::Postgres.new dbconf }
+      @pool.create { @connected = true; Mystic::Postgres.new dbconf }
       @pool.destroy { |pg| pg.disconnect! }
       @pool.validate { |pg| pg != nil && pg.valid? }
       @connected = true
     end
     
     def env
-      ENV["RACK_ENV"] || DOTENV["RACK_ENV"] || "development"
+      ENV["RACK_ENV"] || DOTENV["RACK_ENV"] || ENV["RAILS_ENV"] || DOTENV["RAILS_ENV"] || "development"
     end
     
     def env= new_env
@@ -26,16 +26,16 @@ module Mystic
       disconnect
       ENV["RACK_ENV"] = new_env.to_s
       ENV["DATABASE_URL"] = database_url
-			manual_conn config, pool_config
+      manual_conn config, pool_config
       new_env
     end
     
     alias_method :connect, :env=
 
-		def disconnect
+    def disconnect
       @connected = false
-			@pool.clear! unless @pool.nil?
-		end
+      @pool.clear! unless @pool.nil?
+    end
     
     def connected?
       @connected
@@ -44,7 +44,7 @@ module Mystic
     def reap_connections!
       @pool.reap!
     end
-
+    
     # no quotes
     # Should be called when connected.
     # It defaults to a less secure method.

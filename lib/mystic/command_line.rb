@@ -4,52 +4,60 @@ require_relative "./database"
 
 module Mystic
   module CommandLine
-    MPATH = Mystic.root.join "mystic","migrations"
-    MREGEX = /^(?<num>\d+)_(?<name>[a-zA-Z]+)\.rb$/ # example: 1_MigrationClassName.rb
-    #CLIError = Class.new StandardError
-    class << self
-  		def create_mig_table
-  			execute "CREATE TABLE IF NOT EXISTS mmigs (num integer, name text)"
-  		end
+    MPATH = Mystic.root.join("mystic","migrations").freeze
+    MREGEX = /^(?<num>\d+)_(?<name>[a-zA-Z]+)\.rb$/.freeze # example: 1_MigrationClassName.rb
 
-  		# Runs every yet-to-be-ran migration
+    MIGTABLE = "mmgis".dblquote.freeze
+    
+    CREATE_TABLE_SQL = "CREATE TABLE IF NOT EXISTS #{MIGTABLE} (num integer, name text)".freeze
+    ROLLBACK_SQL = 
+    LAST_MIG_NUM_SQL = "SELECT max(num) as num FROM #{MIGTABLE.dblquote}".freeze
+    LAST_MIG_SQL = "WITH max AS (#{LAST_MIG_NUM_SQL}) SELECT max.num as num,#{MIGTABLE}.name as name FROM max,#{MIGTABLE} WHERE #{MIGTABLE}.num=max.num;".freeze
+    
+    class << self
+      def setup
+        execute CREATE_TABLE_SQL
+      end
+
+      # Runs every yet-to-be-ran migration
       def migrate
-        create_mig_table
-        last_mig_num = execute("SELECT max(num) FROM mmigs")[0]["max"] rescue 0
-      
-        Dir.entries(MPATH.to_s).each_with_object({}) { |fna,migs|
-          m = MREGEX.match(fn)
-          next if m.nil? || m[:num].to_i <= last_mig_num
-          load MPATH.join(fn).to_s
-          migs[m[:num].to_i] = m[:name]
-        }.sort { |a,b| a[0] <=> b[0] }.each { |num, name|
-  				Object.const_get(name).new.migrate
-  				execute "INSERT INTO mmigs (num,name) VALUES (#{num.to_s.escape},'#{name.sqlize}')"
-        }
+        setup
+        last_mig_num = execute(LAST_MIG_NUM_SQL).first["num"] rescue 0
+
+        migs = MPATH.entries
+               .map { |fn| MREGEX.match fn }
+               .compact
+               .map { |m| [m[:num].to_t, m[:name].to_s] }
+               .reject { |k,v| k < last_mig_num }
+               .sort_by { |k, v| k }
+               .each { |num, name|
+                 Object.const_get(name).new.migrate
+                 execute "INSERT INTO #{MIGTABLE} (num,name) VALUES (#{num.to_s.escape},'#{name.sqlize}')"
+               }
       end
     
       # Rolls back a single migration
       def rollback
-        create_mig_table
-        res = execute("WITH max AS (SELECT max(num) FROM mmigs) SELECT max.max as num,mmigs.name FROM max,mmigs WHERE mmigs.num=max.max;").first
+        setup
+        res = execute(LAST_MIG_SQL).first
 
         unless res.nil?
-          load root.join("mystic","migrations","#{res["num"].escape}_#{res["name"]}.rb")
+          load root.join("mystic","migrations","#{res["num"]}_#{res["name"]}.rb")
           Object.const_get(res["name"]).new.rollback
-          execute "DELETE FROM mmigs WHERE num=#{res["num"].sqlize}"
+          execute "DELETE FROM #{MIGTABLE} WHERE num=#{res["num"].sqlize}"
         end
       end
 	
-  	  # Creates a blank migration in mystic/migrations
-  		def create_migration name=""
-  			num = MPATH.entries.map { |e| MREGEX.match(e.to_s)[:num].to_i rescue 0 }.max.to_i+1
-        File.write MPATH.join("#{num}_#{_name}.rb"), template(name.strip.capitalize.gsub(" ",""))
-  		end
+      # Creates a blank migration in mystic/migrations
+      def create_migration name=""
+  	num = MPATH.entries.map { |e| MREGEX.match(e.to_s)[:num].to_i rescue 0 }.max.to_i+1
+        MPATH.join("#{num}_#{_name}.rb").write template(name.strip.capitalize.gsub(/\S+/,''))
+      end
       
-  		# Retuns a blank migration's code in a String
-  		def template name=""
-  			raise ArgumentError, "Migrations must have a name." if name.nil? || name.empty?
-  			<<-RUBY
+      # Retuns a blank migration's code in a String
+      def template name=""
+  	raise ArgumentError, "Migrations must have a name." if name.nil? || name.empty?
+  	<<-RUBY
 #!/usr/bin/env ruby
 
 require "mystic"
@@ -64,7 +72,7 @@ class #{name} < Mystic::Migration
   end
 end
         RUBY
-  		end
+      end
     end
   end
 end

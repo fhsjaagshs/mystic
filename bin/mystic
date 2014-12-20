@@ -11,8 +11,7 @@ require "irb"
 # mystic rollback production
 
 ErrorOutput = Class.new StandardError
-EmptyClass = Class.new
-EMPTY = EmptyClass.new
+EMPTY = :empty
 
 ARGV.map! do |arg|
   case
@@ -23,33 +22,33 @@ ARGV.map! do |arg|
 end
 
 begin
-	case ARGV[0].to_sym
-	when :create
-	  case ARGV[1].to_sym
-	  when :migration
-			raise ErrorOutput, "No migration name provided" if ARGV[2] == EMPTY
-			Mystic::CommandLine.create_migration ARGV[2].dup
-	  end
-	else
-		begin
-			Mystic.connect ARGV[1]
-		  case ARGV[0].to_sym
-		  when :migrate
-		  	Mystic::CommandLine.migrate
-		  when :rollback
-		  	Mystic::CommandLine.rollback
-			when :console
-				puts "Starting Mystic console: #{Mystic.env}"
-				ARGV.clear
-				IRB.start
-			end
-		 	Mystic.disconnect
-		rescue Mystic::EnvironmentError => e
-			puts e.message
-		end
-	end
+  case ARGV[0].to_sym
+  when :create
+    case ARGV[1].to_sym
+    when :migration
+      raise ErrorOutput, "No migration name provided" if ARGV[2] == EMPTY
+      Mystic::CommandLine.create_migration ARGV[2].dup
+    end
+  else
+    begin
+      Mystic.connect ARGV[1]
+      case ARGV[0].to_sym
+      when :migrate
+	Mystic::CommandLine.migrate
+      when :rollback
+	Mystic::CommandLine.rollback
+      when :console
+	puts "Starting Mystic console: #{Mystic.env}"
+	ARGV.clear
+	IRB.start
+      end
+      Mystic.disconnect
+    rescue Mystic::EnvironmentError => e
+      puts e.message
+    end
+  end
 rescue ErrorOutput => e
-	puts e.message
+  puts e.message
 rescue Mystic::RootError
   puts "Not in an application anymore."
 end
