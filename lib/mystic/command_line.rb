@@ -28,8 +28,8 @@ module Mystic
                .map { |fn| MREGEX.match fn }
                .compact
                .map { |m| [m[:num].to_t, m[:name].to_s] }
-               .reject { |k,v| k < last_mig_num }
-               .sort_by { |k, v| k }
+               .reject { |k,_| k < last_mig_num }
+               .sort_by { |k,_| k }
                .each { |num, name|
                  Object.const_get(name).new.migrate
                  execute "INSERT INTO #{MIGTABLE} (num,name) VALUES (#{num.to_s.escape},'#{name.sqlize}')"
@@ -50,7 +50,7 @@ module Mystic
 	
       # Creates a blank migration in mystic/migrations
       def create_migration name=""
-  	num = MPATH.entries.map { |e| MREGEX.match(e.to_s)[:num].to_i rescue 0 }.max.to_i+1
+        num = MPATH.entries.map { |e| MREGEX.match(e.to_s)[:num].to_i rescue 0 }.max.to_i+1
         MPATH.join("#{num}_#{_name}.rb").write template(name.strip.capitalize.gsub(/\S+/,''))
       end
       

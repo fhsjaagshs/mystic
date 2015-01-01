@@ -28,20 +28,18 @@ module Mystic
         @v = v.to_s.to_i
       end
       
-      def geospatial?
-        @type == :geometry
-      end
-      
-      def unique?
-        @unique
-      end
+      def geospatial?; @type == :geometry; end
+      def unique?; @unique; end
       
       def to_s
   			sql = []
   			sql << @name.to_s.escape
   			sql << @type.downcase
-  			sql << "(#{@size.sqlize})" if @size > 0 && !geospatial?
-  			sql << "(#{@geom_type.escape}, #{@geom_srid.to_s.escape})" if geospatial?
+        if geospatial?
+          sql << "(#{@geom_type.escape}, #{@geom_srid.to_s.escape})"
+        else
+          sql << "(#{@size.sqlize})" if @size > 0
+        end
         sql << "NULL" if @null
         sql << "NOT NULL" if @not_null
   			sql << "UNIQUE" if @unique

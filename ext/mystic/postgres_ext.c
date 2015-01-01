@@ -273,4 +273,3 @@ VALUE coerced_value(PGresult *result, size_t r, size_t c, int pg_encoding) {
   }
   }
 }
-OB

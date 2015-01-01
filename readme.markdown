@@ -253,6 +253,12 @@ When you're perusing the code, you'll see it's truly idiomatic and has few comme
 Some of the comments you'll see are:
 `MIXED_ARGS` - Takes args like so: `t.serial :id, :unique, :other => "opts", :primary_key`. Quite mixed, eh?
 
+
+### Running the tests
+
+You'll need to install Postgres so that it's available on localhost
+
+
 TODO
 -
 
