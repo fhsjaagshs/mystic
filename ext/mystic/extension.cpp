@@ -1,5 +1,5 @@
 /*
-  postgres.c
+  extension.c
   require "mystic/postgres"
 
   Interface to Postgres for Mystic
@@ -8,8 +8,9 @@
   p.disconnect!
 */
 
-#include "postgres_ext.h"
+#include "extension.h"
 #include <math.h>
+#include "postgres.h" // our LibPQ wrapper
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
@@ -23,7 +24,7 @@ VALUE m_REPR_COL = Qnil;
 
 VALUE coerced_value(PGresult *result, size_t r, size_t c, int pg_encoding);
 
-void Init_postgres_ext() {
+void Init_postgres() {
   rb_mMystic = rb_define_module("Mystic");
   m_cPostgres = rb_define_class_under(rb_mMystic, "Postgres", rb_cObject);
   mp_cError = rb_define_class_under(m_cPostgres, "Error", rb_eStandardError);
@@ -46,18 +47,24 @@ void Init_postgres_ext() {
 
   if (m_REPR_COL == Qnil) {
     // Store the repr_col constant somwhere accessible
-    m_REPR_COL = rb_const_get(rb_mMystic, rb_intern("REPR_COL"));
+    m_REPR_COL = rb_const_get(m_cPostgres, rb_intern("REPR_COL"));
   }
 }
 
-// GC Free
-static void postgres_gc_free(PGconn *conn) {
-  if (conn) PQfinish(conn);
-  conn = NULL;
+static Postgres *getPostgres(VALUE self) {
+    Postgres *p;
+    Data_Get_Struct(self, Postgres, p);
+    return p;
+}
+
+static void postgres_gc_free(Human* p) {
+    if (p) delete p;
+    p = NULL;
+    ruby_xfree(p);
 }
 
 static VALUE postgres_allocate(VALUE klass) {
-  return Data_Wrap_Struct(klass, NULL, postgres_gc_free, NULL);
+    return Data_Wrap_Struct(klass, NULL, postgres_gc_free, ruby_xmalloc(sizeof(Postgres)));
 }
 
 /*
@@ -65,27 +72,41 @@ static VALUE postgres_allocate(VALUE klass) {
 */
 
 static VALUE postgres_disconnect(VALUE self) {
-  postgres_gc_free(DATA_PTR(self));
-  return Qnil;
+    Postgres *p = getPostgres(self);
+    if (p) p->disconnect();
+    return Qnil;
 }
 
 static VALUE postgres_initialize(int argc, VALUE *argv, VALUE self) {
-  Check_Type(self, T_DATA);
-  
-  if (argc != 1) rb_raise(rb_eArgError, "Invalid arguments.");
-  
-  Check_Type(argv[0], T_HASH);
-  
-  VALUE connstr = rb_funcall(self, rb_intern("connstr"), 1, argv[0]);
-  
-  PGconn *conn = PQconnectdb(StringValueCStr(connstr));
-  
-  if (!conn) rb_raise(mp_cError, "Failed to create a connection.");
-  if (PQstatus(conn) == CONNECTION_BAD) rb_raise(mp_cError, "%s",PQerrorMessage(conn));
-  
-  DATA_PTR(self) = conn;
-  rb_iv_set(self, "@options", argv[0]);
-  return self;
+    if (argc > 2) rb_raise(rb_eArgError, "Invalid number of arguments.");
+    
+    Postgres *p = getPostgres(self);
+    new (p) Postgres();
+    
+    char **keys;
+    char **values;
+    
+    if (argc == 1) {
+        Check_Type(argv[0], T_HASH);
+        
+    } else if (argc == 2) {
+        Check_Type(argv[0], T_ARRAY);
+        Check_Type(argv[1], T_ARRAY);
+        
+    }
+    
+    // TODO: null terminate keys and values
+    
+    keys[-1] = NULL;
+    values[-1] = NULL;
+    
+    try {
+        p->connect(keys, values);
+    } catch (char *error_message) {
+        rb_raise(mp_cError, error_message);
+    }
+    
+    return Qnil;
 }
 
 static VALUE postgres_valid(VALUE self) {
@@ -221,7 +242,7 @@ static VALUE postgres_exec(VALUE self, VALUE query) {
   return res;
 }
 
-VALUE coerced_value(PGresult *result, size_t r, size_t c, int pg_encoding) {
+static VALUE coerced_value(PGresult *result, size_t r, size_t c, int pg_encoding) {
   if (PQgetisnull(result, r, c)) return Qnil;
   
   char *value = PQgetvalue(result, r, c); // It's null terminated http://www.postgresql.org/docs/9.1/static/libpq-exec.html
@@ -238,9 +259,14 @@ VALUE coerced_value(PGresult *result, size_t r, size_t c, int pg_encoding) {
 	    strncmp("1", value, MIN(1,length)) == 0) ? Qtrue : Qfalse;
     break;
   }
+
+  case MONEYOID:
+    return DBL2NUM(atof(value+1)); // first character is a dollar sign
+    break;
   case INT2OID:
   case INT4OID:
   case INT8OID:
+  case OIDOID:
     return INT2NUM(atoi(value));
     break;
   case FLOAT4OID:
