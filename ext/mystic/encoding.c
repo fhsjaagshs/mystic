@@ -1,8 +1,10 @@
 #include "encoding.h"
 #include "ruby/st.h"
-#include "postgres_ext.h"
+#include "ruby/encoding.h"
+#include "libpq-fe.h"
 
-extern int enc_alias(const char *, int); // Function is in encoding.c, so we have to define it here to use it.
+int rb_encdb_alias(const char *alias, const char *orig);
+//extern int enc_alias(const char *, int); // Function is in encoding.c, so we have to define it here to use it.
 
 // The map from canonical encoding names in PostgreSQL to ones in Ruby.
 const char * const (pg2ruby_enc_map[][2]) = {
@@ -56,42 +58,45 @@ static const char * const JOHAB = "JOHAB";
 static const char * const JOHAB_ALIASES[] = { "Windows-1361", "CP1361" };
 
 static struct st_table *enc_pg2ruby;
-static ID s_id_index;
+
+static size_t pg2ruby_enc_map_count = sizeof(pg2ruby_enc_map)/sizeof(pg2ruby_enc_map[0]);
+size_t johab_aliases_count = sizeof(JOHAB_ALIASES)/sizeof(JOHAB_ALIASES[0]);
 
 rb_encoding * load_cached_enc(int enc_id) {
     rb_encoding *enc;
-    if (!st_lookup(enc_pg2ruby, (st_data_t)enc_id, (st_data_t*)&enc)) return NULL;
+    if (!st_lookup(enc_pg2ruby, (st_data_t)enc_id, (st_data_t *)&enc)) return NULL;
     return enc;
 }
 
-rb_encoding * cache_enc(rb_encoding *enc, int enc_id) {
+void cache_enc(rb_encoding *enc, int enc_id) {
     st_insert(enc_pg2ruby, (st_data_t)enc_id, (st_data_t)enc);
-    return enc;
 }
 
 /*
  * Return the given PostgreSQL encoding ID as an rb_encoding.
  * - returns NULL if the client encoding is 'SQL_ASCII'.
  * - returns ASCII-8BIT if the client encoding is unknown.
- * - :FIXME: remove round tip through loading the encoding
  */
 rb_encoding * pg_enc2rb_enc(int enc_id) {
+  printf("pg_enc2rb_enc()");
     rb_encoding *enc = load_cached_enc(enc_id);
     if (enc) return enc;
     
     const char *pg_encname = pg_encoding_to_char(enc_id);
-    if (strncmp(pg_encname, "SQL_ASCII", 9) == 0) return NULL; // return NULL if the client encoding is 'SQL_ASCII'.
     
-    // JOHAB isn't a builtin encoding, so make up a dummy encoding if it's seen
-    // find or create JOHAB encoding
-    if (strncmp(pg_encname, JOHAB, 5) == 0) {
-        int enc_index;
+    printf("Encoding: %s\n",pg_encname);
+    
+    if (strcmp(pg_encname, "SQL_ASCII") == 0) return NULL; // SQL_ASCII denotes ignorance of encoding.
+    
+    rb_encoding *encoding = rb_ascii8bit_encoding(); // default to ASCII-8BIT
+    
+    if (strcmp(pg_encname, "JOHAB") == 0) { // JOHAB isn't a builtin encoding, so make up a dummy encoding if it's seen
+        // check if JOHAB exists
+        int enc_index = rb_enc_find_index(JOHAB);
         
-        enc_index = rb_enc_find_index(JOHAB);
-        
-        // Check if JOHAB or an alias of JOHAB exists
+        // check if one of its aliases exists if it doesn't exist
         if (enc_index == 0) {
-            for (size_t i = 0; i < sizeof(JOHAB_ALIASES)/sizeof(JOHAB_ALIASES[0]); i++) {
+            for (size_t i = 0; i < johab_aliases_count; i++) {
                 if ((enc_index = rb_enc_find_index(JOHAB_ALIASES[i])) > 0) break;
             }
         }
@@ -99,35 +104,22 @@ rb_encoding * pg_enc2rb_enc(int enc_id) {
         // create it if it doesn't exist
         if (enc_index == 0) {
             enc_index = rb_define_dummy_encoding(JOHAB);
-            for (size_t i = 0; i < sizeof(JOHAB_ALIASES)/sizeof(JOHAB_ALIASES[0]); i++) enc_alias(JOHAB_ALIASES[i], enc_index);
+            for (size_t i = 0; i < johab_aliases_count; i++) rb_encdb_alias(JOHAB_ALIASES[i], JOHAB); //enc_alias(JOHAB_ALIASES[i], enc_index);
         }
         
-        return cache_enc(rb_enc_from_index(enc_index), enc_id);
+        encoding = rb_enc_from_index(enc_index);
     } else {
         // Look it up in the conversion table
-        size_t enc_map_count = sizeof(pg2ruby_enc_map)/sizeof(pg2ruby_enc_map[0]);
-        for (size_t i = 0; i < enc_map_count; ++i) {
-            if (strcmp(pg_encname, pg2ruby_enc_map[i][0]) == 0) return cache_enc(rb_enc_find(pg2ruby_enc_map[i][1]), enc_id);
+        for (size_t i = 0; i < pg2ruby_enc_map_count; i++) {
+            if (strcmp(pg_encname, pg2ruby_enc_map[i][0]) == 0) {
+              encoding = rb_enc_find(pg2ruby_enc_map[i][1]);
+              break;
+            }
         }
     }
     
-    return cache_enc(rb_ascii8bit_encoding(), enc_id); // Fallthrough to ASCII-8BIT
-}
-
-// Returns the given rb_encoding as the equivalent PostgreSQL encoding string.
-const char * rb_enc2pg_enc(rb_encoding *enc) {
-	const char *rb_encname = rb_enc_name(enc);
-	const char *encname = NULL;
-    size_t enc_map_count = sizeof(pg2ruby_enc_map)/sizeof(pg2ruby_enc_map[0]);
-	for (size_t i = 0; i < enc_map_count; ++i) {
-		if (strcmp(rb_encname, pg2ruby_enc_map[i][1]) == 0) {
-			encname = pg2ruby_enc_map[i][0];
-            break;
-		}
-	}
-
-	if (!encname) encname = SQL_ASCII;
-	return encname;
+    cache_enc(encoding, enc_id);
+    return encoding;
 }
 
 void reencode(VALUE reencodee, VALUE reencoder) {
@@ -135,6 +127,10 @@ void reencode(VALUE reencodee, VALUE reencoder) {
 }
 
 void encode(int enc_id, VALUE str, bool textual) {
-    if (textual) rb_enc_associate(str, pg_enc2rb_enc(enc_id));
+    if (textual) {
+      
+      rb_encoding *enc = pg_enc2rb_enc(enc_id);
+      if (enc) rb_enc_associate(str, enc);
+    }
     else rb_enc_associate(str, rb_ascii8bit_encoding());
 }

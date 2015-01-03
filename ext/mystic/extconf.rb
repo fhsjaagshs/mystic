@@ -1,6 +1,7 @@
 require "mkmf"
 
-$libs += " -lstdc++ "
+$libs += "-lstdc++"
+#$CFLAGS << " -Wall"
 
 with_cflags("-I/usr/local/include") { true }
 with_ldflags("-L/usr/local/lib -lpq") { true }

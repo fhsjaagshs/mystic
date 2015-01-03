@@ -2,12 +2,12 @@
 
 require "yaml"
 require "erb"
+require "securerandom"
 
 module Mystic
-  VALID_ADAPTERS = [
-    "postgres",
-    "postgis"
-  ].freeze
+  JSON_COLUMN = "mystic_json_col_#{SecureRandom.uuid}".freeze # The column used by Mystic::Model to return JSON or XML
+	PG_CONNECT_FIELDS = [:host, :hostaddr, :port, :dbname, :user, :password, :connect_timeout, :client_encoding, :options, :sslmode].freeze
+  MAIN_PG_FIELDS = [:user, :password, :host, :hostaddr, :port, :dbname].freeze
   
   ## ActiveRecord database.yml fields
   DATABASE_FIELDS = [
@@ -27,11 +27,12 @@ module Mystic
     :checkout_timeout, # (number) How many seconds to block and wait for a connection before giving up and raising a timeout error (default 5 seconds).
     :reaping_frequency, # frequency in seconds to periodically run the Reaper, which attempts to find and close dead connections, which can occur if a programmer forgets to close a connection at the end of a thread or a thread dies unexpectedly. (Default nil, which means don't run the Reaper).
     :dead_connection_timeout # number of seconds from last checkout after which the Reaper will consider a connection reapable. (default 5 seconds). 
-  ]
+  ].freeze
   
   class << self
+    # this is the config from config/database.yml
     def db_yml
-      if @db_yml.nil?
+      unless defined? @db_yml
         # Heroku uses ERB cuz rails uses it errwhere
         @db_ybl = YAML.load(ERB.new(root.join("config","database.yml").read).result)
                     .symbolize
@@ -43,14 +44,14 @@ module Mystic
     
     # Postgres connect params, precalculated
     def config
-      if @configs.nil?
+      unless defined? @configs
         @configs = Hash[db_yml.map { |env,hash|
           # :database as connection string
           if hash[:database].index "="
-            hash.merge Hash[hash[:database]
-                              .split(' ')
-                              .map { |s| s.split('=',2) }
-                              .map { |k,v| [k.to_s.strip.downcase.to_sym, v.index("'").nil? ? v : v[1..-1] ] }
+            hash.merge Hash[hash.delete(:database)
+                                .split(' ')
+                                .map { |s| s.split('=',2) }
+                                .map { |k,v| [k.to_s.strip.downcase.to_sym, v.index("'").nil? ? v : v[1..-1] ] }
                             ]
           end
           
@@ -63,23 +64,34 @@ module Mystic
           hash[:client_encoding] = hash.delete :encoding
           hash[:fallback_application_name] = $0
           
-          [env, hash.subhash(*Mystic::Postgres::CONNECT_FIELDS)]
+          [env, hash.subhash(*PG_CONNECT_FIELDS)]
         }]
       end
       @configs[env]
     end
     
     def pool_config
-      if @pconfigs.nil?
-        @pconfigs = Hash[db_yml.map { |env, h| [env, h.subhash(*Mystic::POOL_FIELDS)] }]
+      unless defined? @pconfigs
+        @pconfigs = Hash[db_yml.map { |env, h| [env, h.subhash(*POOL_FIELDS)] }]
       end
       @pconfigs[env]
     end
     
-    def database_url
-      conf = db_yml[env]
-      opts = conf.reject { |k,v| [:user, :password, :host, :hostaddr, :port, :dbname].include? k }
-      URI.escape "postgresql://#{conf[:user]}:#{conf[:password]}@#{conf[:host] || conf[:hostaddr]}:#{conf[:port]}/#{conf[:dbname]}?#{opts.map { |k,v| "#{k.to_s}=#{v}" }*'&'}"
+    def database_url c=nil
+      if c
+        base_url = "#{c[:user]}:#{c[:password]}@#{c[:host]||c[:hostaddr]}:#{c[:port]}/#{c[:dbname]}"
+        query_str = c
+                    .reject { |k,v| MAIN_PG_FIELDS.include? k }
+                    .map { |k,v| "#{k.to_s}=#{v}" }
+                    .join '&' 
+                    # query_str contains whatever connection params are not in the base_url
+        URI.escape "postgresql://#{base_url}?#{query_str}"
+      else
+        unless defined? @db_urls
+          @db_urls = Hash[config.map { |env, conf| [env, database_url conf] }]
+        end
+        @db_urls
+      end
     end
   end
 end

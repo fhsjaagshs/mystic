@@ -4,27 +4,28 @@
   A C++ class to wrap libpq
 */
 
+#include <iostream>
 #include "libpq-fe.h"
-
-using namespace std;
 
 class Postgres {
 public:
-  Postgres::Postgres();
-  Postgres::~Postgres();
+  Postgres();
+  ~Postgres();
   
-  void Postgres::connect(char **keys, char **values);
-  void Postgres::disconnect();
+  bool connected();
+  void connect(char **keys, char **values);
+  void disconnect();
   
-  PGresult * Postgres::execute(string *query);
+  PGresult * execute(std::string query);
   
-  string * Postgres::escape_string(string *string);
-  string * Postgres::escape_literal(string *literal);
-  string * Postgres::escape_identifier(string *identifier);
+  std::string escape_string(std::string string);
+  std::string escape_literal(std::string literal);
+  std::string escape_identifier(std::string identifier);
   
-  int Postgres::client_encoding();
+  void reset();
+  
+  int client_encoding();
 private:
   PGconn *_connection;
-  
-  char * Postgres::compose_format(size_t extra_alloc, const char *fmt, ...);
+  const char * compose_format(size_t extra_alloc, const char *fmt, ...);
 };

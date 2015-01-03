@@ -8,21 +8,39 @@
   p.disconnect!
 */
 
-#include "extension.h"
-#include <math.h>
-#include "postgres.h" // our LibPQ wrapper
+#include <iostream>
 
-#define MIN(a,b) (((a)<(b))?(a):(b))
-#define MAX(a,b) (((a)>(b))?(a):(b))
+#include "postgres.h" // our LibPQ wrapper
+#include "postgres_result.h" // out PGresult wrapper
+#include "encoding.h" // our postgres encoding to rb_encoding conversion
+#include "oids.h" // our postgres OID defines
+
+#include "ruby.h" // ruby header
+
+//#define MIN(a,b) (((a)<(b))?(a):(b))
+//#define MAX(a,b) (((a)>(b))?(a):(b))
+
+using namespace std;
+
+extern "C" void Init_postgres();
+static void postgres_gc_free(Postgres *conn);
+static VALUE postgres_allocate(VALUE klass);
+static VALUE postgres_disconnect(VALUE self);
+static VALUE postgres_initialize(int argc, VALUE *argv, VALUE self);
+static VALUE postgres_valid(VALUE self);
+static VALUE postgres_escape_string(VALUE self, VALUE in_str);
+static VALUE postgres_escape_literal(VALUE self, VALUE in_str);
+static VALUE postgres_escape_identifier(VALUE self, VALUE in_str);
+static VALUE postgres_exec(VALUE self, VALUE query);
 
 VALUE rb_mMystic = Qnil;
 VALUE m_cPostgres = Qnil;
 VALUE mp_cError = Qnil;
 VALUE m_Date = Qnil;
 VALUE m_DateTime = Qnil;
-VALUE m_REPR_COL = Qnil;
+VALUE m_JSON_COLUMN = Qnil;
 
-VALUE coerced_value(PGresult *result, size_t r, size_t c, int pg_encoding);
+static VALUE coerced_value(PostgresResult &res, size_t r, size_t c, int pg_encoding);
 
 void Init_postgres() {
   rb_mMystic = rb_define_module("Mystic");
@@ -38,16 +56,17 @@ void Init_postgres() {
   rb_define_method(m_cPostgres, "escape_identifier", RUBY_METHOD_FUNC(postgres_escape_identifier), 1);
   rb_define_singleton_method(m_cPostgres, "escape_identifier", RUBY_METHOD_FUNC(postgres_escape_identifier), 1);
 
+  //rb_funcall(rb_mKernel, rb_intern("require"), 1, rb_str_new2("encoding"));
+
   if (m_Date == Qnil && m_DateTime == Qnil) {
     // Load Date and DateTime 
     rb_funcall(rb_mKernel, rb_intern("require"), 1, rb_str_new2("date"));
     m_Date = rb_const_get(rb_cObject, rb_intern("Date"));
     m_DateTime = rb_const_get(rb_cObject, rb_intern("DateTime"));
   }
-
-  if (m_REPR_COL == Qnil) {
-    // Store the repr_col constant somwhere accessible
-    m_REPR_COL = rb_const_get(m_cPostgres, rb_intern("REPR_COL"));
+  
+  if (m_JSON_COLUMN) {
+    m_JSON_COLUMN = rb_const_get(rb_mMystic, rb_intern("JSON_COLUMN"));
   }
 }
 
@@ -57,7 +76,7 @@ static Postgres *getPostgres(VALUE self) {
     return p;
 }
 
-static void postgres_gc_free(Human* p) {
+static void postgres_gc_free(Postgres *p) {
     if (p) delete p;
     p = NULL;
     ruby_xfree(p);
@@ -67,10 +86,6 @@ static VALUE postgres_allocate(VALUE klass) {
     return Data_Wrap_Struct(klass, NULL, postgres_gc_free, ruby_xmalloc(sizeof(Postgres)));
 }
 
-/*
-  Connections
-*/
-
 static VALUE postgres_disconnect(VALUE self) {
     Postgres *p = getPostgres(self);
     if (p) p->disconnect();
@@ -78,223 +93,189 @@ static VALUE postgres_disconnect(VALUE self) {
 }
 
 static VALUE postgres_initialize(int argc, VALUE *argv, VALUE self) {
-    if (argc > 2) rb_raise(rb_eArgError, "Invalid number of arguments.");
+    if (argc == 0 || argc > 2) rb_raise(rb_eArgError, "Invalid number of arguments.");
     
     Postgres *p = getPostgres(self);
     new (p) Postgres();
     
-    char **keys;
-    char **values;
+    VALUE rb_keys = Qnil;
+    VALUE rb_values = Qnil;
     
     if (argc == 1) {
         Check_Type(argv[0], T_HASH);
-        
+        rb_keys = rb_funcall(argv[0], rb_intern("keys"), 0);
+        rb_values = rb_funcall(argv[0], rb_intern("values"), 0);
     } else if (argc == 2) {
         Check_Type(argv[0], T_ARRAY);
         Check_Type(argv[1], T_ARRAY);
-        
+        rb_keys = argv[0];
+        rb_keys = argv[1];
     }
     
-    // TODO: null terminate keys and values
+    size_t num_pairs = RARRAY_LEN(rb_keys);
     
-    keys[-1] = NULL;
-    values[-1] = NULL;
+    char **keys = (char **)malloc(sizeof(char *)*(num_pairs+1));
+    char **values = (char **)malloc(sizeof(char *)*(num_pairs+1));
+    
+    for (size_t i = 0; i < num_pairs; i++) {
+     // keys[i] = rb_string_value_cstr(&rb_ary_entry(rb_keys, i));
+      VALUE k = rb_funcall(rb_ary_entry(rb_keys, i), rb_intern("to_s"), 0);
+      VALUE v = rb_funcall(rb_ary_entry(rb_values, i), rb_intern("to_s"), 0);
+      keys[i] = StringValueCStr(k);
+      values[i] = StringValueCStr(v);
+    }
+
+    keys[num_pairs] = NULL;
+    values[num_pairs] = NULL;
     
     try {
         p->connect(keys, values);
-    } catch (char *error_message) {
-        rb_raise(mp_cError, error_message);
+    } catch (const char *error_message) {
+        free(keys); keys = NULL;
+        free(values); values = NULL;
+        rb_raise(mp_cError, "%s", error_message);
     }
+    
+    if (keys) free(keys);
+    if (values) free(values);
     
     return Qnil;
 }
 
 static VALUE postgres_valid(VALUE self) {
-  return (DATA_PTR(self) && PQstatus(DATA_PTR(self)) == CONNECTION_OK) ? Qtrue : Qfalse;
+    Postgres *p = getPostgres(self);
+    return p->connected() ? Qtrue : Qfalse;
 }
 
-/*
-  Escaping
-*/
-
 static VALUE postgres_escape_string(VALUE self, VALUE in_str) {
-  Check_Type(in_str, T_STRING);
-  
-  int error;
-  char *escaped = malloc(sizeof(char)*(RSTRING_LEN(in_str) * 2 + 1));
-  size_t size = PQescapeStringConn(DATA_PTR(self), escaped, RSTRING_PTR(in_str), RSTRING_LEN(in_str), &error);
-  
-  VALUE result = Qnil;
-  
-  if (!error) result = rb_str_new(escaped,size);
-  free(escaped);
-  if (error) rb_raise(mp_cError, "%s", PQerrorMessage(DATA_PTR(self)));
+    Check_Type(in_str, T_STRING);
+    
+    Postgres *p = getPostgres(self);
 
-  encode(PQclientEncoding(DATA_PTR(self)), result, true);
-  OBJ_INFECT(result, in_str);
-  
-  return result;
+    try {
+        string escaped = p->escape_string(string(StringValueCStr(in_str)));
+        VALUE rbstr = rb_str_new2(escaped.c_str());
+     //   encode(p->client_encoding(), rbstr, true);
+        OBJ_INFECT(rbstr, in_str);
+        return rbstr;
+    } catch (const char *error_message) {
+        rb_raise(mp_cError, "%s", error_message);
+    }
+    
+    return Qnil;
 }
 
 static VALUE postgres_escape_literal(VALUE self, VALUE in_str) {
-  Check_Type(in_str, T_STRING);
-  
-  char *res = PQescapeLiteral(DATA_PTR(self), RSTRING_PTR(in_str), RSTRING_LEN(in_str));
-  if (!res) rb_raise(mp_cError, "Failed to escape string %s as a literal: %s", StringValueCStr(in_str),PQerrorMessage(DATA_PTR(self)));
-  
-  VALUE ret = rb_str_new2(res);
-  PQfreemem(res);
-  encode(PQclientEncoding(DATA_PTR(self)), ret, true);
-  OBJ_INFECT(ret, in_str);
-  return ret;
+    Check_Type(in_str, T_STRING);
+    
+    Postgres *p = getPostgres(self);
+    
+    try {
+        string escaped = p->escape_literal(string(StringValueCStr(in_str)));
+        VALUE rbstr = rb_str_new2(escaped.c_str());
+      //  encode(p->client_encoding(), rbstr, true);
+        OBJ_INFECT(rbstr, in_str);
+        return rbstr;
+    } catch (const char *error_message) {
+        rb_raise(mp_cError, "%s", error_message);
+    }
+    
+    return Qnil;
 }
 
 static VALUE postgres_escape_identifier(VALUE self, VALUE in_str) {
   Check_Type(in_str, T_STRING);
+
+  Postgres *p = getPostgres(self);
   
-  char *str = RSTRING_PTR(in_str);
-  size_t str_len = RSTRING_LEN(in_str);
-  
-  if (str_len >= NAMEDATALEN) rb_raise(rb_eArgError, "Input string is longer than NAMEDATALEN-1 (%d)", NAMEDATALEN-1);
-  
-  // result size at most NAMEDATALEN*2 plus surrounding double-quotes
-  char *buffer = malloc(sizeof(char)*(NAMEDATALEN*2+2));
-  size_t j = 0; // length of escaped string
-  
-  buffer[j++] = '"';
-  for (size_t i = 0; i < strlen(str) && str[i]; i++) {
-    if (str[i] == '"') buffer[j++] = '"';
-    buffer[j++] = str[i];
+  try {
+      string escaped = p->escape_identifier(string(StringValueCStr(in_str)));
+      VALUE rbstr = rb_str_new2(escaped.c_str());
+      reencode(rbstr, in_str);
+      OBJ_INFECT(rbstr, in_str);
+      return rbstr;
+  } catch (const char *error_message) {
+      rb_raise(mp_cError, "%s", error_message);
   }
   
-  buffer[j++] = '"';
-  VALUE ret = rb_str_new(buffer, j);
-  free(buffer);
-  
-  OBJ_INFECT(ret, in_str);
-  reencode(ret, in_str);
-  return ret;
+  return Qnil;
 }
-
-/*
-  Execution & processing
-*/
 
 static VALUE postgres_exec(VALUE self, VALUE query) {
   Check_Type(query, T_STRING);
   
-  char *query_c = StringValueCStr(query);
-  size_t size = RSTRING_LEN(query);
+  Postgres *p = getPostgres(self);
   
-  if (size == 0) rb_raise(mp_cError, "Invalid SQL query.");
-  
-  char *q = malloc(sizeof(char)*size);
-  
-  if (q[size-1] != ';') {
-    char *temp = malloc(sizeof(char)*(size+2));
-    memcpy(temp, q, size);
-    size += 2;
-    temp[size-2] = ';';
-    temp[size-1] = '\0';
-    free(q);
-    q = temp;
-    size++;
-  }
-  
-  PGresult *result = PQexec(DATA_PTR(self), q);
-  
-  free(q);
-  
-  VALUE res = rb_ary_new();
-  
-  if (PQresultStatus(result) == PGRES_TUPLES_OK) {
-    int pg_encoding = PQclientEncoding(DATA_PTR(self));
-    VALUE row = Qnil;
+  try {
+    PostgresResult res(p->execute(string(StringValueCStr(query))));
+    res.json_col = StringValueCStr(m_JSON_COLUMN);
     
-    for (size_t r = 0; r < PQntuples(result); r++) {
-      VALUE res = Qnil;
-      if (
-	  r == 0 &&
-	  PQnfields(result) == 1 &&
-	  PQntuples(result) == 1 &&
-	  PQftype(result, r) == JSONOID &&
-	  strcmp(PQfname(result, 0), StringValueCStr(m_REPR_COL)) == 0
-	  )
-	{
-	  res = coerced_value(result, 0, 0, pg_encoding);
-	} else {
-	row = rb_hash_new();
-	for (size_t c = 0; c < PQnfields(result); c++) {
-	  VALUE v = coerced_value(result, r, c, pg_encoding);
-	  rb_hash_aset(row, rb_tainted_str_new2(PQfname(result, c)), v);
-	}
+    if (res.json()) {
+      return rb_tainted_str_new2(res.at(0,0).c_str());
+    } else {
+      VALUE rows = rb_ary_new();
+      for (size_t r = 0; r < res.number_rows(); r++) {
+        VALUE row = rb_hash_new();
+        for (size_t c = 0; c < res.number_cols(); c++) {
+          VALUE k = rb_tainted_str_new2(res.col_name(c).c_str());
+          VALUE v = coerced_value(res, r, c, p->client_encoding());
+          rb_hash_aset(row, k, v);
+        }
+        rb_ary_push(rows, row);
       }
-      
-      rb_ary_push(res, row);
+      return rows;
     }
-  } else {
-    char *error_message = (char *)PQresultErrorMessage(result);
-    PQclear(result); result = NULL;
-    rb_raise(mp_cError, "Failed to execute query: %s", error_message);
+  } catch (char *error_message) {
+    rb_raise(mp_cError, "%s", error_message);
   }
   
-  if (result) PQclear(result);
-  return res;
+  return Qnil;
 }
 
-static VALUE coerced_value(PGresult *result, size_t r, size_t c, int pg_encoding) {
-  if (PQgetisnull(result, r, c)) return Qnil;
+static VALUE coerced_value(PostgresResult &res, size_t r, size_t c, int pg_encoding) {
+  if (res.null_at(r,c)) return Qnil;
+
+  string v = res.at(r, c);
   
-  char *value = PQgetvalue(result, r, c); // It's null terminated http://www.postgresql.org/docs/9.1/static/libpq-exec.html
-  int length = PQgetlength(result, r, c);
-  
-  switch (PQftype(result, c)) {
+  switch (res.col_oid(c)) {
   case BOOLOID: {
-    return (strncmp("TRUE", value, MIN(4,length)) == 0 &&
-	    strncmp("t", value, MIN(1,length)) == 0 &&
-	    strncmp("true", value, MIN(4,length)) == 0 &&
-	    strncmp("y", value, MIN(1,length)) == 0 &&
-	    strncmp("yes", value, MIN(3,length)) == 0 &&
-	    strncmp("on", value, MIN(2,length)) == 0 &&
-	    strncmp("1", value, MIN(1,length)) == 0) ? Qtrue : Qfalse;
+    return (v == "TRUE" || v == "t" || v == "true" || v == "y" || v == "yes" || v == "on" || v == "1") ? Qtrue : Qfalse;
     break;
   }
-
   case MONEYOID:
-    return DBL2NUM(atof(value+1)); // first character is a dollar sign
+    return DBL2NUM(atof(v.c_str()+1)); // first character is a dollar sign
     break;
   case INT2OID:
   case INT4OID:
   case INT8OID:
   case OIDOID:
-    return INT2NUM(atoi(value));
+    return INT2NUM(atoi(v.c_str()));
     break;
   case FLOAT4OID:
   case FLOAT8OID:
-    return DBL2NUM(atof(value));
+    return DBL2NUM(atof(v.c_str()));
     break;
   case DATEOID:
-    return rb_funcall(m_Date, rb_intern("parse"), 1, rb_tainted_str_new(value, length));
+    return rb_funcall(m_Date, rb_intern("parse"), 1, rb_tainted_str_new2(v.c_str()));
     break;
   case TIMESTAMPOID:
   case TIMESTAMPTZOID:
-    return rb_funcall(m_DateTime, rb_intern("parse"), 1, rb_tainted_str_new(value, length));
+    return rb_funcall(m_DateTime, rb_intern("parse"), 1, rb_tainted_str_new2(v.c_str()));
     break;
   case TIMEOID:
   case TIMETZOID:
-    return rb_funcall(rb_cTime, rb_intern("parse"), 1, rb_tainted_str_new(value, length));
+    return rb_funcall(rb_cTime, rb_intern("parse"), 1, rb_tainted_str_new2(v.c_str()));
     break;
   case NUMERICOID: {
     size_t i = 0;
-    while (i < length && value[i] != 0) i++; // get the index of a
-    return (i != length) ? DBL2NUM(atof(value)) : INT2NUM(atoi(value));
+    while (i < v.length() && v[i] != '.') i++; // get the index of a
+    return (i != v.length()) ? DBL2NUM(atof(v.c_str())) : INT2NUM(atoi(v.c_str()));
     break;
   }
   default: {
-    VALUE res = rb_tainted_str_new(value, length);
-    bool textual = PQfformat(result, c) == 0;
-    encode(pg_encoding, res, textual);
-    return res;
+    VALUE str = rb_tainted_str_new2(v.c_str());
+    encode(pg_encoding, str, !res.col_binary(c));
+    return str;
     break;
   }
   }

@@ -2,4 +2,9 @@
 *.gem
 Gemfile.lock
 Makefile
-*.o
+/**/**/*.o
+/**/**/*.bundle
+/**/**/*.log
+
+ext/mystic/mkmf.log
+ext/mystic/postgres.bundle

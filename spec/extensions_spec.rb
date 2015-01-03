@@ -45,6 +45,7 @@ describe "Mystic helpers" do
   end
   
   context Array do
+    # Array#unify_args
     it "processes custom arguments" do
       pending "implement"
     end
