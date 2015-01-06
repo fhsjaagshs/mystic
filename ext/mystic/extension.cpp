@@ -38,7 +38,6 @@ VALUE m_cPostgres = Qnil;
 VALUE mp_cError = Qnil;
 VALUE m_Date = Qnil;
 VALUE m_DateTime = Qnil;
-VALUE m_JSON_COLUMN = Qnil;
 
 static VALUE coerced_value(PostgresResult &res, size_t r, size_t c, int pg_encoding);
 
@@ -63,10 +62,6 @@ void Init_postgres() {
     rb_funcall(rb_mKernel, rb_intern("require"), 1, rb_str_new2("date"));
     m_Date = rb_const_get(rb_cObject, rb_intern("Date"));
     m_DateTime = rb_const_get(rb_cObject, rb_intern("DateTime"));
-  }
-  
-  if (m_JSON_COLUMN) {
-    m_JSON_COLUMN = rb_const_get(rb_mMystic, rb_intern("JSON_COLUMN"));
   }
 }
 
@@ -203,12 +198,15 @@ static VALUE postgres_escape_identifier(VALUE self, VALUE in_str) {
 
 static VALUE postgres_exec(VALUE self, VALUE query) {
   Check_Type(query, T_STRING);
-  
+
   Postgres *p = getPostgres(self);
   
   try {
+    VALUE config = rb_funcall(rb_mMystic, rb_intern("config"), 0);
+    VALUE rb_json_col = rb_funcall(config, rb_intern("JSON_COLUMN"), 0);
+      
     PostgresResult res(p->execute(string(StringValueCStr(query))));
-    res.json_col = StringValueCStr(m_JSON_COLUMN);
+    res.json_col = StringValueCStr(rb_json_col);
     
     if (res.json()) {
       return rb_tainted_str_new2(res.at(0,0).c_str());

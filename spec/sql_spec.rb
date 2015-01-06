@@ -21,19 +21,5 @@ describe Mystic do
   
   context "When migrating" do
     # TODO: IMPLEMENT THIS
-    it "works" do
-      class Mig < Mystic::Migration
-        def up
-          
-        end
-        
-        def down
-          
-        end
-      end
-      
-      expect(Mig.new.to_sql(:up)).to_not be_nil
-      expect(Mig.new.to_sql(:down)).to_not be_nil
-    end
   end
 end

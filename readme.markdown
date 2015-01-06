@@ -1,7 +1,7 @@
 Mystic
 ===
 
-*"Clean, easily customized Postgres access."*
+Clean, extensible Postgres access.
 
 **Sinatra** is to **Rails** as **Mystic** is to **ActiveRecord**
 
@@ -69,17 +69,7 @@ An array of `Hash`es representing rows. Every method that returns DB data does i
 The command line
 -
 
-You can run your migrations
 
-    $ mystic migrate
-    
-You can roll them back (one at a time).
-
-    $ mystic rollback
-    
-You can start a console with Mystic already configured via `config/database.yml`
-    
-    $ mystic console
 
 Migrations
 -

@@ -7,37 +7,43 @@ module Mystic
   module Model
     RETURN_TYPES = [:rows, :json, :nothing].freeze
     DEFAULT_MODE = :default.freeze
-    ACTIONS = [:select, :fetch :create, :update, :delete].freeze   
+    ACTIONS = [:select, :fetch, :create, :update, :delete].freeze   
     
+    def self.extended b; included(b); end
     def self.included b
-      b.extend DefaultActions
-      b.extend DSL
       b.extend SQLGeneration
+      b.extend DSL
+      b.include DefaultActions
     end
     
     module DefaultActions
-      select do |params={}, opts={}|
-        Mystic.execute sql(:select, params, opts)
-      end
+      def self.extended b; self.included b; end
+      def self.included b
+        b.module_eval do
+          select_action do |params={}, opts={}|
+            Mystic.execute sql(:select, params, opts)
+          end
       
-      fetch do |params={}, opts={}|
-        res = select params, opts.merge({:singular => true})
-        res.is_a? String ? res : (res.empty? {} : res.first)
-      end
+          fetch_action do |params={}, opts={}|
+            res = select params, opts.merge({:singular => true})
+            res.is_a?(String) ? res : (res.empty? ? {} : res.first)
+          end
       
-      create do |params={}, opts={}|
-        res = Mystic.execute sql(:insert, params, opts.merge({:singular => true}))
-        res.is_a? String ? res : (res.empty? {} : res.first)
-      end
+          create_action do |params={}, opts={}|
+            res = Mystic.execute sql(:insert, params, opts.merge({:singular => true}))
+            res.is_a?(String) ? res : (res.empty? ? {} : res.first)
+          end
       
-      update do |params={}, opts={}|
-        res = Mystic.execute sql(:update, where, set, opts)
-        opts[:singular] ? (res.empty? {} : res.first) : res
-      end
+          update_action do |where={}, set={}, opts={}|
+            res = Mystic.execute sql(:update, where, set, opts)
+            opts[:singular] ? (res.empty? ? {} : res.first) : res
+          end
       
-      delete do |params={}, opts={}|
-			  res = Mystic.execute sql(:delete, params, opts)
-        opts[:singular] ? (res.empty? {} : res.first) : res
+          delete_action do |params={}, opts={}|
+    			  res = Mystic.execute sql(:delete, params, opts)
+            opts[:singular] ? (res.empty? ? {} : res.first) : res
+          end
+        end
       end
     end
     
@@ -70,30 +76,21 @@ module Mystic
       
       # select, creat, fetch, update, delete actions
       ACTIONS.each do |action|
-        # DSL method to define the action
-        define_method "#{action.to_s}_action".to_sym do |mode = DEFAULT_MODE, &b|
-          block_valid = [(b.arity <= 0 && b.parameters.count >= 2), b.parameters.detect { |kind,_| kind == :rest } != nil].any?
-          raise ArgumentError, "Invalid block for action '#{action}' on table '#{table_name}'." unless block_valid
-          properties[:actions][action][mode] = b
-        end
-        
-        # Method to call an action
-        define_method action do |mode = DEFAULT_MODE, *args|
-          properties[:actions][action][mode].call *args
-        end
+        define_method("#{action}_action".to_sym) { |mode = DEFAULT_MODE, &b| map_action action, mode, &b } # DSL method to define the action
+        define_method(action.to_sym) { |*args| action_for(action, (Symbol === args.first ? args.shift : DEFAULT_MODE)).call *args } # Method to call an action
       end
-      
+
       # Attributes of a model
       def default_table
         to_s.downcase.strip
       end
       
       def column_string
-        columns+(pseudocolumns.map { |name, sql| "(#{sql}) AS #{name.to_s}" }).join ','
+        (columns+pseudocolumns.map { |name, sql| "(#{sql}) AS #{name.to_s}" }).join(',')
       end
       
       def columns
-        (properties[:columns].empty? ? [:*] : properties[:columns]
+        properties[:columns].empty? ? [:*] : properties[:columns]
       end
       
       def pseudocolumns
@@ -106,14 +103,26 @@ module Mystic
       
       # Contains information from the DSL
       def properties
-        if @__properties.nil?
-          @__properties = {}
-          @__properties[:table] = default_table
-          @__properties[:columns] = []
-          @__properties[:pseudocolumns] = {}
-          @__properties[:actions] = {}
+        unless defined? @__properties
+          @__properties = {
+            :table => default_table,
+            :columns => [],
+            :pseudocolumns => {},
+            :actions => {}
+          }
+          ACTIONS.each { |a| @__properties[:actions][a] = {} }
         end
         @__properties
+      end
+      
+      private
+      
+      def map_action action, mode, &b
+        (properties[:actions][action] || {})[mode] = b#ModelAction.new(&b)
+      end
+      
+      def action_for action, mode
+        (properties[:actions][action] || {})[mode]
       end
     end
     

@@ -3,33 +3,21 @@
 require "uri"
 require "access_stack"
 require_relative "../../ext/mystic/postgres.bundle" # TODO: figure this out
-require_relative "./config"
 
 module Mystic
   EnvironmentError = Class.new StandardError
-
   class << self
-    def env
-      ENV["RACK_ENV"] || DOTENV["RACK_ENV"] || ENV["RAILS_ENV"] || DOTENV["RAILS_ENV"] || "development"
-    end
-    
-    def env= new_env
-      raise EnvironmentError, "Environment '#{new_env}' doesn't exist." unless db_yml.key? new_env
-    
-      ENV["RACK_ENV"] = new_env.to_s
-      ENV["DATABASE_URL"] = database_url
-      
-      connect config, pool_config
-      new_env || env
-    end
-    
-    alias_method :connect, :env=
-    
     def connect dbconf={}, poolconf={}
+      if dbconf.empty?
+        dbconf = config.postgres
+        poolconf = config.pool
+      end
+      
       disconnect if connected?
+      ENV["DATABASE_URL"] = config.database_url dbconf
       @pool = AccessStack.new poolconf
       @pool.create { @connected = true; Mystic::Postgres.new dbconf }
-      @pool.destroy { |pg| pg.disconnect! }
+      @pool.destroy { |pg| (@connected = @pool.count-1 <= 0); pg.disconnect! }
       @pool.validate { |pg| pg != nil && pg.valid? }
       @connected = true
     end
@@ -44,27 +32,31 @@ module Mystic
     end
     
     def reap_connections!
-      @pool.reap!
+      @pool.reap! unless @pool.nil?
     end
     
     # no quotes
     # Should be called when connected.
     # It defaults to a less secure method.
     def escape s=""
+      raise Mystic::Postgres::Error, "Database connection required to escape strings." unless connected?
       @pool.with { |pg| pg.escape_string s.to_s }
     end
     
     # single quotes
     def quote s=""
+      raise Mystic::Postgres::Error, "Database connection required to escape strings." unless connected?
       @pool.with { |pg| pg.escape_literal s.to_s }
     end
     
     # double quotes
     def dblquote s=""
+      raise Mystic::Postgres::Error, "Database connection required to escape strings." unless connected?
       @pool.with { |pg| pg.escape_identifier s.to_s }
     end
     
     def execute sql=""
+      raise Mystic::Postgres::Error, "Database connection required to execute SQL." unless connected?
       @pool.with { |pg| pg.execute sql }
     end
   end
