@@ -11,7 +11,7 @@ module Mystic
   end
 end
 
-#Mystic.connect :user => "nathaniel", :password => "", :dbname => "nathaniel", :port => 5432, :host => "localhost"
+Mystic.connect :user => "nathaniel", :password => "", :dbname => "nathaniel", :port => 5432, :host => "localhost"
 
 class Paws
   include Mystic::Model

@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 require "uri"
-require "access_stack"
+require_relative "./access_stack"
 require_relative "../../ext/mystic/postgres.bundle" # TODO: figure this out
 
 module Mystic
