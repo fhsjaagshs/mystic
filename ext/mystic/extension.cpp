@@ -9,6 +9,7 @@
 */
 
 #include <iostream>
+#include <cstdlib>
 
 #include "postgres.h" // our LibPQ wrapper
 #include "postgres_result.h" // out PGresult wrapper
@@ -31,6 +32,7 @@ static VALUE postgres_valid(VALUE self);
 static VALUE postgres_escape_string(VALUE self, VALUE in_str);
 static VALUE postgres_escape_literal(VALUE self, VALUE in_str);
 static VALUE postgres_escape_identifier(VALUE self, VALUE in_str);
+static VALUE postgres_wait_for_notify(VALUE self, VALUE timeout);
 static VALUE postgres_exec(VALUE self, VALUE query);
 
 VALUE rb_mMystic = Qnil;
@@ -203,17 +205,17 @@ static VALUE postgres_wait_for_notify(VALUE self, VALUE timeout) {
     map<const char *, string> values;
     
     try {
-        values = p->wait_for_notify();
+        values = p->wait_for_notify(NUM2DBL(timeout));
     } catch (char *error_message) {
         rb_raise(mp_cError, "%s", error_message);
     } catch (int fatal_code) {
         if (fatal_code < 0) rb_sys_fail("Fatal error waiting for socket.");
     }
     
-    VALUE relname = rb_tainted_str_new2(values["relname"]);
+    VALUE relname = rb_tainted_str_new2(values["relname"].c_str());
     // encode(p->client_encoding(), relname, true);
-    VALUE be_pid = INT2NUM(aoti(values["be_pid"]));
-    VALUE extra = rb_tainted_str_new2(values["extra"]);
+    VALUE be_pid = INT2NUM(atoi(values["be_pid"].c_str()));
+    VALUE extra = rb_tainted_str_new2(values["extra"].c_str());
     // encode(p->client_encoding(), extra, true);
     
     if (rb_block_given_p()) rb_yield_values(3, relname, be_pid, extra);
@@ -228,7 +230,7 @@ static VALUE postgres_exec(VALUE self, VALUE query) {
   
   try {
     VALUE config = rb_funcall(rb_mMystic, rb_intern("config"), 0);
-    VALUE rb_json_col = rb_funcall(config, rb_intern("JSON_COLUMN"), 0);
+    VALUE rb_json_col = rb_funcall(config, rb_intern("json_column"), 0);
       
     PostgresResult res(p->execute(string(StringValueCStr(query))));
     res.json_col = StringValueCStr(rb_json_col);

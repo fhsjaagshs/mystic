@@ -14,10 +14,10 @@ public:
   Socket();
   Socket(int sd);
   ~Socket();
-  void Socket::reset();
-  int Socket::select_readable(struct timeval *waittime);
-  int Socket::select_writeable(struct timeval *waittime);
-  int Socket::select_errored(struct timeval *waittime);
+  void reset();
+  int select_readable(struct timeval *waittime);
+  int select_writeable(struct timeval *waittime);
+  int select_errored(struct timeval *waittime);
 private:
   int _socket_desc;
   fd_set *file_descs;

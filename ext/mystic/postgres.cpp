@@ -110,16 +110,16 @@ string Postgres::escape_identifier(string identifier) {
   return escaped;
 }
 
-map<const char *, string> Postgres::notifies(PGnotify *msg=NULL) {
+map<const char *, string> Postgres::notifies(PGnotify *msg) {
   if (!msg) msg = PQnotifies(_connection);
   
   std::map<const char *, std::string> results;
   
   if (!msg) throw "No notification.";
   else {
-    results["relname"] = std::string(msg->relname);
-    results["extra"] = std::string(msg->extra);
-    results["be_pid"] = std::string(msg->be_pid);
+    results["relname"] = string(msg->relname);
+    results["extra"] = string(msg->extra);
+    results["be_pid"] = to_string(msg->be_pid);
     PQfreemem(msg);
   }
 

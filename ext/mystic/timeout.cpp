@@ -1,6 +1,7 @@
 #include "timeout.h"
 
 Timeout::Timeout(double sec) {
+  _aborttime = {0,0};
   _timeout.tv_sec = (time_t)sec;
   _timeout.tv_usec = (suseconds_t)((sec-(long)sec)*1e6);
 }
@@ -15,8 +16,8 @@ void Timeout::start() {
 	timeradd(&_currtime, &_timeout, &_aborttime);
 }
 
-struct timeval Timeout::get_timeval() {
-  return _waittime;
+struct timeval * Timeout::get_timeval() {
+  return &_waittime;
 }
 
 bool Timeout::timed_out() {

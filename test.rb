@@ -1,9 +1,6 @@
 #!/usr/bin/env ruby
 
-#require "./lib/mystic"
-
-require "./lib/mystic/config"
-require "./lib/mystic/postgres"
+require_relative "./lib/mystic"
 
 
 username = ENV['USER'] || ENV['USERNAME']
