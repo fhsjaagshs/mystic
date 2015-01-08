@@ -9,7 +9,7 @@
 
 PostgresResult::PostgresResult(PGresult *res) {
   _result = res;
-  if (PQresultStatus(_result) != PGRES_TUPLES_OK) throw PQresultErrorMessage(_result);
+    if (!(PQresultStatus(_result) == PGRES_TUPLES_OK || PQresultStatus(_result) == PGRES_COMMAND_OK)) throw PQresultErrorMessage(_result);
 }
 
 PostgresResult::PostgresResult(PostgresResult &pgres) {

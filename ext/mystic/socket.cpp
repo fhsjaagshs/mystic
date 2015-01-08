@@ -1,7 +1,7 @@
 #include "socket.h"
 
 Socket::Socket() {
-  file_descs = malloc(sizeof(fd_set));
+  file_descs = (fd_set *)malloc(sizeof(fd_set));
   FD_ZERO(file_descs);
 }
 
@@ -12,7 +12,7 @@ Socket::Socket(int sd) {
 }
 
 Socket::~Socket() {
-  if (FD_ISSET(_socket_desc)) FD_CLR(_socket_desc, file_descs);
+  if (FD_ISSET(_socket_desc, file_descs)) FD_CLR(_socket_desc, file_descs);
   free(file_descs);
 }
 

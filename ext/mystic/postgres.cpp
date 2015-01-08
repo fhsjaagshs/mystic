@@ -146,6 +146,8 @@ map<const char *, string> Postgres::wait_for_notify(double timeout) {
       
       if (!t.timed_out()) ret = s.select_readable(t.get_timeval());
       
+        cout << "Returned: " << ret << endl;
+        
       if (ret < 0) throw ret;
       if (ret == 0) return map<const char *, string>(); // the socket timed out
       if (PQconsumeInput(_connection) == 0) throw PQerrorMessage(_connection); // Check for connection errors

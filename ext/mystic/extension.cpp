@@ -251,6 +251,7 @@ static VALUE postgres_exec(VALUE self, VALUE query) {
       return rows;
     }
   } catch (char *error_message) {
+      cout << "Error: " << error_message << endl;
     rb_raise(mp_cError, "%s", error_message);
   }
   

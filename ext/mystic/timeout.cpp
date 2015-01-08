@@ -1,7 +1,8 @@
 #include "timeout.h"
 
 Timeout::Timeout(double sec) {
-  _aborttime = {0,0};
+  _aborttime.tv_sec = 0;
+  _aborttime.tv_usec = 0;
   _timeout.tv_sec = (time_t)sec;
   _timeout.tv_usec = (suseconds_t)((sec-(long)sec)*1e6);
 }
