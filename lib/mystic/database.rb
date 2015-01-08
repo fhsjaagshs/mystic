@@ -35,6 +35,10 @@ module Mystic
       @pool.reap! unless @pool.nil?
     end
     
+    def wait_for_notify time
+      @pool.with { |pg| pg.wait_for_notify time }
+    end
+    
     # no quotes
     # Should be called when connected.
     # It defaults to a less secure method.

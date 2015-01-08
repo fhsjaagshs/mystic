@@ -5,6 +5,7 @@
 */
 
 #include <iostream>
+#include <map>
 #include "libpq-fe.h"
 
 class Postgres {
@@ -25,6 +26,9 @@ public:
   void reset();
   
   int client_encoding();
+    
+  std::map<const char *, std::string> notifies(PGnotify *msg=NULL);
+  std::map<const char *, std::string> wait_for_notify(double timeout);
 private:
   PGconn *_connection;
   const char * compose_format(size_t extra_alloc, const char *fmt, ...);

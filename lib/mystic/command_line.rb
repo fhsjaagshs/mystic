@@ -10,13 +10,16 @@ module Mystic
     MIGTABLE = "mmgis".dblquote.freeze
     
     CREATE_TABLE_SQL = "CREATE TABLE IF NOT EXISTS #{MIGTABLE} (num integer, name text)".freeze
-    ROLLBACK_SQL = 
     LAST_MIG_NUM_SQL = "SELECT max(num) as num FROM #{MIGTABLE.dblquote}".freeze
     LAST_MIG_SQL = "WITH max AS (#{LAST_MIG_NUM_SQL}) SELECT max.num as num,#{MIGTABLE}.name as name FROM max,#{MIGTABLE} WHERE #{MIGTABLE}.num=max.num;".freeze
     
     class << self
       def setup
         execute CREATE_TABLE_SQL
+      end
+      
+      def work queue, wait, concurrency
+        Mystic.queue.work queue, wait, concurrency
       end
 
       # Runs every yet-to-be-ran migration

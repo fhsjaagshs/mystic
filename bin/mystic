@@ -29,6 +29,10 @@ begin
       raise ErrorOutput, "No migration name provided" if ARGV[2] == EMPTY
       Mystic::CommandLine.create_migration ARGV[2].dup
     end
+  when :work
+    # mystic work myqueue 5 6
+    # mystic work <queue_name> <wait timeout> <concurrency>
+    Mystic::CommandLine.work ARGV[1], ARGV[2], ARGV[3]
   else
     begin
       Mystic.connect ARGV[1]

@@ -22,10 +22,11 @@ class ::Object
     else raise TypeError, "Unable to turn type into an SQL type." end
   end
   
-  def symbolize
+  def symbolize doit=true
     case self
-    when Hash then Hash[map { |k| [k.to_sym, v.symbolize] }]
-    when Array then map { |e| e.to_s.to_sym }
+    when Hash then Hash[map { |k| [k.to_sym, v.symbolize(false)] }]
+    when Array then map(&:symbolize)
+    when String then doit ? to_sym : self # The goal is to symbolize all strings
     else self end
   end
   

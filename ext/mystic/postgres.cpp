@@ -9,6 +9,8 @@
 */
 
 #include "postgres.h"
+#include "socket.h"
+#include "timeout.h"
 #include "pg_config_manual.h"
 
 using namespace std;
@@ -106,6 +108,50 @@ string Postgres::escape_identifier(string identifier) {
   free(buffer);
     
   return escaped;
+}
+
+map<const char *, string> Postgres::notifies(PGnotify *msg=NULL) {
+  if (!msg) msg = PQnotifies(_connection);
+  
+  std::map<const char *, std::string> results;
+  
+  if (!msg) throw "No notification.";
+  else {
+    results["relname"] = std::string(msg->relname);
+    results["extra"] = std::string(msg->extra);
+    results["be_pid"] = std::string(msg->be_pid);
+    PQfreemem(msg);
+  }
+
+  return results;
+}
+
+map<const char *, string> Postgres::wait_for_notify(double timeout) {
+    int sd = PQsocket(_connection);
+    
+    if (PQconsumeInput(_connection) == 0) throw PQerrorMessage(_connection);
+    
+    PGnotify *msg;
+    
+    Socket s = Socket(sd);
+    Timeout t = Timeout(timeout);
+
+    t.start();
+
+    while (!(msg = PQnotifies(_connection))) {
+      s.reset();
+      t.update();
+      
+      int ret = 0;
+      
+      if (!t.timed_out()) ret = s.wait(t.get_timeval());
+      
+      if (ret < 0) throw ret;
+      if (ret == 0) return map<const char *, string>(); // the socket timed out
+      if (PQconsumeInput(_connection) == 0) throw PQerrorMessage(_connection); // Check for connection errors
+    }
+
+    return notifies(msg);
 }
 
 void Postgres::reset() {

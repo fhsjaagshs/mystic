@@ -54,6 +54,7 @@ void Init_postgres() {
   rb_define_method(m_cPostgres, "escape_literal", RUBY_METHOD_FUNC(postgres_escape_literal), 1);
   rb_define_method(m_cPostgres, "escape_identifier", RUBY_METHOD_FUNC(postgres_escape_identifier), 1);
   rb_define_singleton_method(m_cPostgres, "escape_identifier", RUBY_METHOD_FUNC(postgres_escape_identifier), 1);
+  rb_define_method(m_cPostgres, "wait_for_notify", RUBY_METHOD_FUNC(postgres_wait_for_notify), 1);
 
   //rb_funcall(rb_mKernel, rb_intern("require"), 1, rb_str_new2("encoding"));
 
@@ -194,6 +195,30 @@ static VALUE postgres_escape_identifier(VALUE self, VALUE in_str) {
   }
   
   return Qnil;
+}
+
+static VALUE postgres_wait_for_notify(VALUE self, VALUE timeout) {
+    Postgres *p = getPostgres(self);
+    
+    map<const char *, string> values;
+    
+    try {
+        values = p->wait_for_notify();
+    } catch (char *error_message) {
+        rb_raise(mp_cError, "%s", error_message);
+    } catch (int fatal_code) {
+        if (fatal_code < 0) rb_sys_fail("Fatal error waiting for socket.");
+    }
+    
+    VALUE relname = rb_tainted_str_new2(values["relname"]);
+    // encode(p->client_encoding(), relname, true);
+    VALUE be_pid = INT2NUM(aoti(values["be_pid"]));
+    VALUE extra = rb_tainted_str_new2(values["extra"]);
+    // encode(p->client_encoding(), extra, true);
+    
+    if (rb_block_given_p()) rb_yield_values(3, relname, be_pid, extra);
+    
+    return Qnil;
 }
 
 static VALUE postgres_exec(VALUE self, VALUE query) {

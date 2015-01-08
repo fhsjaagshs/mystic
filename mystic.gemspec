@@ -12,5 +12,5 @@ Gem::Specification.new do |s|
   s.extensions   = ["ext/mystic/extconf.rb"]
   s.executables  = Dir.glob("bin/**/*").map{ |path| path.split("/",2).last }
 	
-  s.add_dependency 'access_stack', "~> 0"
+ # s.add_dependency 'access_stack', "~> 0"
 end
