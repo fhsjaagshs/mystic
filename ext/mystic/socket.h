@@ -5,15 +5,20 @@
 */
 
 #include <iostream>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/select.h>
 
 class Socket {
 public:
   Socket();
   Socket(int sd);
   ~Socket();
+  void Socket::reset();
+  int Socket::select_readable(struct timeval *waittime);
+  int Socket::select_writeable(struct timeval *waittime);
+  int Socket::select_errored(struct timeval *waittime);
 private:
   int _socket_desc;
-  rb_fdset_t sd_rset;
-  
-  struct timeval aborttime={0,0}, currtime, waittime;
+  fd_set *file_descs;
 };

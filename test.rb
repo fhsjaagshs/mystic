@@ -16,5 +16,10 @@ puts p.execute("SELECT false::boolean as \"boolean\", 0::integer as \"integer\",
 puts p.escape_identifier("sdfghj56")
 puts p.escape_literal("sdfghj56")
 puts p.escape_string("sdfghj56")
+
+p.execute "LISTEN \"foobar\"" # to trigger it, Mystic.execute "perform pg_notify('foobar', '');"
+p.wait_for_notify 10000
+p.execute "UNLISTEN \"foobar\""
+
 p.disconnect!
 #raise StardardError, p.error unless !p.valid?

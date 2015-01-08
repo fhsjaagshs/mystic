@@ -6,19 +6,19 @@ Timeout::Timeout(double sec) {
 }
 
 void Timeout::update() {
-  gettimeofday(&currtime, NULL);
-  timersub(&aborttime, &currtime, &waittime);
+  gettimeofday(&_currtime, NULL);
+  timersub(&_aborttime, &_currtime, &_waittime);
 }
 
 void Timeout::start() {
-	gettimeofday(&currtime, NULL);
-	timeradd(&currtime, &_timeout, &aborttime);
+	gettimeofday(&_currtime, NULL);
+	timeradd(&_currtime, &_timeout, &_aborttime);
 }
 
-struct timeval Socket::get_timeval() {
-  return waittime;
+struct timeval Timeout::get_timeval() {
+  return _waittime;
 }
 
-bool Socket::timed_out() {
-  return (waittime.tv_sec >= 0 && waittime.tv_usec >= 0);
+bool Timeout::timed_out() {
+  return (_waittime.tv_sec >= 0 && _waittime.tv_usec >= 0);
 }
