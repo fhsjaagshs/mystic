@@ -35,7 +35,7 @@ module Mystic
       @pool.reap! unless @pool.nil?
     end
     
-    def wait_for_notify time
+    def wait_for_notify time=0
       @pool.with { |pg| pg.wait_for_notify time }
     end
     

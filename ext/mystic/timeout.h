@@ -13,6 +13,7 @@ public:
     void update();
     void start();
     struct timeval * get_timeval();
+    bool zero();
     bool timed_out();
 private:
     struct timeval _timeout;

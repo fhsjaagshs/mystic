@@ -206,7 +206,7 @@ static VALUE postgres_wait_for_notify(VALUE self, VALUE timeout) {
     
     try {
         values = p->wait_for_notify(NUM2DBL(timeout));
-    } catch (char *error_message) {
+    } catch (const char *error_message) {
         rb_raise(mp_cError, "%s", error_message);
     } catch (int fatal_code) {
         if (fatal_code < 0) rb_sys_fail("Fatal error waiting for socket.");
@@ -251,7 +251,6 @@ static VALUE postgres_exec(VALUE self, VALUE query) {
       return rows;
     }
   } catch (char *error_message) {
-      cout << "Error: " << error_message << endl;
     rb_raise(mp_cError, "%s", error_message);
   }
   

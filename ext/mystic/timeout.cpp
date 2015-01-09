@@ -8,19 +8,28 @@ Timeout::Timeout(double sec) {
 }
 
 void Timeout::update() {
-  gettimeofday(&_currtime, NULL);
-  timersub(&_aborttime, &_currtime, &_waittime);
+    if (_timeout.tv_sec > 0 && _timeout.tv_usec > 0) {
+        gettimeofday(&_currtime, NULL);
+        timersub(&_aborttime, &_currtime, &_waittime);
+    }
 }
 
 void Timeout::start() {
-	gettimeofday(&_currtime, NULL);
-	timeradd(&_currtime, &_timeout, &_aborttime);
+    if (_timeout.tv_sec > 0 && _timeout.tv_usec > 0) {
+        gettimeofday(&_currtime, NULL);
+        timeradd(&_currtime, &_timeout, &_aborttime);
+    }
 }
 
 struct timeval * Timeout::get_timeval() {
-  return &_waittime;
+    return zero() ? NULL : &_waittime;
+}
+
+bool Timeout::zero() {
+    return (_timeout.tv_sec == 0 && _timeout.tv_usec == 0);
 }
 
 bool Timeout::timed_out() {
-  return (_waittime.tv_sec >= 0 && _waittime.tv_usec >= 0);
+    if (zero()) return false;
+    return (_waittime.tv_sec >= 0 && _waittime.tv_usec >= 0);
 }

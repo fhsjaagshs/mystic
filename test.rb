@@ -15,13 +15,8 @@ puts p.escape_identifier("sdfghj56")
 puts p.escape_literal("sdfghj56")
 puts p.escape_string("sdfghj56")
 
-begin
-  p.execute 'LISTEN "foobar"' # to trigger it, Mystic.execute "perform pg_notify('foobar', '');"
-rescue => e
-  puts e.message
-end
-
-p.wait_for_notify 10000
+p.execute 'LISTEN "foobar"' # to trigger it, Mystic.execute "perform pg_notify('foobar', '');"
+p.wait_for_notify 0
 p.execute "UNLISTEN \"foobar\""
 
 p.disconnect!
