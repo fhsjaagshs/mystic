@@ -7,15 +7,11 @@ require "securerandom"
 module Mystic
   singleton_class.class_eval do
     def config
-      @config
+      @config ||= Mystic::Configuration.new
     end
     
     def config= c
-      if c.nil?
-        @config = Mystic::Configuration.new
-      else
-        @config = c
-      end
+      @config = c || Mystic::Configuration.new
     end
   end
   
@@ -121,6 +117,4 @@ module Mystic
       end
     end
   end
-  
-  self.config = Mystic::Configuration.new
 end

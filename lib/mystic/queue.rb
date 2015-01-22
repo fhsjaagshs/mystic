@@ -166,8 +166,7 @@ module Mystic
     end
     
     def queue= q
-      raise ArgumentError, "Queue cannot be nil." if q.nil?
-      @queue = q
+      @queue = q || Mystic::Queue.new
     end
   end
 end
