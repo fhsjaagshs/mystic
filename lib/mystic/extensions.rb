@@ -24,9 +24,9 @@ class ::Object
   
   def symbolize doit=true
     case self
-    when Hash then Hash[map { |k| [k.to_sym, v.symbolize(false)] }]
+    when Hash then Hash[map { |k,v| [k.symbolize, v.symbolize(false)] }] # The goal is to symbolize all strings that are KEYS
     when Array then map(&:symbolize)
-    when String then doit ? to_sym : self # The goal is to symbolize all strings
+    when String then doit ? to_sym : self
     else self end
   end
   
