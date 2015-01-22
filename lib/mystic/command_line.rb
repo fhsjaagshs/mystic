@@ -7,10 +7,10 @@ module Mystic
     MPATH = Mystic.root.join("mystic","migrations").freeze
     MREGEX = /^(?<num>\d+)_(?<name>[a-zA-Z]+)\.rb$/.freeze # example: 1_MigrationClassName.rb
 
-    MIGTABLE = "mmgis".dblquote.freeze
+    MIGTABLE = "mmgis".freeze
     
     CREATE_TABLE_SQL = "CREATE TABLE IF NOT EXISTS #{MIGTABLE} (num integer, name text)".freeze
-    LAST_MIG_NUM_SQL = "SELECT max(num) as num FROM #{MIGTABLE.dblquote}".freeze
+    LAST_MIG_NUM_SQL = "SELECT max(num) as num FROM #{MIGTABLE}".freeze
     LAST_MIG_SQL = "WITH max AS (#{LAST_MIG_NUM_SQL}) SELECT max.num as num,#{MIGTABLE}.name as name FROM max,#{MIGTABLE} WHERE #{MIGTABLE}.num=max.num;".freeze
     
     class << self
