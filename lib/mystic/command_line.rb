@@ -15,7 +15,7 @@ module Mystic
     
     class << self
       def setup
-        execute CREATE_TABLE_SQL
+        Mystic.execute CREATE_TABLE_SQL
       end
       
       def work queue, wait, concurrency
@@ -35,7 +35,7 @@ module Mystic
                .sort_by { |k,_| k }
                .each { |num, name|
                  Object.const_get(name).new.migrate
-                 execute "INSERT INTO #{MIGTABLE} (num,name) VALUES (#{num.to_s.escape},'#{name.sqlize}')"
+                 Mystic.execute "INSERT INTO #{MIGTABLE} (num,name) VALUES (#{num.to_s.escape},'#{name.sqlize}')"
                }
       end
     
@@ -45,9 +45,9 @@ module Mystic
         res = execute(LAST_MIG_SQL).first
 
         unless res.nil?
-          load root.join("mystic","migrations","#{res["num"]}_#{res["name"]}.rb")
+          load Mystic.root.join("mystic","migrations","#{res["num"]}_#{res["name"]}.rb")
           Object.const_get(res["name"]).new.rollback
-          execute "DELETE FROM #{MIGTABLE} WHERE num=#{res["num"].sqlize}"
+          Mystic.execute "DELETE FROM #{MIGTABLE} WHERE num=#{res["num"].sqlize}"
         end
       end
 	
