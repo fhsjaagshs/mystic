@@ -115,7 +115,7 @@ module Mystic
         URI.escape "postgresql://#{base_url}?#{query_str}"
       else
         unless defined? @db_urls
-          @db_urls = Hash[postgres.map { |env, conf| [env, database_url(conf)] }]
+          @db_urls = Hash[database.map { |env, conf| [env, database_url(conf)] }]
         end
         @db_urls
       end
