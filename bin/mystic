@@ -38,16 +38,16 @@ begin
       Mystic.connect ARGV[1]
       case ARGV[0].to_sym
       when :migrate
-	Mystic::CommandLine.migrate
+	      Mystic::CommandLine.migrate
       when :rollback
-	Mystic::CommandLine.rollback
+	      Mystic::CommandLine.rollback
       when :console
-	puts "Starting Mystic console: #{Mystic.env}"
-	ARGV.clear
-	IRB.start
+        puts "Starting Mystic console: #{Mystic.env}"
+        ARGV.clear
+        IRB.start
       end
       Mystic.disconnect
-    rescue Mystic::EnvironmentError => e
+    rescue => e
       puts e.message
     end
   end
