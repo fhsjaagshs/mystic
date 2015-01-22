@@ -60,10 +60,9 @@ module Mystic
     def database
       unless defined? @database
         # Heroku uses ERB cuz rails uses it errwhere
-        @database = YAML.load(ERB.new(Mystic.root.join("config","database.yml").read).result)
-                      .symbolize
-                      .reject { |k,v| v[:adapter].match(/postg.*/).nil? }
-                      .subhash(*(POOL_FIELDS+DATABASE_FIELDS))
+        # running a non-erb string through erb does nothing to the string
+        raw = YAML.load(ERB.new(Mystic.root.join("config","database.yml").read).result)
+        @database = Hash[raw.map { |env,hsh| [env, hsh.symbolize.subhash(*(POOL_FIELDS+DATABASE_FIELDS))] }]
       end
       @database
     end
