@@ -41,20 +41,22 @@ Nonetheless, modifying the configuration code is as easy as creating a subclass 
         # it should not conflict with any column names in your app (obviously)
       end
       
-      def database
-        # RETURNS Hash of Hashes (eg { "development" => { ... config here ... }
-        # defaults to loaded config from config/database.yml
+      def raw
+      	# RETURNS Hash of Hashes (eg { "development" => { ... config here ... }
+      	# this has must have symbol keys.
       end
       
-      def postgres
-        # RETURNS Hash
-        # connection hashmap for Mystic::Postgres.new
+      def database
+    	# RETURNS Hash
+        # processes the value from Mystic::Configuration#raw
+        # into a hash suitable for sending to Postgres
+        # as a connection options
       end
       
       def pool
         # RETURNS Hash
         # configuration hash for the connection pool
-        # the connection pool is an instance of AccessStack***
+        # the connection pool is an instance of Mystic::AccessStack
       end
     end
     
@@ -62,8 +64,6 @@ Nonetheless, modifying the configuration code is as easy as creating a subclass 
     # IMPORTANT IMPORTANT IMPORTANT
     #
     Mystic.config = MyConfig.new
-    
-*** See github.com/fhsjaagshs/access_stack
 
 Connecting to a Database
 -

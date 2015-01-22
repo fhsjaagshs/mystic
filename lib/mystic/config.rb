@@ -2,6 +2,7 @@
 
 require "yaml"
 require "erb"
+require "uri"
 require "securerandom"
 
 module Mystic
@@ -44,9 +45,9 @@ module Mystic
     end
     
     def env= new_env
-      raise EnvironmentError, "Environment '#{new_env}' doesn't exist." unless database.key? new_env
-      unless new_env.to_s == env
-        ENV["RACK_ENV"] = new_env.to_s
+      raise ArgumentError, "Environment '#{new_env}' doesn't exist." unless database.key? new_env
+      unless new_env == env
+        ENV["RACK_ENV"] = ENV["RAILS_ENV"] = new_env.to_s
         Mystic.connect if Mystic.connected?
       end
       env
@@ -54,49 +55,58 @@ module Mystic
     
     # The column used by Mystic::Model to return JSON
     def json_column
-      "json_#{SecureRandom.uuid}".freeze
+      "mystic_json_column".freeze
     end
     
+    # loads database.yml or DATABASE_URL
+    def raw
+      if Mystic.root.join("config","database.yml").file? # also checks for existence
+        Hash[YAML.load(ERB.new(Mystic.root.join("config","database.yml").read).result).map { |env,hsh| [env, hsh.symbolize.subhash(*(POOL_FIELDS+DATABASE_FIELDS))] }]
+      else
+        u = URI.parse ENV["DATABASE_URL"]
+        h = { 
+          "url" => {
+            :host => u.host,
+            :port => u.port,
+            :username => u.user,
+            :password => u.password,
+            :database => u.path[1..-1]
+          }
+        }
+        u.query.split('&').map { |p| p.split('=',2) }.each { |k,v| h["url"][k.to_sym] = v }
+        h.subhash(*(POOL_FIELDS+DATABASE_FIELDS))
+      end
+    end
+    
+    # database config
     def database
-      unless defined? @database
-        # Heroku uses ERB cuz rails uses it errwhere
-        # running a non-erb string through erb does nothing to the string
-        raw = YAML.load(ERB.new(Mystic.root.join("config","database.yml").read).result)
-        @database = Hash[raw.map { |env,hsh| [env, hsh.symbolize.subhash(*(POOL_FIELDS+DATABASE_FIELDS))] }]
+      unless defined? @database_config
+        @database_config ||= Hash[raw.map { |env,h|
+                                    if h[:database].index '=' # :database as connection string
+                                      h.merge Hash[h.delete(:database).split(' ').map { |s| s.split('=',2) }.map { |k,v| [k.to_s.strip.downcase.to_sym, v.index('\'').nil? ? v : v[1..-2] ] }]
+                                    else
+                                      h[:dbname] = h.delete :database
+                                      h[:user] = h.delete :username
+                                      h[:connect_timeout] = h.delete :timeout
+                                      h[:client_encoding] = h.delete :encoding
+                                      h[:fallback_application_name] ||= $0
+                                      h
+                                    end
+                                    
+                                    h[:host] ||= "localhost"
+                                    h[:port] ||= 5432
+                                    h[:user] ||= ENV["USER"] || ENV["USERNAME"]
+                                    h[:client_encoding] ||= "utf8"
+                                    
+                                    [env, h.subhash(*POSTGRES_FIELDS)]
+                                  }]
       end
-      @database
-    end
-    
-    def postgres
-      unless defined? @configs
-        @configs = Hash[database.map { |env,hash|
-          # :database as connection string
-          if hash[:database].index "="
-            hash.merge Hash[hash.delete(:database)
-                                .split(' ')
-                                .map { |s| s.split('=',2) }
-                                .map { |k,v| [k.to_s.strip.downcase.to_sym, v.index("'").nil? ? v : v[1..-1] ] }
-                            ]
-          end
-          
-          hash.delete :insert_returning # This is already implemented elsewhere with more functionality
-          hash.delete :min_messages # TODO: Implement this
-          hash.delete :variables # TODO: Implement this
-          hash[:dbname] = hash.delete :database
-          hash[:user] = hash.delete :username
-          hash[:connect_timeout] = hash.delete :timeout
-          hash[:client_encoding] = hash.delete :encoding
-          hash[:fallback_application_name] = $0
-          
-          [env, hash.subhash(*POSTGRES_FIELDS)]
-        }]
-      end
-      @configs[env]
+      @database_config[env] || @database_config["url"]
     end
     
     def pool
-      @pconfigs = Hash[database.map { |env, h| [env, h.subhash(*POOL_FIELDS)] }] unless defined? @pconfigs
-      @pconfigs[env]
+      @pool_configs = Hash[raw.map { |env, h| [env, h.subhash(*POOL_FIELDS)] }] unless defined? @pool_configs
+      @pool_configs[env] || @pool_configs["url"]
     end
     
     def database_url c=nil
@@ -109,10 +119,8 @@ module Mystic
                     # query_str contains whatever connection params are not in the base_url
         URI.escape "postgresql://#{base_url}?#{query_str}"
       else
-        unless defined? @db_urls
-          @db_urls = Hash[database.map { |env, conf| [env, database_url(conf)] }]
-        end
-        @db_urls[env]
+        @db_urls = Hash[database.map { |env, conf| [env, database_url(conf)] }] unless defined? @db_urls
+        @db_urls[env] || @db_urls["url"]
       end
     end
   end
