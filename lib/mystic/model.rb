@@ -144,7 +144,7 @@ module Mystic
         when :json
           s = ["SELECT"]
           s << singular ? "row_to_json(\"res\")" : "array_to_json(array_agg(\"res\"))"
-          s << "AS #{Mystic::Postgres::REPR_COL.dblquote}"
+          s << "AS #{Mystic.config.json_column.dblquote}"
           s << "FROM (#{sql}) \"res\""
           s << "LIMIT 1" if singular
           s*' '

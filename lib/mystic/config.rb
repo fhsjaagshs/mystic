@@ -117,7 +117,7 @@ module Mystic
         unless defined? @db_urls
           @db_urls = Hash[database.map { |env, conf| [env, database_url(conf)] }]
         end
-        @db_urls
+        @db_urls[env]
       end
     end
   end

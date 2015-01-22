@@ -7,16 +7,11 @@ require_relative "../../ext/mystic/postgres.bundle" # TODO: figure this out
 module Mystic
   EnvironmentError = Class.new StandardError
   class << self
-    def connect dbconf={}, poolconf={}
-      if dbconf.empty?
-        dbconf = config.postgres
-        poolconf = config.pool
-      end
-      
+    def connect dbconf=nil, poolconf=nil
       disconnect if connected?
       ENV["DATABASE_URL"] = config.database_url dbconf
-      @pool = AccessStack.new poolconf
-      @pool.create { @connected = true; Mystic::Postgres.new dbconf }
+      @pool = AccessStack.new (poolconf || config.pool)
+      @pool.create { @connected = true; Mystic::Postgres.new (dbconf || config.postgres) }
       @pool.destroy { |pg| (@connected = @pool.count-1 <= 0); pg.disconnect! }
       @pool.validate { |pg| pg != nil && pg.valid? }
       @connected = true
