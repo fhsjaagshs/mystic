@@ -19,7 +19,7 @@ module Mystic
     end
     
     def connected?
-      @pool.empty?
+      !@pool.nil? && @pool.empty?
     end
     
     def reap_connections!
