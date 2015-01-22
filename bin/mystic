@@ -42,7 +42,7 @@ begin
       when :rollback
 	      Mystic::CommandLine.rollback
       when :console
-        puts "Starting Mystic console: #{Mystic.env}"
+        puts "Starting Mystic console: #{Mystic.config.env}"
         ARGV.clear
         IRB.start
       end
