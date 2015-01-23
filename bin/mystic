@@ -1,5 +1,7 @@
 #!/usr/bin/env ruby
 
+abort "Invalid arguments." if ARGV.empty?
+
 require_relative "../lib/mystic.rb"
 require_relative "../lib/mystic/command_line"
 require_relative "../lib/mystic/root"
@@ -34,7 +36,7 @@ begin
     # mystic work <queue_name> <wait timeout> <concurrency>
     Mystic::CommandLine.work ARGV[1], ARGV[2], ARGV[3]
   else
-    begin
+  #  begin
       Mystic.connect ARGV[1]
       case ARGV[0].to_sym
       when :migrate
@@ -47,9 +49,9 @@ begin
         IRB.start
       end
       Mystic.disconnect
-    rescue => e
-      puts e.message
-    end
+    # rescue => e
+    #   puts e.message
+    # end
   end
 rescue ErrorOutput => e
   puts e.message

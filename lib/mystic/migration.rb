@@ -1,5 +1,7 @@
 #!/usr/bin/env ruby
 
+require "securerandom"
+
 module Mystic
   class Migration
 		IrreversibleError = Class.new StandardError
@@ -21,15 +23,20 @@ module Mystic
 		end
     
     def _exec_loaded_sql
+      puts @sql if $DEBUG
+      uuid = SecureRandom.uuid
+      Mystic.execute "BEGIN"
       begin
-        Mystic.execute "SAVEPOINT #{self.class}"
-        Mystic.execute @sql.join ''
-      rescue
-        Mystic.execute "ROLLBACK TO SAVEPOINT #{self.class}"
+        Mystic.execute "SAVEPOINT \"#{uuid}\""
+        Mystic.execute (@sql.join '')
+      rescue => e
+        Mystic.execute "ROLLBACK TO SAVEPOINT \"#{uuid}\""
+        puts e
       else
-        Mystic.execute "RELEASE SAVEPOINT #{self.class}"
+        Mystic.execute "RELEASE SAVEPOINT \"#{uuid}\""
       ensure
         @sql.clear
+        Mystic.execute "COMMIT"
       end
     end
     

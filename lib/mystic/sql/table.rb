@@ -11,29 +11,21 @@ module Mystic
 										:inherits,
                     :tablespace
 										
-			def self.create opts={}
-				new true, opts
-			end
-			
-			def self.alter opts={}
-				new false, opts
-			end
+			def self.create opts={}; new true, opts; end
+			def self.alter opts={}; new false, opts; end
+			def create?; @is_create; end
       
       def initialize is_create=true, opts={}
 				@is_create = is_create
-        @name = (opts[:name] || opts["name"]).to_sym
-        @inherits = opts[:inherits] || opts["inherits"]
-        @tablespace = opts[:tablespace] || opts["tablespace"]
+        @name = (opts[:name] || opts["name"]).to_sym rescue nil
+        @inherits = (opts[:inherits] || opts["inherits"]).to_sym rescue nil
+        @tablespace = (opts[:tablespace] || opts["tablespace"]).to_sym rescue nil
         @columns = []
         @indeces = []
         @operations = []
         raise ArgumentError, "Argument 'name' is invalid." if @name.empty?
       end
-			
-			def create?
-				@is_create
-			end
-    
+      
       def << obj
         case obj
         when Column then @columns << obj
@@ -48,12 +40,12 @@ module Mystic
 			
   			if create?
   				tbl = []
-  				tbl << "CREATE TABLE #{@name.to_sym.sqlize} (#{@columns.map { |c| c.to_s.sqlize }*","})"
-  				tbl << "INHERITS #{@inherits.to_sym.sqlize}" if @inherits.nil?
-  				tbl << "TABLESPACE #{@tablespace.to_sym.sqlize}" unless @tablespace.nil?
+  				tbl << "CREATE TABLE #{@name.sqlize} (#{@columns.map { |c| c.to_s }*","})"
+  				tbl << "INHERITS #{@inherits.sqlize}" unless @inherits.nil?
+  				tbl << "TABLESPACE #{@tablespace.sqlize}" unless @tablespace.nil?
   				sql << tbl*' '
   			else
-  				sql << "ALTER TABLE #{@name.to_sym.sqlize} #{@columns.map { |c| "ADD COLUMN #{c.to_s}" }*', ' }"
+  				sql << "ALTER TABLE #{@name.sqlize} #{@columns.map { |c| "ADD COLUMN #{c.to_s}" }*', ' }"
   			end
       
   			sql.push(*@indeces.map(&:to_s)) unless @indeces.empty?
@@ -116,12 +108,10 @@ module Mystic
       
       def method_missing meth, *args, &block
         return super if args.empty?
-        unless respond_to? meth
-          define_method meth do |*args|
-            column args[0], meth, *args[1..-1]
-          end
-          send meth, *args, &block
+        define_singleton_method meth do |*args|
+          column args[0], meth, *args[1..-1]
         end
+        send meth, *args, &block
       end
     end
   end

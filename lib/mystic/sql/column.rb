@@ -7,7 +7,7 @@ module Mystic
       
       def initialize opts={}
         @name = (opts[:name] || opts["name"]).to_sym
-        @type = (opts[:type] || opts["type"]).to_sym
+        @type = (opts[:type] || opts["type"]).to_s.downcase.gsub('_',' ').to_sym
         @size = (opts[:size] || opts["size"]).to_i
         @unique = (opts[:unique] || opts["unique"]) == true
         @not_null = (opts[:not_null] || opts["not_null"]) == true
@@ -33,8 +33,8 @@ module Mystic
       
       def to_s
   			sql = []
-  			sql << @name.to_s.escape
-  			sql << @type.downcase
+  			sql << @name.to_s.dblquote
+  			sql << @type.to_s
         if geospatial?
           sql << "(#{@geom_type.escape}, #{@geom_srid.to_s.escape})"
         else

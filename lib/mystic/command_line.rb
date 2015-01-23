@@ -7,7 +7,7 @@ module Mystic
     MPATH = Mystic.root.join("mystic","migrations").freeze
     MREGEX = /^(?<num>\d+)_(?<name>[a-zA-Z]+)\.rb$/.freeze # example: 1_MigrationClassName.rb
 
-    MIGTABLE = "mmgis".freeze
+    MIGTABLE = "mmigs".freeze
     
     CREATE_TABLE_SQL = "CREATE TABLE IF NOT EXISTS #{MIGTABLE} (num integer, name text)".freeze
     LAST_MIG_NUM_SQL = "SELECT max(num) as num FROM #{MIGTABLE}".freeze
@@ -26,23 +26,25 @@ module Mystic
       def migrate
         setup
         last_mig_num = execute(LAST_MIG_NUM_SQL).first["num"] rescue 0
-
+        
         migs = MPATH.entries
+               .map(&:to_s)
                .map { |fn| MREGEX.match fn }
                .compact
-               .map { |m| [m[:num].to_t, m[:name].to_s] }
+               .map { |m| [m[:num].to_i, m[:name].to_s] }
                .reject { |k,_| k < last_mig_num }
                .sort_by { |k,_| k }
                .each { |num, name|
+                 load MPATH.join(num.to_s + '_' + name + '.rb').to_s
                  Object.const_get(name).new.migrate
-                 Mystic.execute "INSERT INTO #{MIGTABLE} (num,name) VALUES (#{num.to_s.escape},'#{name.sqlize}')"
+                 Mystic.execute "INSERT INTO #{MIGTABLE} (num,name) VALUES (#{num.to_s.escape},#{name.sqlize})"
                }
       end
     
       # Rolls back a single migration
       def rollback
         setup
-        res = execute(LAST_MIG_SQL).first
+        res = Mystic.execute(LAST_MIG_SQL).first
 
         unless res.nil?
           load Mystic.root.join("mystic","migrations","#{res["num"]}_#{res["name"]}.rb")

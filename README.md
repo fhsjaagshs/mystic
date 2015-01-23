@@ -113,7 +113,43 @@ If you used the JSON column, it will return ONLY that column's value at row 0.
 Writing a Model
 -
 
-TODO: write this
+Mystic provides a DSL for writing models. An example model looks like:
+
+    #!/usr/bin/env ruby
+
+    require "mystic"
+    
+    class Users
+      include Mystic::Model
+    
+      table :users # define which table the model accesses
+      
+      column :id
+      column :username
+      # other columns
+      
+      # Mystic models have the following class methods.
+      # They are called "actions"
+      # 	select - return array of results
+      # 	fetch - Like select, but returns one row as a hash
+      # 	update - update rows
+      # 	delete - delete rows
+      
+      # you can make custom actions:
+      select_action :my_action do |params={}, opts={}|
+      	# return stuff
+      	# issue queries
+      end
+      
+      # update takes 3 params
+      update_action :my_update_action do |where={}, set={}, opts={}|
+      
+      end
+    end
+    
+You can call custom actions like this:
+
+    Users.select :my_action, { :param => "this" }, { :option => "value" }
 
 Writing a Migration
 -
@@ -143,3 +179,4 @@ TODO
 -
 
 1. **Postgres client encodings**. As long as you don't change your DB server's encoding, you won't need to change your client encoding, and this won't affect you. The code is approximately 60% finished.
+2. **Postgres notices**. Postgres issues these retarded messages when you do things like creating a table that already exists (`CREATE TABLE IF NOT EXISTS`)
