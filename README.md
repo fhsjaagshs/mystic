@@ -110,6 +110,18 @@ This method normally returns an array of hashes. Each hash is a row.
 
 If you used the JSON column, it will return ONLY that column's value at row 0.
 
+General Notes
+-
+
+Unlike other frameworks, Ruby encodes meaning in the types of objects. For example:
+
+`Symbol`s  ->  double-quoted identifiers
+
+`String`s  ->  single quoted literals
+
+All other objects remain the same.
+
+
 Writing a Model
 -
 
@@ -156,8 +168,39 @@ Writing a Migration
 
 TODO: write this
 
+Mystic::SQL
+-
+
+`Mystic::SQL` is a wrapper around basic SQL constructs such as tables, indeces, and columns.
+
+**`Mystic::SQL::Index`**
+
+`:columns` must contain at least one element.
+
+**`:name`** (optional) (`Symbol`) The name of the index. Defaults to a name generated from the columns and the table.
+
+**`:type`** (optional) (`Symbol`) The index type. Can either be `:btree`, `:hash`, `:gist`, `:spgist`, or `:gin`.
+
+**`:columns`** (optional) (`Array` of `Strings`, `Symbol`s, or `Column`s) the index's columns. `String`s represent SQL fragments, `Symbols` represent column names, and `Columns` are replaced with their names.
+
+**`:fillfactor`** (optional) (`Integer`) The fillfactor storage option. Must be in the range `10..100`.
+
+**`:tablespace`** (`Symbol`) The tablespace of the index.
+
+**`:buffering`** (`Symbol`) The buffering storage option. Must either be `:on`, `:off`, or `:auto`.
+
+**`:where`** (`String`) SQL fragment that determines which rows are indexed.
+
+**`unique`** (`true`/`false`) Whether or not the table is unique.
+
+**`:table`** (`Symbol`) The table the index is on.
+
+
+
 Command line
 -
+
+TODO: Document Queue
 
 Run all pending migrations
 

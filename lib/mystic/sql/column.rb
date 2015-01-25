@@ -31,6 +31,10 @@ module Mystic
       def geospatial?; @type == :geometry; end
       def unique?; @unique; end
       
+      def sqlize
+        name.sqlize
+      end
+      
       def to_s
   			sql = []
   			sql << @name.to_s.dblquote

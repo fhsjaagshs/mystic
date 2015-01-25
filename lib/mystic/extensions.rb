@@ -19,6 +19,8 @@ class ::Object
     when Time then to_s.quote
     when Array then map(&:sqlize)
     when Hash then map { |p| p.sqlize*'=' }
+    when TrueClass then "true"
+    when FalseClass then "false"
     else raise TypeError, "Unable to turn type into an SQL type." end
   end
   

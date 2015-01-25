@@ -10,7 +10,7 @@ module Mystic
 										:operations,
 										:inherits,
                     :tablespace
-										
+			
 			def self.create opts={}; new true, opts; end
 			def self.alter opts={}; new false, opts; end
 			def create?; @is_create; end
@@ -100,9 +100,10 @@ module Mystic
       end
       
       def index *cols
-        opts = cols.last.is_a? Hash ? cols.last : {}
-        opts[:columns] = cols[0..-2]
-				opts[:table_name] = @name
+        opts = cols.last.is_a?(Hash) ? cols.pop : {}
+        opts[:columns] = cols
+				opts[:table] = @name
+        puts "opts: " + opts.inspect
         self << Mystic::SQL::Index.new(opts)
       end
       

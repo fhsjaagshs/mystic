@@ -2,94 +2,111 @@
 
 module Mystic
   module SQL
-  	INDEX_TYPES = [
-      :btree,
-  		:hash,
-  		:gist,
-  		:spgist,
-  		:gin
-  	].freeze
-    class Index
-      attr_accessor :name, # Symbol or String
-										:table_name, # Symbol or String
-										:type, # Symbol
-										:unique, # true/false
-										:columns, # Array of Symbols
-                    :fillfactor, # Integer in (10..100)
-                    :fastupdate, # true/false
-                    :concurrently, # true/false
-                    :tablespace, # Symbol
-                    :buffering, # :on, :off, :auto
-                    :where # String
-      
+    class Index  
+      FILLFACTOR_RANGE = (10..100).freeze
+    	INDEX_TYPES = [:btree, :hash, :gist, :spgist, :gin].freeze
+       
       def initialize params={}
-        opts = params.symbolize
-				raise ArgumentError, "Missing table_name." unless opts.key? :table_name
-        name = opts[:name].to_sym if opts.key? :name
-        table_name = (opts[:table_name] || "").to_sym
-				@unique = opts[:unique] == true
-        @columns = opts[:columns].reject { |c| c.nil? || c.empty? }.map { |c| c.to_s.to_sym }
-        @fastupdate = (opts[:fastupdate] || true) == true
-        @concurrently = (opts[:concurrently] || false) == true
-        @tablespace = opts[:tablespace].to_sym
-        @where = opts[:where].to_s
-        type = (opts[:type] || :btree).to_s.downcase.to_sym
-        fillfactor = opts[:fillfactor].to_i
-        buffering = opts[:buffering] || :auto
-        
-        raise ArgumentError, "Indeces must contain at least one column." if @columns.empty?
+        opts = params.symbolize.subhash([
+          :fastupdate,
+          :concurrently,
+          :tablespace,
+          :where,
+          :type,
+          :fillfactor,
+          :buffering,
+          :unique,
+          :table,
+          :columns,
+          :name
+        ]).each { |option,value| send (option.to_s + '=').to_sym, value }
+
+        raise ArgumentError, "Indeces must contain at least one column." if columns.empty?
       end
       
-      def buffering= v
-        raise ArgumentError, "Index buffering option must either be :on, :off, or :auto"  unless [:on, :off, :auto].include? v.to_s.to_sym
-        @buffering = v.to_s.to_sym
-      end
+      def unique?; @unique; end
+      def concurrently?; @concurrently; end
+      def fastupdate?; @fastupdate; end
       
-      def fillfactor= v
-        raise ArgumentError, "Index fill factor must be in the range 10..100" unless (10..100).include? v
-        @fillfactor = v.to_i
-      end
+      # Accept truthy/falsey values
+      def unique= v; @unique = v ? true : false; end
+      def concurrently= v; v.nil? ? false : (@concurrently = v ? true : false); end
+      def fastupdate= v; v.nil? ? true : (@fastupdate = v ? true : false); end
       
-      def type= v
-        raise ArgumentError, "Index type must either be :btree, :hash, :gist, :spgist, :gin." unless INDEX_TYPES.include? @type
-        @type = v.to_s.to_sym
-      end
+      def columns; (columns = @columns) rescue []; end
+      def columns= v;  @columns = v.compact.reject(&:empty?); end
       
+      def name; @name ||= ["index",table].push(*columns.map(&:sqlize).map { |c| c.start_with?('"') ? c[1..-2] : c }.join('_').to_sym; end
       def name= v
-        raise ArgumentError, "Index name cannot be nil or empty." if v.nil? || v.empty?
-        @name = v.to_s.to_sym
+        return (@name = nil) if v.nil?
+        raise ArgumentError, "Index name must not be empty." if v.empty?
+        raise TypeError, "Index name must be a Symbol." unless Symbol === v
+        @name = v
       end
       
-      def table_name= v
-        raise ArgumentError, "An index's table name cannot be nil or empty." if v.nil? || v.empty?
-        @table_name = v.to_s.to_sym
+      def where; @where; end
+      def where= v
+        raise TypeError, ":where must be an integer" unless Integer === v || v.nil?
+        @where = v
+      end
+      
+      def buffering; @buffering; end
+      def buffering= v
+        raise ArgumentError, "Invalid buffering option: #{v}. Index buffering option must either be :on, :off, or :auto."  unless [:on, :off, :auto].include?(v) || v.nil?
+        @buffering = v
+      end
+      
+      def fillfactor; @fillfactor; end
+      def fillfactor= v
+        return (@fillfactor = nil) if v.nil?
+        raise TypeError, "Fillfactor must be an Integer." unless Integer === v
+        raise ArgumentError, "Invalid fill factor: #{v}. Index fill factor must be in the range #{FILLFACTOR_RANGE.inpect}" unless FILLFACTOR_RANGE.include? v
+        @fillfactor = v
+      end
+      
+      def tablespace; @tablespace; end
+      def tablespace= v
+        return (@tablespace = nil) if v.nil?
+        raise TypeError, "Tablespace must be a Symbol." unless Symbol === v
+        @tablespace = v
+      end
+      
+      def type; @type; end
+      def type= v
+        return (@type = nil) if v.nil?
+        raise TypeError, "Index type must be a Symbol." unless Symbol === v
+        raise ArgumentError, "Invalid index type: #{v}. Index type must either be :btree, :hash, :gist, :spgist, or :gin." unless INDEX_TYPES.include? v
+        @type = v
       end
 
-      def << col
-        case col
-        when Column then @columns << col.name.to_sym
-        else @columns << col.to_s.to_sym end
+      def table; @table; end
+      def table= v
+        raise ArgumentError, "Index table name must not be nil." if v.nil?
+        raise ArgumentError, "Index table name must not be empty." if v.empty?
+        raise TypeError, "Index table name must be a Symbol." unless Symbol === v
+        @table = v
       end
       
       def to_s
         storage_params = {
-          :fillfactor => @fillfactor,
-          :buffering => @buffering,
-          :fastupdate => @fastupdate
+          "fillfactor" => fillfactor,
+          "buffering" => buffering,
+          "fastupdate" => fastupdate
         }.reject { |k,v| v.nil? }
-
+        
   			sql = []
   			sql << "CREATE"
-  			sql << "UNIQUE" if @unique
+  			sql << "UNIQUE" if unique?
   			sql << "INDEX"
-  			sql << "CONCURENTLY" if @concurrently
-  		  sql << @name.dblquote
-  		  sql << "ON #{@table_name.dblquote}"
-  			sql << "USING #{@type.escape}" if INDEX_TYPES.include? @type
-  			sql << "(#{@columns.map(&:sqlize)*',' })"
-  			sql << "WITH (#{storage_params.sqlize})" unless storage_params.empty?
-  			sql << "TABLESPACE #{@tablespace.dblquote}" if @tablespace
-  			sql << "WHERE #{@where}" if @where
+  			sql << "CONCURENTLY" if concurrently?
+  		  sql << name.sqlize
+  		  sql << "ON #{table.sqlize}" if table_name
+  			sql << "USING #{type.to_s.escape}" if type
+  			sql << "(#{columns.map { |c| Symbol === c ? c.sqlize : c }.join(',')})"
+  			sql << "WITH (#{storage_params.map { |k,v| k.escape + ' = ' + v.to_s.escape }*", "})" unless storage_params.empty?
+  			sql << "TABLESPACE #{tablespace.sqlize}" if tablespace
+  			sql << "WHERE #{where}" if where
+        puts "----------------------\n" + sql*' '
   			sql*' '
       end
     end
