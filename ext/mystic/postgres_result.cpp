@@ -6,6 +6,7 @@
 
 #include "postgres_result.h"
 #include "oids.h"
+#include <cstring>
 
 PostgresResult::PostgresResult(PGresult *res) {
   _result = res;

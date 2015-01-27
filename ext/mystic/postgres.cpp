@@ -12,6 +12,9 @@
 #include "socket.h"
 #include "timeout.h"
 #include "pg_config_manual.h"
+#include <cstring>
+#include <string>
+#include <cstdarg>
 
 using namespace std;
 
@@ -119,7 +122,7 @@ map<const char *, string> Postgres::notifies(PGnotify *msg) {
   else {
     results["relname"] = string(msg->relname);
     results["extra"] = string(msg->extra);
-    results["be_pid"] = to_string(msg->be_pid);
+    results["be_pid"] = to_string((int)msg->be_pid);
     PQfreemem(msg);
   }
 

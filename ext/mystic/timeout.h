@@ -4,6 +4,7 @@
   A C++ class to wrap a timeval
 */
 
+#include <stdlib.h>
 #include <sys/time.h>
 
 class Timeout {

@@ -36,7 +36,10 @@ module Mystic
       def columns; (columns = @columns) rescue []; end
       def columns= v;  @columns = v.compact.reject(&:empty?); end
       
-      def name; @name ||= ["index",table].push(*columns.map(&:sqlize).map { |c| c.start_with?('"') ? c[1..-2] : c }.join('_').to_sym; end
+      def name
+        @name ||= ["index",table].push(*columns.map(&:sqlize).map { |c| c.start_with?('"') ? c[1..-2] : c }).join('_').to_sym
+      end
+
       def name= v
         return (@name = nil) if v.nil?
         raise ArgumentError, "Index name must not be empty." if v.empty?

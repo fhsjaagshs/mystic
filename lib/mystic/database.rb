@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 require_relative "./access_stack"
-require_relative "../../ext/mystic/postgres.bundle" rescue "mystic/postgres"
+require "mystic/postgres"
 
 module Mystic
   class << self

@@ -4,6 +4,7 @@ Gemfile.lock
 Makefile
 /**/**/*.o
 /**/**/*.bundle
+/**/**/*.so
 /**/**/*.log
 
 ext/mystic/mkmf.log

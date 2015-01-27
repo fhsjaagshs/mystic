@@ -1,9 +1,9 @@
 require "mkmf"
 
 $libs += "-lstdc++"
-#$CFLAGS << " -Wall"
 
-with_cflags("-I/usr/local/include") { true }
+with_cflags("-I/usr/local/include -std=c99") { true }
+with_cppflags("-std=c++0x") { true }
 with_ldflags("-L/usr/local/lib -lpq") { true }
 
 pg_config_path = with_config("pg-config") || with_config("pg_config")
