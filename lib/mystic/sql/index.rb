@@ -7,7 +7,7 @@ module Mystic
     	INDEX_TYPES = [:btree, :hash, :gist, :spgist, :gin].freeze
        
       def initialize params={}
-        opts = params.symbolize.subhash([
+        opts = params.symbolize.subhash(*[
           :fastupdate,
           :concurrently,
           :tablespace,
@@ -20,6 +20,8 @@ module Mystic
           :columns,
           :name
         ]).each { |option,value| send (option.to_s + '=').to_sym, value }
+
+        puts table.inspect
 
         raise ArgumentError, "Indeces must contain at least one column." if columns.empty?
       end
@@ -94,7 +96,7 @@ module Mystic
         storage_params = {
           "fillfactor" => fillfactor,
           "buffering" => buffering,
-          "fastupdate" => fastupdate
+          "fastupdate" => fastupdate?
         }.reject { |k,v| v.nil? }
         
   			sql = []
@@ -103,7 +105,7 @@ module Mystic
   			sql << "INDEX"
   			sql << "CONCURENTLY" if concurrently?
   		  sql << name.sqlize
-  		  sql << "ON #{table.sqlize}" if table_name
+  		  sql << "ON #{table.sqlize}" if table
   			sql << "USING #{type.to_s.escape}" if type
   			sql << "(#{columns.map { |c| Symbol === c ? c.sqlize : c }.join(',')})"
   			sql << "WITH (#{storage_params.map { |k,v| k.escape + ' = ' + v.to_s.escape }*", "})" unless storage_params.empty?

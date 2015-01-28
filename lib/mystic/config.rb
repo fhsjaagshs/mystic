@@ -5,6 +5,8 @@ require "erb"
 require "uri"
 require "securerandom"
 
+# TODO: Error on environment not in configuration
+
 module Mystic
   singleton_class.class_eval do
     def config
@@ -45,7 +47,7 @@ module Mystic
     end
     
     def env= new_env
-      raise ArgumentError, "Environment '#{new_env}' doesn't exist." unless database.key? new_env
+      raise ArgumentError, "Environment '#{new_env}' doesn't exist." unless raw.has_key? new_env
       unless new_env == env
         ENV["RACK_ENV"] = ENV["RAILS_ENV"] = new_env.to_s
         Mystic.connect if Mystic.connected?
@@ -60,22 +62,25 @@ module Mystic
     
     # loads database.yml or DATABASE_URL
     def raw
-      if Mystic.root.join("config","database.yml").file? # also checks for existence
-        Hash[YAML.load(ERB.new(Mystic.root.join("config","database.yml").read).result).map { |env,hsh| [env, hsh.symbolize.subhash(*(POOL_FIELDS+DATABASE_FIELDS))] }]
-      else
-        u = URI.parse ENV["DATABASE_URL"]
-        h = { 
-          "url" => {
-            :host => u.host,
-            :port => u.port,
-            :username => u.user,
-            :password => u.password,
-            :database => u.path[1..-1]
+      unless defined? @raw
+      	if Mystic.root.join("config","database.yml").file? # also checks for existence
+       	 @raw = Hash[YAML.load(ERB.new(Mystic.root.join("config","database.yml").read).result).map { |env,hsh| [env, hsh.symbolize.subhash(*(POOL_FIELDS+DATABASE_FIELDS))] }]
+      	else
+          u = URI.parse ENV["DATABASE_URL"]
+          h = { 
+            "url" => {
+              :host => u.host,
+              :port => u.port,
+              :username => u.user,
+              :password => u.password,
+              :database => u.path[1..-1]
+            }
           }
-        }
-        u.query.split('&').map { |p| p.split('=',2) }.each { |k,v| h["url"][k.to_sym] = v }
-        h.subhash(*(POOL_FIELDS+DATABASE_FIELDS))
+          u.query.split('&').map { |p| p.split('=',2) }.each { |k,v| h["url"][k.to_sym] = v }
+          @raw = h.subhash(*(POOL_FIELDS+DATABASE_FIELDS))
+        end
       end
+      @raw
     end
     
     # database config
@@ -105,8 +110,8 @@ module Mystic
     end
     
     def pool
-      @pool_configs = Hash[raw.map { |env, h| [env, h.subhash(*POOL_FIELDS)] }] unless defined? @pool_configs
-      @pool_configs[env] || @pool_configs["url"]
+      @pool_config = Hash[raw.map { |env, h| [env, h.subhash(*POOL_FIELDS)] }] unless defined? @pool_config
+      @pool_config[env]
     end
     
     def database_url c=nil
@@ -119,8 +124,9 @@ module Mystic
                     # query_str contains whatever connection params are not in the base_url
         URI.escape "postgresql://#{base_url}?#{query_str}"
       else
-        @db_urls = Hash[database.map { |env, conf| [env, database_url(conf)] }] unless defined? @db_urls
-        @db_urls[env] || @db_urls["url"]
+        database_url database
+        # @db_urls = Hash[raw.map { |env, conf| [env, database_url(conf)] }] unless defined? @db_urls
+        # @db_urls[env] || @db_urls["url"]
       end
     end
   end

@@ -37,7 +37,8 @@ begin
     Mystic::CommandLine.work ARGV[1], ARGV[2], ARGV[3]
   else
   #  begin
-      Mystic.connect ARGV[1]
+      Mystic.config.env = ARGV[1]
+      Mystic.connect
       case ARGV[0].to_sym
       when :migrate
 	      Mystic::CommandLine.migrate

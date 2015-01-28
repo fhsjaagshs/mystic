@@ -7,8 +7,10 @@ module Mystic
   class << self
     def connect dbconf=nil, poolconf=nil
       disconnect if connected?
-      ENV["DATABASE_URL"] = config.database_url (dbconf || config.database)
-      @pool = AccessStack.new (poolconf || config.pool)
+      dbconf ||= config.database
+      poolconf ||= config.pool
+      ENV["DATABASE_URL"] = config.database_url dbconf
+      @pool = AccessStack.new poolconf
       @pool.validate { |pg| !pg.nil? && pg.valid? }
       @pool.create { Mystic::Postgres.new (dbconf || config.database) }
       @pool.destroy { |pg| pg.disconnect! }

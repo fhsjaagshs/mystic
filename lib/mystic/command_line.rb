@@ -25,14 +25,14 @@ module Mystic
       # Runs every yet-to-be-ran migration
       def migrate
         setup
-        last_mig_num = execute(LAST_MIG_NUM_SQL).first["num"] rescue 0
-        
+        last_mig_num = Mystic.execute(LAST_MIG_NUM_SQL).first["num"]
+
         migs = MPATH.entries
                .map(&:to_s)
                .map { |fn| MREGEX.match fn }
                .compact
                .map { |m| [m[:num].to_i, m[:name].to_s] }
-               .reject { |k,_| k < last_mig_num }
+               .select { |k,_| k > last_mig_num }
                .sort_by { |k,_| k }
                .each { |num, name|
                  load MPATH.join(num.to_s + '_' + name + '.rb').to_s
