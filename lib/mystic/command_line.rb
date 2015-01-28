@@ -26,6 +26,7 @@ module Mystic
       def migrate
         setup
         last_mig_num = Mystic.execute(LAST_MIG_NUM_SQL).first["num"]
+        last_mig_num ||= -1
 
         migs = MPATH.entries
                .map(&:to_s)

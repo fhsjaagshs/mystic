@@ -137,7 +137,7 @@ module Mystic
       
         raise ArgumentError, "Return type (:return) must be either #{RETURN_TYPES.map(&:to_s).join(", ")}" unless RETURN_TYPES.include? retrn
 
-        sql << " RETURNING #{colstr}" if retrn != :nothing && sql[0..5] != "SELECT"
+        sql << " RETURNING #{column_string}" if retrn != :nothing && sql[0..5] != "SELECT"
       
         case retrn
         when :rows, :nothing then sql
@@ -167,9 +167,9 @@ module Mystic
           raise ArgumentError, "Update queries must set something." if set.empty?
           decorate "UPDATE #{table_name.dblquote} SET #{set.sqlize*','} WHERE #{where.sqlize*' AND '}", opts
         when :insert
-          decorate "INSERT INTO #{table_name.dblquote} (#{entry.keys*','}) VALUES (#{entry.values.sqlize*','})", opts
+          decorate "INSERT INTO #{table_name.to_s.dblquote} (#{params.keys*','}) VALUES (#{params.values.sqlize*','})", opts
         when :delete
-          decorate "DELETE FROM #{table_name.dblquote} WHERE #{params.sqlize*' AND '}", opts
+          decorate "DELETE FROM #{table_name.to_s.dblquote} WHERE #{params.sqlize*' AND '}", opts
         end
       end
     end

@@ -47,6 +47,7 @@ module Mystic
     end
     
     def env= new_env
+      new_env ||= "development"
       raise ArgumentError, "Environment '#{new_env}' doesn't exist." unless raw.has_key? new_env
       unless new_env == env
         ENV["RACK_ENV"] = ENV["RAILS_ENV"] = new_env.to_s
