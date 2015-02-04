@@ -122,7 +122,7 @@ map<const char *, string> Postgres::notifies(PGnotify *msg) {
   else {
     results["relname"] = string(msg->relname);
     results["extra"] = string(msg->extra);
-    results["be_pid"] = to_string((long long)(msg->be_pid)); // uses long long for better compatibility (with Heroku) 
+    results["be_pid"] = to_string((long long int)(msg->be_pid)); // uses long long for better compatibility (with Heroku) 
     PQfreemem(msg);
   }
 
