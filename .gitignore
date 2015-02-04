@@ -9,3 +9,4 @@ Makefile
 
 ext/mystic/mkmf.log
 ext/mystic/postgres.bundle
+ext/mystic/.RUBYARCHDIR.-.mystic.time
