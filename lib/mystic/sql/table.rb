@@ -103,7 +103,6 @@ module Mystic
         opts = cols.last.is_a?(Hash) ? cols.pop : {}
         opts[:columns] = cols
 				opts[:table] = @name
-        puts "opts: " + opts.inspect
         self << Mystic::SQL::Index.new(opts)
       end
       

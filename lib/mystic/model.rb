@@ -156,7 +156,10 @@ module Mystic
         when :select
           count = opts[:count] || opts["count"] || 0
           count = 1 if (opts[:singlular] || opts["singular"]) == true
+          
     			where = params.sqlize
+
+          puts "WHERE: " + where.inspect
 
     			sql = ["SELECT #{column_string} FROM #{table_name}"]
     			sql << "WHERE #{where*' AND '}" unless where.empty?

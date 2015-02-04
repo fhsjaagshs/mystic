@@ -31,7 +31,7 @@ module Mystic
         Mystic.execute (@sql.join '')
       rescue => e
         Mystic.execute "ROLLBACK TO SAVEPOINT \"#{uuid}\""
-        puts e
+        raise e
       else
         Mystic.execute "RELEASE SAVEPOINT \"#{uuid}\""
       ensure

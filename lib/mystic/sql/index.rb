@@ -21,8 +21,6 @@ module Mystic
           :name
         ]).each { |option,value| send (option.to_s + '=').to_sym, value }
 
-        puts table.inspect
-
         raise ArgumentError, "Indeces must contain at least one column." if columns.empty?
       end
       
@@ -111,7 +109,6 @@ module Mystic
   			sql << "WITH (#{storage_params.map { |k,v| k.escape + ' = ' + v.to_s.escape }*", "})" unless storage_params.empty?
   			sql << "TABLESPACE #{tablespace.sqlize}" if tablespace
   			sql << "WHERE #{where}" if where
-        puts "----------------------\n" + sql*' '
   			sql*' '
       end
     end
