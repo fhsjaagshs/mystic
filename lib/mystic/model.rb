@@ -90,8 +90,12 @@ module Mystic
         to_s.downcase.strip
       end
       
-      def column_string
-        (columns+pseudocolumns.map { |name, sql| "(#{sql}) AS #{name.to_s}" }).join(',')
+      # takes params for pseudocolumns
+      def column_string include_pseudocols=true, params={}
+        cols = columns.map { |c| "#{table_name.to_s.dblquote}.#{c.to_s.dblquote}" }
+        cols.push *pseudocolumns.map { |name, sql| params.each { |k,v| sql.gsub!(":#{k}",v.sqlize) }; "(#{sql}) AS #{name.to_s}" } if include_pseudocols
+        cols.join(',')
+        #(columns.map { |c| "#{table_name.to_s.dblquote}.#{c.to_s.dblquote}" }+pseudocolumns.map { |name, sql| params.each { |k,v| sql.gsub!(":#{k}",v.sqlize) }; "(#{sql}) AS #{name.to_s}" }).join(',')
       end
       
       def cte_string
@@ -150,7 +154,7 @@ module Mystic
       
         raise ArgumentError, "Return type (:return) must be either #{RETURN_TYPES.map(&:to_s).join(", ")}" unless RETURN_TYPES.include? retrn
 
-        sql << " RETURNING #{column_string}" if retrn != :nothing && sql[0..5] != "SELECT"
+        sql << " RETURNING #{column_string false}" if retrn != :nothing && sql[0..5] != "SELECT"
       
         case retrn
         when :rows, :nothing then sql
@@ -170,11 +174,11 @@ module Mystic
           count = opts[:count] || opts["count"] || 0
           count = 1 if (opts[:singlular] || opts["singular"]) == true
           
-    			where = params.sqlize
+    			where = params.select { |k,_| columns.include? k }.sqlize
 
           sql = []
           sql << "WITH #{cte_string}" unless cte_expressions.empty?
-          sql << "SELECT #{column_string}"
+          sql << "SELECT #{column_string(true, params.reject { |k,_| columns.include? k })}"
           sql << "FROM #{table_name}#{cte_expressions.empty? ? '' : ',' }"
           sql << cte_expressions.keys.map(&:to_s).join(',')
     			sql << "WHERE #{where*' AND '}" unless where.empty?
