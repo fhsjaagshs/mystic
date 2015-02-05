@@ -79,10 +79,18 @@ module Mystic
         name
       end
       
+      def transform colname, &block
+        properties[:transforms][colname.to_s] = block
+      end
+      
       # select, creat, fetch, update, delete actions
       ACTIONS.each do |action|
         define_method("#{action}_action".to_sym) { |mode = DEFAULT_MODE, &b| map_action action, mode, &b } # DSL method to define the action
-        define_method(action.to_sym) { |*args| action_for(action, (Symbol === args.first ? args.shift : DEFAULT_MODE)).call *args } # Method to call an action
+        define_method(action.to_sym) do |*args|
+          res = action_for(action, (Symbol === args.first ? args.shift : DEFAULT_MODE)).call *args
+          res = res.map { |h| Hash[h.map { |k,v| [k, (properties[:transforms].member?(k) ? properties[:transforms][k].call(v) : v)] }] } if res.is_a? Array
+          res
+        end # Method to call an action
       end
 
       # Attributes of a model
@@ -93,9 +101,12 @@ module Mystic
       # takes params for pseudocolumns
       def column_string include_pseudocols=true, params={}
         cols = columns.map { |c| "#{table_name.to_s.dblquote}.#{c.to_s.dblquote}" }
-        cols.push *pseudocolumns.map { |name, sql| params.each { |k,v| sql.gsub!(":#{k}",v.sqlize) }; "(#{sql}) AS #{name.to_s}" } if include_pseudocols
+        if include_pseudocols
+          pcols = pseudocolumns.map { |name, sql| params.each { |k,v| sql.gsub!(":#{k}",v.sqlize) }; "(#{sql}) AS #{name.to_s}" }
+          pcols.reject! { |sql| !sql.include?("::") && sql.include?(':') }
+          cols.push *pcols
+        end
         cols.join(',')
-        #(columns.map { |c| "#{table_name.to_s.dblquote}.#{c.to_s.dblquote}" }+pseudocolumns.map { |name, sql| params.each { |k,v| sql.gsub!(":#{k}",v.sqlize) }; "(#{sql}) AS #{name.to_s}" }).join(',')
       end
       
       def cte_string
@@ -126,7 +137,8 @@ module Mystic
             :columns => [],
             :pseudocolumns => {},
             :actions => Hash[ACTIONS.map { |a| [a, {}] }],
-            :cte => {}
+            :cte => {},
+            :transforms => {}
           }
         end
         @__properties
@@ -154,7 +166,7 @@ module Mystic
       
         raise ArgumentError, "Return type (:return) must be either #{RETURN_TYPES.map(&:to_s).join(", ")}" unless RETURN_TYPES.include? retrn
 
-        sql << " RETURNING #{column_string false}" if retrn != :nothing && sql[0..5] != "SELECT"
+        sql << " RETURNING #{column_string}" if retrn != :nothing && sql[0..5] != "SELECT"
       
         case retrn
         when :rows, :nothing then sql
@@ -178,7 +190,7 @@ module Mystic
 
           sql = []
           sql << "WITH #{cte_string}" unless cte_expressions.empty?
-          sql << "SELECT #{column_string(true, params.reject { |k,_| columns.include? k })}"
+          sql << "SELECT #{column_string(true, params)}"
           sql << "FROM #{table_name}#{cte_expressions.empty? ? '' : ',' }"
           sql << cte_expressions.keys.map(&:to_s).join(',')
     			sql << "WHERE #{where*' AND '}" unless where.empty?
