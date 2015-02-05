@@ -102,8 +102,8 @@ module Mystic
       def column_string include_pseudocols=true, params={}
         cols = columns.map { |c| "#{table_name.to_s.dblquote}.#{c.to_s.dblquote}" }
         if include_pseudocols
-          pcols = pseudocolumns.map { |name, sql| params.each { |k,v| sql.gsub!(":#{k}",v.sqlize) }; "(#{sql}) AS #{name.to_s}" }
-          pcols.reject! { |sql| /[^:]:[^:]/.match sql }
+          pcols = pseudocolumns.map { |name, sql| params.each { |k,v| sql.gsub!(":#{k}",v.sqlize) }; puts sql; "(#{sql}) AS #{name.to_s}" }
+          pcols.reject! { |sql| /([^:]:[^:])(?=(?:[^']|'[^']*')*$)/.match sql }
           cols.push *pcols
         end
         cols.join(',')
