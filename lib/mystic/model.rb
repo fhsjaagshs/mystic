@@ -61,7 +61,7 @@ module Mystic
       end
     
       # SQL for a value to be selected as a column
-      # example: row_to_json(res)
+      # example: row_to_json(res){}
       def pseudocolumn name, sql
         properties[:pseudocolumns][name] = sql
         name
@@ -72,6 +72,11 @@ module Mystic
         define_method (funcname.nil? || funcname.empty?) ? newname : funcname do |*args|
           Mystic.execute "SELECT * FROM #{funcname}(#{args.sqlize*','})"
         end
+      end
+      
+      def cte name, sql
+        properties[:cte][name] = sql
+        name
       end
       
       # select, creat, fetch, update, delete actions
@@ -87,6 +92,14 @@ module Mystic
       
       def column_string
         (columns+pseudocolumns.map { |name, sql| "(#{sql}) AS #{name.to_s}" }).join(',')
+      end
+      
+      def cte_string
+        properties[:cte].map { |name, sql| "#{name} as (#{sql})" }.join(',')
+      end
+      
+      def cte_expressions
+        properties[:cte]
       end
       
       def columns
@@ -108,9 +121,9 @@ module Mystic
             :table => default_table,
             :columns => [],
             :pseudocolumns => {},
-            :actions => {}
+            :actions => Hash[ACTIONS.map { |a| [a, {}] }],
+            :cte => {}
           }
-          ACTIONS.each { |a| @__properties[:actions][a] = {} }
         end
         @__properties
       end
@@ -118,11 +131,11 @@ module Mystic
       private
       
       def map_action action, mode, &b
-        (properties[:actions][action] || {})[mode] = b#ModelAction.new(&b)
+        (properties[:actions][action] ||= {})[mode] = b#ModelAction.new(&b)
       end
       
       def action_for action, mode
-        (properties[:actions][action] || {})[mode]
+        (properties[:actions][action] ||= {})[mode]
       end
     end
     
@@ -159,20 +172,22 @@ module Mystic
           
     			where = params.sqlize
 
-          puts "WHERE: " + where.inspect
-
-    			sql = ["SELECT #{column_string} FROM #{table_name}"]
+          sql = []
+          sql << "WITH #{cte_string}" unless cte_expressions.empty?
+          sql << "SELECT #{column_string}"
+          sql << "FROM #{table_name}#{cte_expressions.empty? ? '' : ',' }"
+          sql << cte_expressions.keys.map(&:to_s).join(',')
     			sql << "WHERE #{where*' AND '}" unless where.empty?
     			sql << "LIMIT #{count.to_i}" if count > 0
 		
           decorate sql*' ', opts
         when :update
           raise ArgumentError, "Update queries must set something." if set.empty?
-          decorate "UPDATE #{table_name.dblquote} SET #{set.sqlize*','} WHERE #{where.sqlize*' AND '}", opts
+          decorate "UPDATE #{table_name.dblquote} SET #{set.symbolize.sqlize*','} WHERE #{where.sqlize*' AND '}", opts
         when :insert
-          decorate "INSERT INTO #{table_name.to_s.dblquote} (#{params.keys*','}) VALUES (#{params.values.sqlize*','})", opts
+          decorate "INSERT INTO #{table_name.to_s.dblquote} (#{params.keys.symbolize.sqlize*','}) VALUES (#{params.values.sqlize*','})", opts
         when :delete
-          decorate "DELETE FROM #{table_name.to_s.dblquote} WHERE #{params.sqlize*' AND '}", opts
+          decorate "DELETE FROM #{table_name.to_s.dblquote} WHERE #{params.symbolize.sqlize*' AND '}", opts
         end
       end
     end
