@@ -99,10 +99,10 @@ module Mystic
       end
       
       # takes params for pseudocolumns
-      def column_string include_pseudocols=true, params={}
+      def column_string params={}
         cols = columns.map { |c| "#{table_name.to_s.dblquote}.#{c.to_s.dblquote}" }
-        if include_pseudocols
-          pcols = pseudocolumns.map { |name, sql| params.each { |k,v| sql.gsub!(":#{k}",v.sqlize) }; "(#{sql}) AS #{name.to_s}" }
+        unless params.empty?
+          pcols = pseudocolumns.map { |name, sql| params.each { |k,v| sql.gsub!(":#{k.to_s}",v.sqlize) }; "(#{sql}) AS #{name.to_s}" }
           pcols.reject! { |sql| /([^:]:[^:])(?=(?:[^']|'[^']*')*$)/.match sql }
           cols.push *pcols
         end
@@ -181,6 +181,7 @@ module Mystic
       end
     
       def sql op, params={}, set={}, opts={}
+        opts = set unless op == :update # set is used because of the way opts is passed
         case op
         when :select
           count = opts[:count] || opts["count"] || 0
@@ -190,7 +191,7 @@ module Mystic
 
           sql = []
           sql << "WITH #{cte_string}" unless cte_expressions.empty?
-          sql << "SELECT #{column_string(true, params)}"
+          sql << "SELECT #{column_string(params)}"
           sql << "FROM #{table_name}#{cte_expressions.empty? ? '' : ',' }"
           sql << cte_expressions.keys.map(&:to_s).join(',')
     			sql << "WHERE #{where*' AND '}" unless where.empty?
@@ -201,7 +202,7 @@ module Mystic
           raise ArgumentError, "Update queries must set something." if set.empty?
           decorate "UPDATE #{table_name.dblquote} SET #{set.symbolize.sqlize*','} WHERE #{where.sqlize*' AND '}", opts
         when :insert
-          decorate "INSERT INTO #{table_name.to_s.dblquote} (#{params.keys.symbolize.sqlize*','}) VALUES (#{params.values.sqlize*','})", opts
+          decorate "INSERT INTO #{table_name.to_s.dblquote} (#{params.keys.symbolize.sqlize*','}) VALUES (#{params.values.sqlize*','})", opts 
         when :delete
           decorate "DELETE FROM #{table_name.to_s.dblquote} WHERE #{params.symbolize.sqlize*' AND '}", opts
         end
