@@ -10,7 +10,6 @@ class ::Object
   def sqlize
 		case self
     when nil then "NULL"
-    when respond_to?(:to_str) then to_str.quote
 		when String then quote
     when Symbol then to_s.dblquote # symbols are assumed to be SQL identifiers
 		when Numeric then to_s.escape
@@ -21,6 +20,7 @@ class ::Object
     when Hash then map { |p| p.sqlize*'=' }
     when TrueClass then "true"
     when FalseClass then "false"
+    when respond_to?(:to_s) then to_s.quote
     else raise TypeError, "Unable to turn type into an SQL type." end
   end
   
