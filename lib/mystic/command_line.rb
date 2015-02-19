@@ -57,7 +57,7 @@ module Mystic
       # Creates a blank migration in mystic/migrations
       def create_migration name=""
         num = MPATH.entries.map { |e| MREGEX.match(e.to_s)[:num].to_i rescue 0 }.max.to_i+1
-        MPATH.join("#{num}_#{_name}.rb").write template(name.strip.capitalize.gsub(/\S+/,''))
+        MPATH.join("#{num}_#{name}.rb").write template(name.strip.capitalize.gsub(/\s+/,''))
       end
       
       # Retuns a blank migration's code in a String
